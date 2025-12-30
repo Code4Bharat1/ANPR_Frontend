@@ -1,12 +1,7 @@
-
-import VendorsPage from '@/components/projectmanager/Vendors'
-
-import React from 'react'
+import VendorManagement from '@/components/projectmanager/vendormanagement'
 
 const page = () => {
-  return <div>
-    <VendorsPage/>
-  </div>
+  return <VendorManagement/>
 }
 
 export default page

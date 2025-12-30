@@ -1,12 +1,7 @@
-
-import SitesPage from '@/components/projectmanager/pmsites'
-
-import React from 'react'
+import PMSites from '@/components/projectmanager/pmsites'
 
 const page = () => {
-  return <div>
-    <SitesPage/>
-  </div>
+  return <PMSites/>
 }
 
 export default page

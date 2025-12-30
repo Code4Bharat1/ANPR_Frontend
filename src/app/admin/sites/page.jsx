@@ -1,9 +1,8 @@
-import SitesPage from '@/components/admin/adminsites'
-import React from 'react'
+import SiteManagement from '@/components/admin/sitemanagement'
 
 const page = () => {
   return <div>
-    <SitesPage/>
+    <SiteManagement/>
   </div>
 }
 

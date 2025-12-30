@@ -1,10 +1,7 @@
-import AccessControlDashboard from '@/components/admin/admindashbaord'
-import React from 'react'
+import AdminDashboard from '@/components/admin/admindashboard'
 
 const page = () => {
-  return <div>
-    <AccessControlDashboard/>
-  </div>
+  return <AdminDashboard/>
 }
 
 export default page

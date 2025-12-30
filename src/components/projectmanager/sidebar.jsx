@@ -2,8 +2,8 @@
 import { useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { 
-  LayoutDashboard, MapPin, Users, Camera, FileText, 
-  Settings, User, LogOut, X
+  LayoutDashboard, MapPin, Users, Package, Monitor, 
+  FileText, TrendingUp, User, LogOut, X, Settings
 } from 'lucide-react';
 
 const Sidebar = ({ isOpen, onClose }) => {
@@ -12,13 +12,15 @@ const Sidebar = ({ isOpen, onClose }) => {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   const menuItems = [
-    { name: 'Dashboard', path: '/admin/dashboard', icon: LayoutDashboard },
-    { name: 'Sites', path: '/admin/sites', icon: MapPin },
-    { name: 'Users', path: '/admin/users', icon: Users },
-    { name: 'Devices', path: '/admin/devices', icon: Camera },
-    { name: 'Reports', path: '/admin/reports', icon: FileText },
-    { name: 'Settings', path: '/admin/settings', icon: Settings },
-    { name: 'Profile', path: '/admin/profile', icon: User },
+    { name: 'Dashboard', path: '/projectmanager/dashboard', icon: LayoutDashboard },
+    { name: 'Sites', path: '/projectmanager/sites', icon: MapPin },
+    { name: 'Supervisors', path: '/projectmanager/supervisors', icon: Users },
+    { name: 'Vendors', path: '/projectmanager/vendors', icon: Package },
+    { name: 'Monitoring', path: '/projectmanager/monitoring', icon: Monitor },
+    { name: 'Reports', path: '/projectmanager/reports', icon: FileText },
+    { name: 'Analytics', path: '/projectmanager/analytics', icon: TrendingUp },
+    { name: 'Settings', path: '/projectmanager/settings', icon: Settings },
+    { name: 'Profile', path: '/projectmanager/profile', icon: User },
   ];
 
   const handleLogout = () => {
@@ -31,25 +33,21 @@ const Sidebar = ({ isOpen, onClose }) => {
   return (
     <>
       {isOpen && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
-          onClick={onClose}
-        />
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden" onClick={onClose} />
       )}
 
-      <aside
-        className={`fixed top-0 left-0 h-full w-72 bg-white border-r border-gray-200 z-50 transform transition-transform duration-300 ${
+      <aside className={`fixed top-0 left-0 h-full w-72 bg-white border-r border-gray-200 z-50 transform transition-transform duration-300 ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
-        } lg:translate-x-0`}
-      >
+        } lg:translate-x-0`}>
+        
         <div className="h-16 flex items-center justify-between px-6 border-b border-gray-200">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-xl">A</span>
+            <div className="w-10 h-10 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-lg flex items-center justify-center">
+              <span className="text-white font-bold text-xl">PM</span>
             </div>
             <div>
-              <h1 className="font-bold text-gray-900">ANPR Admin</h1>
-              <p className="text-xs text-gray-500">Client Portal</p>
+              <h1 className="font-bold text-gray-900">BarrierGuard</h1>
+              <p className="text-xs text-gray-500">Project Manager</p>
             </div>
           </div>
           <button onClick={onClose} className="lg:hidden p-2 hover:bg-gray-100 rounded-lg">
@@ -71,7 +69,7 @@ const Sidebar = ({ isOpen, onClose }) => {
                     onClose();
                   }}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${
-                    active ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-100'
+                    active ? 'bg-indigo-600 text-white' : 'text-gray-700 hover:bg-gray-100'
                   }`}
                 >
                   <Icon className="w-5 h-5" />

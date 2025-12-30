@@ -1,13 +1,7 @@
-
-import SitesPage from '@/components/projectmanager/pmsites'
-import SupervisorsPage from '@/components/projectmanager/supervisor'
-
-import React from 'react'
+import SupervisorManagement from '@/components/projectmanager/supervisormanagement'
 
 const page = () => {
-  return <div>
-    <SupervisorsPage/>
-  </div>
+  return <SupervisorManagement/>
 }
 
 export default page
