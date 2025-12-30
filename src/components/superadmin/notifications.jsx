@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { 
   Bell, CheckCircle, AlertTriangle, Info, DollarSign, Users, 
-  Camera, MapPin, Trash2, Check, X, Filter, Search, MoreVertical
+  Camera, Trash2, Check, X, Search, MoreVertical
 } from 'lucide-react';
 import SuperAdminLayout from './layout';
 
@@ -58,14 +58,14 @@ const getNotificationStyle = (type) => {
 };
 
 // Single Notification Card
-const NotificationCard = ({ notification, onMarkRead, onDelete, onToggleMenu }) => {
+const NotificationCard = ({ notification, onMarkRead, onDelete }) => {
   const [showMenu, setShowMenu] = useState(false);
   const style = getNotificationStyle(notification.type);
   const Icon = style.icon;
 
   return (
     <div className={`bg-white rounded-lg p-4 md:p-5 border-l-4 ${style.borderColor} shadow-sm hover:shadow-md transition ${
-      notification.unread ? 'bg-purple-50' : ''
+      notification.unread ? 'bg-purple-50 border-purple-400' : ''
     }`}>
       <div className="flex items-start gap-3 md:gap-4">
         {/* Icon */}
@@ -79,7 +79,7 @@ const NotificationCard = ({ notification, onMarkRead, onDelete, onToggleMenu }) 
             <h3 className="font-semibold text-gray-900 text-sm md:text-base">
               {notification.title}
               {notification.unread && (
-                <span className="inline-block w-2 h-2 bg-purple-600 rounded-full ml-2"></span>
+                <span className="inline-block w-2 h-2 bg-purple-600 rounded-full ml-2 animate-pulse"></span>
               )}
             </h3>
             
@@ -93,28 +93,34 @@ const NotificationCard = ({ notification, onMarkRead, onDelete, onToggleMenu }) 
               </button>
 
               {showMenu && (
-                <div className="absolute right-0 mt-1 w-40 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10">
-                  <button
-                    onClick={() => {
-                      onMarkRead(notification.id);
-                      setShowMenu(false);
-                    }}
-                    className="w-full px-3 py-2 hover:bg-gray-50 text-left text-sm flex items-center gap-2"
-                  >
-                    <Check className="w-4 h-4" />
-                    {notification.unread ? 'Mark as read' : 'Mark as unread'}
-                  </button>
-                  <button
-                    onClick={() => {
-                      onDelete(notification.id);
-                      setShowMenu(false);
-                    }}
-                    className="w-full px-3 py-2 hover:bg-red-50 text-left text-sm text-red-600 flex items-center gap-2"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    Delete
-                  </button>
-                </div>
+                <>
+                  <div 
+                    className="fixed inset-0 z-10" 
+                    onClick={() => setShowMenu(false)}
+                  ></div>
+                  <div className="absolute right-0 mt-1 w-40 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20">
+                    <button
+                      onClick={() => {
+                        onMarkRead(notification.id);
+                        setShowMenu(false);
+                      }}
+                      className="w-full px-3 py-2 hover:bg-gray-50 text-left text-sm flex items-center gap-2 text-gray-700"
+                    >
+                      <Check className="w-4 h-4" />
+                      {notification.unread ? 'Mark as read' : 'Mark as unread'}
+                    </button>
+                    <button
+                      onClick={() => {
+                        onDelete(notification.id);
+                        setShowMenu(false);
+                      }}
+                      className="w-full px-3 py-2 hover:bg-red-50 text-left text-sm text-red-600 flex items-center gap-2"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      Delete
+                    </button>
+                  </div>
+                </>
               )}
             </div>
           </div>
@@ -122,13 +128,12 @@ const NotificationCard = ({ notification, onMarkRead, onDelete, onToggleMenu }) 
           <p className="text-sm md:text-base text-gray-700 mb-2">{notification.message}</p>
 
           {/* Metadata */}
-          <div className="flex flex-wrap items-center gap-3 md:gap-4 text-xs md:text-sm text-gray-500">
-            <span>{notification.time}</span>
+          <div className="flex flex-wrap items-center gap-2 md:gap-3 text-xs md:text-sm">
+            <span className="text-gray-500">{notification.time}</span>
             {notification.module && (
               <>
-                <span>•</span>
-                <span className="flex items-center gap-1">
-                  <MapPin className="w-3 h-3" />
+                <span className="text-gray-300">•</span>
+                <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs font-medium">
                   {notification.module}
                 </span>
               </>
@@ -196,7 +201,7 @@ const Notifications = () => {
         },
         {
           id: 4,
-          title: "Device Added",
+          title: "Device Added Successfully",
           message: "12 new ANPR cameras added to Mumbai Site by Admin",
           time: "3 hours ago",
           unread: false,
@@ -214,9 +219,9 @@ const Notifications = () => {
         },
         {
           id: 6,
-          title: "Backup Completed",
-          message: "Daily system backup completed successfully",
-          time: "Yesterday",
+          title: "Backup Completed Successfully",
+          message: "Daily system backup completed at 2:00 AM",
+          time: "Yesterday at 2:00 AM",
           unread: false,
           type: "success",
           module: "System"
@@ -225,7 +230,7 @@ const Notifications = () => {
           id: 7,
           title: "New User Added",
           message: "Project Manager 'John Smith' added to North Gate Complex",
-          time: "Yesterday",
+          time: "Yesterday at 3:45 PM",
           unread: false,
           type: "client",
           module: "User Management"
@@ -238,6 +243,24 @@ const Notifications = () => {
           unread: false,
           type: "error",
           module: "Device Management"
+        },
+        {
+          id: 9,
+          title: "Analytics Report Ready",
+          message: "Monthly analytics report for December 2025 is available",
+          time: "2 days ago",
+          unread: false,
+          type: "info",
+          module: "Analytics"
+        },
+        {
+          id: 10,
+          title: "Client Upgraded Package",
+          message: "TechStart Ltd upgraded from Silver to Gold Package",
+          time: "3 days ago",
+          unread: false,
+          type: "success",
+          module: "Client Management"
         }
       ]);
     } finally {
@@ -330,12 +353,14 @@ const Notifications = () => {
 
     const matchesSearch = 
       notification.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      notification.message.toLowerCase().includes(searchQuery.toLowerCase());
+      notification.message.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      notification.module?.toLowerCase().includes(searchQuery.toLowerCase());
 
     return matchesFilter && matchesSearch;
   });
 
   const unreadCount = notifications.filter(n => n.unread).length;
+  const readCount = notifications.length - unreadCount;
 
   if (loading) {
     return (
@@ -410,10 +435,10 @@ const Notifications = () => {
           </div>
 
           {/* Filter Tabs */}
-          <div className="flex gap-2">
+          <div className="flex gap-2 overflow-x-auto">
             <button
               onClick={() => setFilter('all')}
-              className={`px-4 py-2.5 rounded-lg font-semibold text-sm transition ${
+              className={`px-4 py-2.5 rounded-lg font-semibold text-sm transition whitespace-nowrap ${
                 filter === 'all'
                   ? 'bg-purple-600 text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -423,7 +448,7 @@ const Notifications = () => {
             </button>
             <button
               onClick={() => setFilter('unread')}
-              className={`px-4 py-2.5 rounded-lg font-semibold text-sm transition ${
+              className={`px-4 py-2.5 rounded-lg font-semibold text-sm transition whitespace-nowrap ${
                 filter === 'unread'
                   ? 'bg-purple-600 text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -433,13 +458,13 @@ const Notifications = () => {
             </button>
             <button
               onClick={() => setFilter('read')}
-              className={`px-4 py-2.5 rounded-lg font-semibold text-sm transition ${
+              className={`px-4 py-2.5 rounded-lg font-semibold text-sm transition whitespace-nowrap ${
                 filter === 'read'
                   ? 'bg-purple-600 text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
-              Read ({notifications.length - unreadCount})
+              Read ({readCount})
             </button>
           </div>
         </div>
@@ -457,14 +482,16 @@ const Notifications = () => {
             />
           ))
         ) : (
-          <div className="bg-white rounded-xl p-12 text-center border border-gray-100">
+          <div className="bg-white rounded-xl p-8 md:p-12 text-center border border-gray-100">
             <Bell className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">No notifications</h3>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">
+              {searchQuery ? 'No matching notifications' : filter === 'unread' ? 'All caught up!' : 'No notifications'}
+            </h3>
             <p className="text-gray-600">
               {searchQuery 
-                ? 'No notifications match your search' 
+                ? 'Try adjusting your search terms' 
                 : filter === 'unread' 
-                ? 'You\'re all caught up!' 
+                ? 'You have no unread notifications' 
                 : 'No notifications to display'}
             </p>
           </div>
