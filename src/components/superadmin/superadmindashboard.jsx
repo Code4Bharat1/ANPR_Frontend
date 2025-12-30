@@ -81,7 +81,7 @@ const SuperAdminDashboard = () => {
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-  console.log(API_URL)
+  // console.log(API_URL)
 
   useEffect(() => {
     fetchDashboardData();
@@ -100,7 +100,7 @@ const fetchDashboardData = async () => {
     );
 
     setDashboardData(res.data);
-    console.log(res.data);
+    // console.log(res.data);
 
     setError(null);
   } catch (err) {

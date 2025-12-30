@@ -3,9 +3,10 @@
 import React from "react";
 import {
   Shield, LayoutDashboard, Users, Camera, BarChart3, 
-  FileText, Settings, User, LogOut, X
+  FileText, Settings, User, LogOut, X , Bell
 } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
+import { Server } from 'lucide-react'; // Add this
 
 const Sidebar = ({ isOpen, onClose }) => {
   const router = useRouter();
@@ -17,6 +18,8 @@ const Sidebar = ({ isOpen, onClose }) => {
     { name: "Devices", icon: Camera, path: "/superadmin/devices" },
     { name: "Analytics", icon: BarChart3, path: "/superadmin/analytics" },
     { name: "Audit Logs", icon: FileText, path: "/superadmin/audit-logs" },
+    // { icon: Bell, name: "Notifications", path: "/superadmin/notifications" },
+    { icon: Server, name: "Server Setup", path: "/superadmin/server-setup" },
     { name: "Settings", icon: Settings, path: "/superadmin/settings" },
     { name: "Profile", icon: User, path: "/superadmin/profile" },
   ];
