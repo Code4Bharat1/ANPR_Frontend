@@ -318,38 +318,38 @@ const DeviceManagement = () => {
       setError(err.response?.data?.message || err.message);
       
       // Mock data fallback
-      setDevices([
-        {
-          _id: '1',
-          name: 'Gate-1-Cam-01',
-          deviceId: 'ANPR-2024-001',
-          type: 'ANPR',
-          clientName: 'Enterprise Corp',
-          siteName: 'North Gate Complex',
-          status: 'online',
-          lastActive: new Date().toISOString()
-        },
-        {
-          _id: '2',
-          name: 'Gate-2-Barrier-01',
-          deviceId: 'BAR-2024-001',
-          type: 'Barrier',
-          clientName: 'Enterprise Corp',
-          siteName: 'North Gate Complex',
-          status: 'online',
-          lastActive: new Date().toISOString()
-        },
-        {
-          _id: '3',
-          name: 'Gate-3-Cam-02',
-          deviceId: 'ANPR-2024-002',
-          type: 'ANPR',
-          clientName: 'TechStart Ltd',
-          siteName: 'Westside Hub',
-          status: 'offline',
-          lastActive: new Date(Date.now() - 3600000).toISOString()
-        }
-      ]);
+      // setDevices([
+      //   {
+      //     _id: '1',
+      //     name: 'Gate-1-Cam-01',
+      //     deviceId: 'ANPR-2024-001',
+      //     type: 'ANPR',
+      //     clientName: 'Enterprise Corp',
+      //     siteName: 'North Gate Complex',
+      //     status: 'online',
+      //     lastActive: new Date().toISOString()
+      //   },
+      //   {
+      //     _id: '2',
+      //     name: 'Gate-2-Barrier-01',
+      //     deviceId: 'BAR-2024-001',
+      //     type: 'Barrier',
+      //     clientName: 'Enterprise Corp',
+      //     siteName: 'North Gate Complex',
+      //     status: 'online',
+      //     lastActive: new Date().toISOString()
+      //   },
+      //   {
+      //     _id: '3',
+      //     name: 'Gate-3-Cam-02',
+      //     deviceId: 'ANPR-2024-002',
+      //     type: 'ANPR',
+      //     clientName: 'TechStart Ltd',
+      //     siteName: 'Westside Hub',
+      //     status: 'offline',
+      //     lastActive: new Date(Date.now() - 3600000).toISOString()
+      //   }
+      // ]);
     } finally {
       setLoading(false);
     }
@@ -378,33 +378,50 @@ const DeviceManagement = () => {
     }
   };
 
-  const handleAddDevice = async (formData) => {
-    try {
-      setSubmitLoading(true);
-      const token = localStorage.getItem('accessToken');
+const handleAddDevice = async (formData) => {
+  try {
+    setSubmitLoading(true);
+    const token = localStorage.getItem("accessToken");
 
-      const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/superadmin/devices`,
-        formData,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        }
-      );
-
-      setDevices([response.data, ...devices]);
-      setShowAddModal(false);
-      alert('Device registered successfully!');
-      fetchDevices(); // Refresh list
-    } catch (err) {
-      console.error('Error registering device:', err);
-      alert(`Error registering device: ${err.response?.data?.message || err.message}`);
-    } finally {
-      setSubmitLoading(false);
+    if (!token) {
+      throw new Error("No authentication token found");
     }
-  };
+
+    const payload = {
+      clientId: formData.clientId,
+      deviceType: formData.type,          // ✅ mapped
+      serialNumber: formData.deviceId,    // ✅ mapped
+      deviceName: formData.name,
+      siteLocation: formData.location,
+      ipAddress: formData.ipAddress,
+      notes: formData.notes
+    };
+
+    const response = await axios.post(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/superadmin/devices`,
+      payload,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
+        }
+      }
+    );
+
+    alert("Device registered successfully!");
+    setShowAddDeviceModal(true);
+    fetchDevices();
+  } catch (err) {
+    console.error("Error registering device:", err);
+    alert(
+      `Error registering device: ${
+        err.response?.data?.message || err.message
+      }`
+    );
+  } finally {
+    setSubmitLoading(false);
+  }
+};
 
   const handleEdit = (device) => {
     console.log('Edit device:', device);

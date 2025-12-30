@@ -39,6 +39,9 @@ export default function LoginPage() {
         case "admin":
           router.push("/admin/dashboard");
           break;
+          case "client":
+          router.push("/admin/dashboard");
+          break;
         case "projectmanager":
           router.push("/projectmanager/dashboard");
           break;

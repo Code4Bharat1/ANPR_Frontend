@@ -17,11 +17,10 @@ const ClientCard = ({ client, onEdit, onActivate, onDeactivate }) => (
           <span className="text-sm truncate">{client.email}</span>
         </div>
       </div>
-      <span className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap self-start ${
-        client.status === 'active'
-          ? 'bg-green-100 text-green-700'
-          : 'bg-red-100 text-red-700'
-      }`}>
+      <span className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap self-start ${client.status === 'active'
+        ? 'bg-green-100 text-green-700'
+        : 'bg-red-100 text-red-700'
+        }`}>
         {client.status?.toUpperCase() || 'ACTIVE'}
       </span>
     </div>
@@ -111,12 +110,14 @@ const AddClientModal = ({ isOpen, onClose, onSubmit, loading }) => {
       email: '',
       phone: '',
       company: '',
+      password: '',
       package: 'basic',
       packageStartDate: '',
       packageEndDate: '',
       address: ''
     });
   };
+
 
   if (!isOpen) return null;
 
@@ -245,6 +246,20 @@ const AddClientModal = ({ isOpen, onClose, onSubmit, loading }) => {
                 </div>
               </div>
             </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Password *
+              </label>
+              <input
+                type="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                required
+                className="w-full px-3 py-2 border rounded-lg"
+              />
+            </div>
+
 
             {/* Address */}
             <div>
@@ -324,7 +339,7 @@ const ClientManagement = () => {
     } catch (err) {
       console.error('Error fetching clients:', err);
       setError(err.response?.data?.message || err.message);
-      
+
       // Mock data fallback
       // setClients([
       //   {
@@ -366,6 +381,7 @@ const ClientManagement = () => {
     }
   };
 
+
   const handleAddClient = async (formData) => {
     try {
       setSubmitLoading(true);
@@ -374,10 +390,19 @@ const ClientManagement = () => {
       if (!token) {
         throw new Error('No authentication token found');
       }
+      const payload = {
+        companyName: formData.company,
+        email: formData.email,
+        password: formData.password,
+        role: "client",
+        packageType: formData.package,
+        packageStart: formData.packageStartDate,
+        packageEnd: formData.packageEndDate,
+      };
 
       const response = await axios.post(
         `${process.env.NEXT_PUBLIC_API_URL}/api/superadmin/clients`,
-        formData,
+        payload,
         {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -441,7 +466,7 @@ const ClientManagement = () => {
 
   const filteredClients = clients.filter(client => {
     const matchesSearch = client.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         client.email?.toLowerCase().includes(searchQuery.toLowerCase());
+      client.email?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesFilter = filterStatus === 'all' || client.status === filterStatus;
     return matchesSearch && matchesFilter;
   });
