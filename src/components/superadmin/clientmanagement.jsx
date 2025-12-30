@@ -310,7 +310,7 @@ const ClientManagement = () => {
       }
 
       const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/superadmin/clients`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/superadmin/clients`,
         {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -326,41 +326,41 @@ const ClientManagement = () => {
       setError(err.response?.data?.message || err.message);
       
       // Mock data fallback
-      setClients([
-        {
-          _id: '1',
-          name: 'Enterprise Corp',
-          email: 'admin@enterprise.com',
-          company: 'Enterprise Corporation',
-          package: 'Enterprise Gold',
-          sitesCount: 12,
-          packageStartDate: '2024-01-01',
-          packageEndDate: '2024-12-31',
-          status: 'active'
-        },
-        {
-          _id: '2',
-          name: 'TechStart Ltd',
-          email: 'contact@techstart.com',
-          company: 'TechStart Limited',
-          package: 'Premium',
-          sitesCount: 5,
-          packageStartDate: '2024-03-15',
-          packageEndDate: '2025-03-14',
-          status: 'active'
-        },
-        {
-          _id: '3',
-          name: 'Global Industries',
-          email: 'info@globalind.com',
-          company: 'Global Industries Inc',
-          package: 'Standard',
-          sitesCount: 3,
-          packageStartDate: '2023-12-01',
-          packageEndDate: '2024-01-15',
-          status: 'expired'
-        }
-      ]);
+      // setClients([
+      //   {
+      //     _id: '1',
+      //     name: 'Enterprise Corp',
+      //     email: 'admin@enterprise.com',
+      //     company: 'Enterprise Corporation',
+      //     package: 'Enterprise Gold',
+      //     sitesCount: 12,
+      //     packageStartDate: '2024-01-01',
+      //     packageEndDate: '2024-12-31',
+      //     status: 'active'
+      //   },
+      //   {
+      //     _id: '2',
+      //     name: 'TechStart Ltd',
+      //     email: 'contact@techstart.com',
+      //     company: 'TechStart Limited',
+      //     package: 'Premium',
+      //     sitesCount: 5,
+      //     packageStartDate: '2024-03-15',
+      //     packageEndDate: '2025-03-14',
+      //     status: 'active'
+      //   },
+      //   {
+      //     _id: '3',
+      //     name: 'Global Industries',
+      //     email: 'info@globalind.com',
+      //     company: 'Global Industries Inc',
+      //     package: 'Standard',
+      //     sitesCount: 3,
+      //     packageStartDate: '2023-12-01',
+      //     packageEndDate: '2024-01-15',
+      //     status: 'expired'
+      //   }
+      // ]);
     } finally {
       setLoading(false);
     }
@@ -376,7 +376,7 @@ const ClientManagement = () => {
       }
 
       const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/superadmin/clients`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/superadmin/clients`,
         formData,
         {
           headers: {
@@ -408,7 +408,7 @@ const ClientManagement = () => {
       try {
         const token = localStorage.getItem('accessToken');
         await axios.patch(
-          `${process.env.NEXT_PUBLIC_API_URL}/superadmin/clients/${client._id}/activate`,
+          `${process.env.NEXT_PUBLIC_API_URL}/api/superadmin/clients/${client._id}/activate`,
           {},
           { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -426,7 +426,7 @@ const ClientManagement = () => {
       try {
         const token = localStorage.getItem('accessToken');
         await axios.patch(
-          `${process.env.NEXT_PUBLIC_API_URL}/superadmin/clients/${client._id}/deactivate`,
+          `${process.env.NEXT_PUBLIC_API_URL}/api/superadmin/clients/${client._id}/deactivate`,
           {},
           { headers: { Authorization: `Bearer ${token}` } }
         );

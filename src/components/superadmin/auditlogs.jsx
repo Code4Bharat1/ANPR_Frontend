@@ -250,7 +250,7 @@ const AuditLogs = () => {
       }
 
       const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/superadmin/audit-logs`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/superadmin/audit-logs`,
         {
           headers: {
             'Authorization': `Bearer ${token}`,

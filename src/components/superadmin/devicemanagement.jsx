@@ -302,7 +302,7 @@ const DeviceManagement = () => {
       }
 
       const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/superadmin/devices`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/superadmin/devices`,
         {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -359,7 +359,7 @@ const DeviceManagement = () => {
     try {
       const token = localStorage.getItem('accessToken');
       const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/superadmin/clients`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/superadmin/clients`,
         {
           headers: {
             'Authorization': `Bearer ${token}`,

@@ -157,7 +157,7 @@ const Notifications = () => {
       const token = localStorage.getItem('accessToken');
 
       const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/superadmin/notifications`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/superadmin/notifications`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -251,7 +251,7 @@ const Notifications = () => {
       const notification = notifications.find(n => n.id === id);
 
       await axios.patch(
-        `${process.env.NEXT_PUBLIC_API_URL}/superadmin/notifications/${id}/${notification.unread ? 'read' : 'unread'}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/superadmin/notifications/${id}/${notification.unread ? 'read' : 'unread'}`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -273,7 +273,7 @@ const Notifications = () => {
       const token = localStorage.getItem('accessToken');
 
       await axios.patch(
-        `${process.env.NEXT_PUBLIC_API_URL}/superadmin/notifications/read-all`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/superadmin/notifications/read-all`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -291,7 +291,7 @@ const Notifications = () => {
         const token = localStorage.getItem('accessToken');
 
         await axios.delete(
-          `${process.env.NEXT_PUBLIC_API_URL}/superadmin/notifications/${id}`,
+          `${process.env.NEXT_PUBLIC_API_URL}/api/superadmin/notifications/${id}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
 
@@ -309,7 +309,7 @@ const Notifications = () => {
         const token = localStorage.getItem('accessToken');
 
         await axios.delete(
-          `${process.env.NEXT_PUBLIC_API_URL}/superadmin/notifications/clear-all`,
+          `${process.env.NEXT_PUBLIC_API_URL}/api/superadmin/notifications/clear-all`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
 

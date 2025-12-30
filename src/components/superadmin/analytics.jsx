@@ -123,7 +123,7 @@ const SuperAdminAnalytics = () => {
       }
 
       const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/superadmin/analytics?range=${dateRange}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/superadmin/analytics/summary`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -179,7 +179,7 @@ const SuperAdminAnalytics = () => {
     try {
       const token = localStorage.getItem('accessToken');
       await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/superadmin/analytics/export?range=${dateRange}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/superadmin/analytics/summary`,
         {
           headers: { Authorization: `Bearer ${token}` },
           responseType: 'blob'

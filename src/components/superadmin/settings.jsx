@@ -107,7 +107,7 @@ const Settings = () => {
     try {
       const token = localStorage.getItem('accessToken');
       const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/superadmin/settings`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/superadmin/settings`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -153,7 +153,7 @@ const Settings = () => {
         formData.append('logo', companyData.logo);
         
         const uploadResponse = await axios.post(
-          `${process.env.NEXT_PUBLIC_API_URL}/superadmin/upload-logo`,
+          `${process.env.NEXT_PUBLIC_API_URL}/api/superadmin/upload-logo`,
           formData,
           {
             headers: {
@@ -167,7 +167,7 @@ const Settings = () => {
 
       // Save all settings
       await axios.put(
-        `${process.env.NEXT_PUBLIC_API_URL}/superadmin/settings`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/superadmin/settings`,
         {
           company: { ...companyData, logoUrl },
           preferences,
@@ -206,7 +206,7 @@ const Settings = () => {
     try {
       const token = localStorage.getItem('accessToken');
       await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/superadmin/change-password`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/superadmin/change-password`,
         {
           currentPassword: security.currentPassword,
           newPassword: security.newPassword
@@ -234,7 +234,7 @@ const Settings = () => {
       try {
         const token = localStorage.getItem('accessToken');
         await axios.post(
-          `${process.env.NEXT_PUBLIC_API_URL}/superadmin/revoke-session`,
+          `${process.env.NEXT_PUBLIC_API_URL}/api/superadmin/revoke-session`,
           { sessionId },
           { headers: { Authorization: `Bearer ${token}` } }
         );

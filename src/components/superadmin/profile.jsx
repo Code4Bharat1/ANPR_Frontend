@@ -98,14 +98,14 @@ const Profile = () => {
 
   useEffect(() => {
     fetchProfile();
-    fetchRecentActivity();
+    // fetchRecentActivity();
   }, []);
 
   const fetchProfile = async () => {
     try {
       const token = localStorage.getItem('accessToken');
       const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/superadmin/profile`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/superadmin/profile`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -121,27 +121,27 @@ const Profile = () => {
     }
   };
 
-  const fetchRecentActivity = async () => {
-    try {
-      const token = localStorage.getItem('accessToken');
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/superadmin/recent-activity`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+  // const fetchRecentActivity = async () => {
+  //   try {
+  //     const token = localStorage.getItem('accessToken');
+  //     const response = await axios.get(
+  //       `${process.env.NEXT_PUBLIC_API_URL}/api/superadmin/recent-activity`,
+  //       { headers: { Authorization: `Bearer ${token}` } }
+  //     );
 
-      setRecentActivity(response.data || []);
-    } catch (err) {
-      console.error('Error fetching activity:', err);
-      // Fallback data
-      setRecentActivity([
-        { action: "Updated client package", module: "Client Management", timestamp: "2 hours ago" },
-        { action: "Registered new device", module: "Device Management", timestamp: "5 hours ago" },
-        { action: "Exported analytics report", module: "Analytics", timestamp: "Yesterday" },
-        { action: "Changed system settings", module: "Settings", timestamp: "2 days ago" },
-        { action: "Added new client", module: "Client Management", timestamp: "3 days ago" }
-      ]);
-    }
-  };
+  //     setRecentActivity(response.data || []);
+  //   } catch (err) {
+  //     console.error('Error fetching activity:', err);
+  //     // Fallback data
+  //     setRecentActivity([
+  //       { action: "Updated client package", module: "Client Management", timestamp: "2 hours ago" },
+  //       { action: "Registered new device", module: "Device Management", timestamp: "5 hours ago" },
+  //       { action: "Exported analytics report", module: "Analytics", timestamp: "Yesterday" },
+  //       { action: "Changed system settings", module: "Settings", timestamp: "2 days ago" },
+  //       { action: "Added new client", module: "Client Management", timestamp: "3 days ago" }
+  //     ]);
+  //   }
+  // };
 
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
@@ -165,7 +165,7 @@ const Profile = () => {
         formData.append('profileImage', file);
 
         const response = await axios.post(
-          `${process.env.NEXT_PUBLIC_API_URL}/superadmin/upload-profile-image`,
+          `${process.env.NEXT_PUBLIC_API_URL}/api/superadmin/upload-profile-image`,
           formData,
           {
             headers: {
@@ -191,7 +191,7 @@ const Profile = () => {
     try {
       const token = localStorage.getItem('accessToken');
       await axios.put(
-        `${process.env.NEXT_PUBLIC_API_URL}/superadmin/profile`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/superadmin/profile/change-password`,
         profileData,
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -212,7 +212,7 @@ const Profile = () => {
       try {
         const token = localStorage.getItem('accessToken');
         await axios.post(
-          `${process.env.NEXT_PUBLIC_API_URL}/superadmin/revoke-session`,
+          `${process.env.NEXT_PUBLIC_API_URL}/api/superadmin/revoke-session`,
           { sessionId },
           { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -231,24 +231,18 @@ const Profile = () => {
       <div className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl p-6 md:p-8 mb-6 text-white">
         <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
           {/* Profile Picture */}
-          <div className="relative flex-shrink-0">
-            <div className="w-24 h-24 md:w-32 md:h-32 bg-white rounded-full flex items-center justify-center text-purple-600 text-3xl md:text-4xl font-bold overflow-hidden">
-              {profileImage ? (
-                <img src={profileImage} alt="Profile" className="w-full h-full object-cover" />
-              ) : (
-                profileData.fullName.charAt(0)
-              )}
-            </div>
-            <label className="absolute bottom-0 right-0 w-8 h-8 md:w-10 md:h-10 bg-purple-500 rounded-full flex items-center justify-center cursor-pointer hover:bg-purple-700 transition border-2 md:border-4 border-white">
-              <Camera className="w-4 h-4 md:w-5 md:h-5 text-white" />
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleImageUpload}
-                className="hidden"
-              />
-            </label>
-          </div>
+          <div className="w-24 h-24 md:w-32 md:h-32 bg-white rounded-full flex items-center justify-center text-purple-600 text-3xl md:text-4xl font-bold overflow-hidden">
+  {profileImage ? (
+    <img
+      src={profileImage}
+      alt="Profile"
+      className="w-full h-full object-cover"
+    />
+  ) : (
+    profileData.fullName?.charAt(0) || 'A'
+  )}
+</div>
+
 
           {/* Profile Info */}
           <div className="flex-1 text-center md:text-left min-w-0">

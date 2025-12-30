@@ -52,7 +52,7 @@ const Header = ({ title = "Dashboard", onMenuClick }) => {
 
       // Try to get from API
       const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/superadmin/profile`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/superadmin/profile`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -91,7 +91,7 @@ const Header = ({ title = "Dashboard", onMenuClick }) => {
       const token = localStorage.getItem('accessToken');
       
       const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/superadmin/notifications`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/superadmin/notifications`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -143,7 +143,7 @@ const Header = ({ title = "Dashboard", onMenuClick }) => {
       const token = localStorage.getItem('accessToken');
       
       await axios.patch(
-        `${process.env.NEXT_PUBLIC_API_URL}/superadmin/notifications/${notificationId}/read`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/superadmin/notifications/${notificationId}/read`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -162,7 +162,7 @@ const Header = ({ title = "Dashboard", onMenuClick }) => {
       const token = localStorage.getItem('accessToken');
       
       await axios.patch(
-        `${process.env.NEXT_PUBLIC_API_URL}/superadmin/notifications/read-all`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/superadmin/notifications/`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
