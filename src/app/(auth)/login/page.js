@@ -24,11 +24,10 @@ export default function LoginPage() {
         password,
       });
 
-      const { accessToken, refreshToken, user } = res.data;
+      const { accessToken, user } = res.data;
 
       // Save tokens
       localStorage.setItem("accessToken", accessToken);
-      localStorage.setItem("refreshToken", refreshToken);
       localStorage.setItem("user", JSON.stringify(user));
 
       // Role-based redirect
