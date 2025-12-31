@@ -154,7 +154,7 @@ const SiteModal = ({ isOpen, onClose, site, onSave, mode }) => {
                 className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition"
               >
                 <option value="Active">Active</option>
-                <option value="Maintenance">Maintenance</option>
+                <option value="Complelted">Complelted</option>
                 <option value="Inactive">Inactive</option>
               </select>
             </div>
@@ -742,9 +742,9 @@ const SiteManagement = () => {
             </div>
             <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl p-5 border-2 border-yellow-200 shadow-sm">
               <div className="text-3xl font-black text-yellow-700">
-                {sites.filter(s => s.status === 'Maintenance').length}
+                {sites.filter(s => s.status === 'Complelted').length}
               </div>
-              <div className="text-sm text-yellow-700 font-semibold mt-1">Maintenance</div>
+              <div className="text-sm text-yellow-700 font-semibold mt-1">Complelted</div>
             </div>
             <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-5 border-2 border-gray-200 shadow-sm">
               <div className="text-3xl font-black text-gray-700">
@@ -773,7 +773,7 @@ const SiteManagement = () => {
             >
               <option value="All">All Status</option>
               <option value="Active">Active</option>
-              <option value="Maintenance">Maintenance</option>
+              <option value="Complelted">Complelted</option>
               <option value="Inactive">Inactive</option>
             </select>
             <button 

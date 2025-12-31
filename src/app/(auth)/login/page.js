@@ -41,7 +41,7 @@ export default function LoginPage() {
           case "client":
           router.push("/admin/dashboard");
           break;
-        case "projectmanager":
+        case "project_manager":
           router.push("/projectmanager/dashboard");
           break;
         case "supervisor":

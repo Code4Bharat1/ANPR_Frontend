@@ -78,51 +78,51 @@ const PMDashboard = () => {
       const token = localStorage.getItem('accessToken');
       
       const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/projectmanager/dashboard`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/project/dashboard/stats`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
       setDashboardData(response.data);
     } catch (err) {
-      setDashboardData({
-        totalSites: 12,
-        totalTrips: 3429,
-        supervisors: 48,
-        activeTrips: 28,
-        activeSupervisors: 32,
-        todayTrips: 142,
-        completedTrips: 3401,
-        sites: [
-          {
-            id: 'NLH-01',
-            name: 'North Logistics Hub',
-            barriers: 8,
-            activeTrips: 12,
-            status: 'Operational'
-          },
-          {
-            id: 'WDC-04',
-            name: 'Westside Distribution Center',
-            barriers: 3,
-            activeTrips: 5,
-            status: 'Maintenance'
-          },
-          {
-            id: 'PGA-07',
-            name: 'Port Gate 7 Access',
-            barriers: 12,
-            activeTrips: 24,
-            status: 'Operational'
-          },
-          {
-            id: 'CSF-02',
-            name: 'Central Storage Facility',
-            barriers: 5,
-            activeTrips: 8,
-            status: 'Operational'
-          }
-        ]
-      });
+      // setDashboardData({
+      //   totalSites: 12,
+      //   totalTrips: 3429,
+      //   supervisors: 48,
+      //   activeTrips: 28,
+      //   activeSupervisors: 32,
+      //   todayTrips: 142,
+      //   completedTrips: 3401,
+      //   sites: [
+      //     {
+      //       id: 'NLH-01',
+      //       name: 'North Logistics Hub',
+      //       barriers: 8,
+      //       activeTrips: 12,
+      //       status: 'Operational'
+      //     },
+      //     {
+      //       id: 'WDC-04',
+      //       name: 'Westside Distribution Center',
+      //       barriers: 3,
+      //       activeTrips: 5,
+      //       status: 'Maintenance'
+      //     },
+      //     {
+      //       id: 'PGA-07',
+      //       name: 'Port Gate 7 Access',
+      //       barriers: 12,
+      //       activeTrips: 24,
+      //       status: 'Operational'
+      //     },
+      //     {
+      //       id: 'CSF-02',
+      //       name: 'Central Storage Facility',
+      //       barriers: 5,
+      //       activeTrips: 8,
+      //       status: 'Operational'
+      //     }
+      //   ]
+      // });
     } finally {
       setLoading(false);
     }
@@ -177,7 +177,7 @@ const PMDashboard = () => {
               />
               <DashboardCard
                 icon={TrendingUp}
-                value={`${dashboardData?.totalTrips || 0} MTD`}
+                value={`${dashboardData?.totalTrips || 0}`}
                 label="Total Trips"
                 bgColor="bg-green-50"
                 iconColor="text-green-600"
@@ -215,7 +215,7 @@ const PMDashboard = () => {
               icon={TrendingUp}
               value={dashboardData?.todayTrips || 0}
               label="Today's Trips"
-              subLabel="+12% vs yesterday"
+              subLabel="yesterday"
               bgColor="bg-emerald-50"
               iconColor="text-emerald-600"
             />
@@ -248,7 +248,7 @@ const PMDashboard = () => {
             </div>
 
             {/* Recent Activities */}
-            <div>
+            {/* <div>
               <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
                 <h2 className="text-xl font-bold text-gray-900 mb-6">Recent Activities</h2>
                 <ActivityItem
@@ -282,7 +282,7 @@ const PMDashboard = () => {
                   time="3 hours ago"
                 />
               </div>
-            </div>
+            </div> */}
           </div>
         </main>
       </div>
