@@ -19,7 +19,7 @@ const Sidebar = ({ isOpen, onClose }) => {
     { name: "Analytics", icon: BarChart3, path: "/superadmin/analytics" },
     { name: "Audit Logs", icon: FileText, path: "/superadmin/audit-logs" },
     // { icon: Bell, name: "Notifications", path: "/superadmin/notifications" },
-    { icon: Server, name: "Server Setup", path: "/superadmin/server-setup" },
+    // { icon: Server, name: "Server Setup", path: "/superadmin/server-setup" },
     { name: "Settings", icon: Settings, path: "/superadmin/settings" },
     { name: "Profile", icon: User, path: "/superadmin/profile" },
   ];
