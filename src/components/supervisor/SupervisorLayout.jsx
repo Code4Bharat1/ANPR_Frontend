@@ -34,7 +34,7 @@ const SupervisorLayout = ({ children }) => {
       localStorage.removeItem('accessToken');
       localStorage.removeItem('supervisorData');
       localStorage.removeItem('userRole');
-      router.push('/supervisor/login');
+      router.push('/login');
     }
   };
 

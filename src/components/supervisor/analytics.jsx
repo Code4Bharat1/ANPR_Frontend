@@ -13,59 +13,15 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 const Analytics = () => {
   const [loading, setLoading] = useState(false);
   const [timeFilter, setTimeFilter] = useState('last7days');
-  const [analytics, setAnalytics] = useState({
-    todayTrips: 84,
-    todayChange: 12,
-    weekTrips: 528,
-    avgProcessingTime: '1h 12m',
-    timeImprovement: -5,
-    peakHour: '10:00 AM - 11:00 AM',
-    totalEntries: 482,
-    totalExits: 395,
-    activeVehicles: 87,
-    avgDuration: '2h 30m'
-  });
+  const [analytics, setAnalytics] = useState({});
 
-  const [dailyTrends, setDailyTrends] = useState([
-    { day: 'Mon', entries: 65, exits: 58 },
-    { day: 'Tue', entries: 78, exits: 71 },
-    { day: 'Wed', entries: 82, exits: 76 },
-    { day: 'Thu', entries: 95, exits: 88 },
-    { day: 'Fri', entries: 105, exits: 98 },
-    { day: 'Sat', entries: 68, exits: 65 },
-    { day: 'Sun', entries: 35, exits: 39 }
-  ]);
+  const [dailyTrends, setDailyTrends] = useState([]);
 
-  const [hourlyTrends, setHourlyTrends] = useState([
-    { hour: '06:00', count: 12 },
-    { hour: '07:00', count: 28 },
-    { hour: '08:00', count: 45 },
-    { hour: '09:00', count: 62 },
-    { hour: '10:00', count: 78 },
-    { hour: '11:00', count: 71 },
-    { hour: '12:00', count: 54 },
-    { hour: '13:00', count: 48 },
-    { hour: '14:00', count: 56 },
-    { hour: '15:00', count: 42 },
-    { hour: '16:00', count: 38 },
-    { hour: '17:00', count: 25 }
-  ]);
+  const [hourlyTrends, setHourlyTrends] = useState([]);
 
-  const [vehicleTypes, setVehicleTypes] = useState([
-    { type: 'Truck (10 Wheeler)', count: 145, percentage: 35 },
-    { type: 'Truck (6 Wheeler)', count: 120, percentage: 29 },
-    { type: 'Van/Light Vehicle', count: 98, percentage: 23 },
-    { type: 'Tanker', count: 35, percentage: 8 },
-    { type: 'Visitor/Sedan', count: 20, percentage: 5 }
-  ]);
+  const [vehicleTypes, setVehicleTypes] = useState([]);
 
-  const [topVendors, setTopVendors] = useState([
-    { name: 'Blue Dart Logistics', trips: 56, percentage: 85 },
-    { name: 'Amazon Transport', trips: 48, percentage: 75 },
-    { name: 'Indian Oil Corp', trips: 42, percentage: 68 },
-    { name: 'Local Supply Co', trips: 38, percentage: 62 },
-    { name: 'Tech Solutions Ltd', trips: 28, percentage: 45 }
-  ]);
+  const [topVendors, setTopVendors] = useState([]);
 
   useEffect(() => {
     fetchAnalytics();

@@ -59,38 +59,7 @@ const ExitVehicles = () => {
     } catch (error) {
       console.error('Error fetching active vehicles:', error);
       // Mock data
-      setActiveVehicles([
-        {
-          _id: '1',
-          vehicleNumber: 'MH12-DE-1992',
-          vendor: 'Blue Dart Logistics',
-          driver: 'Rajesh Kumar',
-          entryTime: '10:45 AM',
-          duration: '02h 15m',
-          status: 'loading',
-          materialType: 'Steel Rods'
-        },
-        {
-          _id: '2',
-          vehicleNumber: 'KA01-HH-4550',
-          vendor: 'Amazon Supplies',
-          driver: 'Vijay Singh',
-          entryTime: '09:15 AM',
-          duration: '03h 45m',
-          status: 'overstay',
-          materialType: 'Electronics'
-        },
-        {
-          _id: '3',
-          vehicleNumber: 'MH14-JK-8821',
-          vendor: 'Indian Oil Corp',
-          driver: 'Amit Patel',
-          entryTime: '11:30 AM',
-          duration: '01h 30m',
-          status: 'unloading',
-          materialType: 'Fuel Drums'
-        }
-      ]);
+  
     } finally {
       setLoading(false);
     }
