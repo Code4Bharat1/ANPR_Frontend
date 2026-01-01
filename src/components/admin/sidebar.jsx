@@ -17,8 +17,8 @@ const Sidebar = ({ isOpen, onClose }) => {
     { name: 'Users', path: '/admin/users', icon: Users },
     { name: 'Devices', path: '/admin/devices', icon: Camera },
     { name: 'Reports', path: '/admin/reports', icon: FileText },
-    { name: 'Settings', path: '/admin/settings', icon: Settings },
-    { name: 'Profile', path: '/admin/profile', icon: User },
+    // { name: 'Settings', path: '/admin/settings', icon: Settings },
+    // { name: 'Profile', path: '/admin/profile', icon: User },
   ];
 
   const handleLogout = () => {

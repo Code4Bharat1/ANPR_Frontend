@@ -20,8 +20,8 @@ const Sidebar = ({ isOpen, onClose }) => {
     { name: "Audit Logs", icon: FileText, path: "/superadmin/audit-logs" },
     // { icon: Bell, name: "Notifications", path: "/superadmin/notifications" },
     // { icon: Server, name: "Server Setup", path: "/superadmin/server-setup" },
-    { name: "Settings", icon: Settings, path: "/superadmin/settings" },
-    { name: "Profile", icon: User, path: "/superadmin/profile" },
+    // { name: "Settings", icon: Settings, path: "/superadmin/settings" },
+    // { name: "Profile", icon: User, path: "/superadmin/profile" },
   ];
 
   const handleLogout = () => {

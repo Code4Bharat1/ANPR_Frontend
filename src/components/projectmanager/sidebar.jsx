@@ -19,8 +19,8 @@ const Sidebar = ({ isOpen, onClose }) => {
     { name: 'Monitoring', path: '/projectmanager/monitoring', icon: Monitor },
     { name: 'Reports', path: '/projectmanager/reports', icon: FileText },
     { name: 'Analytics', path: '/projectmanager/analytics', icon: TrendingUp },
-    { name: 'Settings', path: '/projectmanager/settings', icon: Settings },
-    { name: 'Profile', path: '/projectmanager/profile', icon: User },
+    // { name: 'Settings', path: '/projectmanager/settings', icon: Settings },
+    // { name: 'Profile', path: '/projectmanager/profile', icon: User },
   ];
 
   const handleLogout = () => {
