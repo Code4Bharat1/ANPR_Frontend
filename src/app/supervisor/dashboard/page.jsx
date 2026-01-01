@@ -1,12 +1,8 @@
-import React from 'react'
-import SupervisorDashboard from "@/components/supervisor/dashboard/page.jsx"
+// app/supervisor/dashboard/page.jsx
+import SupervisorDashboard from '@/components/supervisor/dashboard'
 
-function page() {
-  return (
-    <div>
-        <SupervisorDashboard/>
-    </div>
-  )
+const page = () => {
+  return <SupervisorDashboard/>
 }
 
 export default page
