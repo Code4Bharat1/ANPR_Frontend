@@ -43,7 +43,7 @@ const PMAnalytics = () => {
       const token = localStorage.getItem('accessToken');
 
       const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/projectmanager/analytics`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/project/analytics`,
         { 
           headers: { Authorization: `Bearer ${token}` },
           params: { timeRange }
@@ -52,34 +52,34 @@ const PMAnalytics = () => {
 
       setAnalyticsData(response.data);
     } catch (err) {
-      setAnalyticsData({
-        totalTrips: 3429,
-        avgDuration: '2h 15m',
-        peakHours: '10 AM - 2 PM',
-        utilizationRate: '78%',
-        topVendors: [
-          { name: 'Apex Logistics', trips: 856, percentage: 25 },
-          { name: 'Global Freight', trips: 742, percentage: 22 },
-          { name: 'Rapid Courier', trips: 628, percentage: 18 },
-          { name: 'Maritime Transports', trips: 514, percentage: 15 },
-          { name: 'City Haulage', trips: 689, percentage: 20 }
-        ],
-        topSites: [
-          { name: 'North Logistics Hub', trips: 1245, percentage: 36 },
-          { name: 'Port Gate 7', trips: 892, percentage: 26 },
-          { name: 'Westside Distribution', trips: 658, percentage: 19 },
-          { name: 'Central Storage', trips: 634, percentage: 19 }
-        ],
-        weeklyData: [
-          { day: 'Mon', trips: 142 },
-          { day: 'Tue', trips: 158 },
-          { day: 'Wed', trips: 134 },
-          { day: 'Thu', trips: 167 },
-          { day: 'Fri', trips: 189 },
-          { day: 'Sat', trips: 98 },
-          { day: 'Sun', trips: 76 }
-        ]
-      });
+      // setAnalyticsData({
+      //   totalTrips: 3429,
+      //   avgDuration: '2h 15m',
+      //   peakHours: '10 AM - 2 PM',
+      //   utilizationRate: '78%',
+      //   topVendors: [
+      //     { name: 'Apex Logistics', trips: 856, percentage: 25 },
+      //     { name: 'Global Freight', trips: 742, percentage: 22 },
+      //     { name: 'Rapid Courier', trips: 628, percentage: 18 },
+      //     { name: 'Maritime Transports', trips: 514, percentage: 15 },
+      //     { name: 'City Haulage', trips: 689, percentage: 20 }
+      //   ],
+      //   topSites: [
+      //     { name: 'North Logistics Hub', trips: 1245, percentage: 36 },
+      //     { name: 'Port Gate 7', trips: 892, percentage: 26 },
+      //     { name: 'Westside Distribution', trips: 658, percentage: 19 },
+      //     { name: 'Central Storage', trips: 634, percentage: 19 }
+      //   ],
+      //   weeklyData: [
+      //     { day: 'Mon', trips: 142 },
+      //     { day: 'Tue', trips: 158 },
+      //     { day: 'Wed', trips: 134 },
+      //     { day: 'Thu', trips: 167 },
+      //     { day: 'Fri', trips: 189 },
+      //     { day: 'Sat', trips: 98 },
+      //     { day: 'Sun', trips: 76 }
+      //   ]
+      // });
     } finally {
       setLoading(false);
     }
@@ -130,7 +130,7 @@ const PMAnalytics = () => {
               <option value="7days">Last 7 Days</option>
               <option value="30days">Last 30 Days</option>
               <option value="90days">Last 90 Days</option>
-              <option value="1year">Last Year</option>
+              {/* <option value="1year">Last Year</option> */}
             </select>
           </div>
 
@@ -140,7 +140,7 @@ const PMAnalytics = () => {
               icon={Activity}
               value={analyticsData?.totalTrips?.toLocaleString() || 0}
               label="Total Trips"
-              change={12}
+              // change={12}
               bgColor="bg-blue-50"
               iconColor="text-blue-600"
             />
@@ -148,7 +148,7 @@ const PMAnalytics = () => {
               icon={Calendar}
               value={analyticsData?.avgDuration || '-'}
               label="Avg Duration"
-              change={-5}
+              // change={-5}
               bgColor="bg-purple-50"
               iconColor="text-purple-600"
             />
@@ -163,7 +163,7 @@ const PMAnalytics = () => {
               icon={Activity}
               value={analyticsData?.utilizationRate || '-'}
               label="Utilization Rate"
-              change={8}
+              // change={8}
               bgColor="bg-green-50"
               iconColor="text-green-600"
             />

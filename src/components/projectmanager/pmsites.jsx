@@ -68,54 +68,13 @@ const PMSites = () => {
       const token = localStorage.getItem('accessToken');
 
       const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/projectmanager/sites`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/project/sites`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
       setSites(response.data);
     } catch (err) {
-      setSites([
-        {
-          id: 'NLH-01',
-          name: 'North Logistics Hub',
-          location: 'Manchester, UK',
-          supervisors: 4,
-          activeVehicles: 28,
-          status: 'Active'
-        },
-        {
-          id: 'WDC-04',
-          name: 'Westside Distribution',
-          location: 'Liverpool, UK',
-          supervisors: 2,
-          activeVehicles: 15,
-          status: 'Active'
-        },
-        {
-          id: 'CSF-02',
-          name: 'Central Storage Facility',
-          location: 'Birmingham, UK',
-          supervisors: 6,
-          activeVehicles: 42,
-          status: 'Active'
-        },
-        {
-          id: 'PGA-07',
-          name: 'Port Gate 7',
-          location: 'Felixstowe, UK',
-          supervisors: 3,
-          activeVehicles: 112,
-          status: 'Active'
-        },
-        {
-          id: 'TPE-01',
-          name: 'Tech Park Entry A',
-          location: 'Cambridge, UK',
-          supervisors: 1,
-          activeVehicles: 0,
-          status: 'Maintenance'
-        },
-      ]);
+     
     } finally {
       setLoading(false);
     }

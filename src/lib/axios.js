@@ -23,13 +23,16 @@ const clearAccessToken = () =>
 /* ==========================
    REQUEST INTERCEPTOR
 ========================== */
-api.interceptors.request.use((config) => {
-  const token = getAccessToken();
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
+api.interceptors.request.use(
+  (config) => {
+    const token = getAccessToken();
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 
 /* ==========================
    RESPONSE INTERCEPTOR
@@ -49,6 +52,16 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
+    // ❗ Prevent infinite loop
+    if (
+      error.response?.status === 401 &&
+      originalRequest.url === "/auth/refresh"
+    ) {
+      clearAccessToken();
+      window.location.href = "/login";
+      return Promise.reject(error);
+    }
+
     if (
       error.response?.status === 401 &&
       !originalRequest._retry
@@ -67,7 +80,7 @@ api.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        // 🔥 refresh token automatically sent via cookie
+        // ✅ CORRECT ENDPOINT
         const res = await api.post("/auth/refresh");
 
         const newAccessToken = res.data.accessToken;

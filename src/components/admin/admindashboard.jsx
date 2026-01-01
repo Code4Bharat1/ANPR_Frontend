@@ -54,7 +54,7 @@ const AdminDashboard = () => {
       setLoading(true);
       const token = localStorage.getItem('accessToken');
       const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/dashboard`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/client-admin/dashboard`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setDashboardData(response.data);

@@ -1,85 +1,57 @@
 "use client";
 import { useState, useEffect } from 'react';
-import axios from 'axios';
 import { 
-  Bell, Menu, Search, Download, FileText, Calendar
+  Bell, Menu, Search, Download, FileText, Calendar, Loader, CheckCircle, AlertCircle
 } from 'lucide-react';
 import Sidebar from './sidebar';
+
 
 const PMReports = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [alert, setAlert] = useState(null);
   const [dateRange, setDateRange] = useState({
-    start: '2025-12-01',
-    end: '2025-12-30'
+    start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    end: new Date().toISOString().split('T')[0]
   });
 
   useEffect(() => {
     fetchReports();
   }, [dateRange]);
 
+  const showAlert = (type, message) => {
+    setAlert({ type, message });
+    setTimeout(() => setAlert(null), 4000);
+  };
+
   const fetchReports = async () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('accessToken');
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/projectmanager/reports`,
-        { 
-          headers: { Authorization: `Bearer ${token}` },
-          params: {
-            startDate: dateRange.start,
-            endDate: dateRange.end
-          }
-        }
+      const params = new URLSearchParams({
+        startDate: dateRange.start,
+        endDate: dateRange.end
+      });
+
+      const response = await fetch(
+        `${API_URL}/api/project/reports/trip?${params}`,
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      setReports(response.data);
+      if (response.ok) {
+        const data = await response.json();
+        setReports(data);
+      } else {
+        showAlert('error', 'Failed to fetch reports');
+      }
     } catch (err) {
-      setReports([
-        {
-          id: 'TR-92810',
-          vehicleNumber: 'KA-01-MJ-2023',
-          vendor: 'Apex Logistics',
-          site: 'North Logistics Hub',
-          entryTime: 'Dec 28, 10:45 AM',
-          exitTime: 'Dec 28, 02:30 PM',
-          duration: '3h 45m',
-          status: 'Completed'
-        },
-        {
-          id: 'TR-92811',
-          vehicleNumber: 'TN-09-BC-9921',
-          vendor: 'Global Freight',
-          site: 'Westside Distribution',
-          entryTime: 'Dec 28, 11:15 AM',
-          exitTime: '-',
-          duration: '-',
-          status: 'Active'
-        },
-        {
-          id: 'TR-92812',
-          vehicleNumber: 'MH-02-X-4421',
-          vendor: 'Rapid Courier',
-          site: 'Port Gate 7',
-          entryTime: 'Dec 28, 11:30 AM',
-          exitTime: 'Dec 28, 12:45 PM',
-          duration: '1h 15m',
-          status: 'Completed'
-        },
-        {
-          id: 'TR-92813',
-          vehicleNumber: 'DL-3C-AB-1234',
-          vendor: 'City Haulage',
-          site: 'Central Storage',
-          entryTime: 'Dec 28, 12:00 PM',
-          exitTime: '-',
-          duration: '-',
-          status: 'Active'
-        },
-      ]);
+      console.error('Error fetching reports:', err);
+      showAlert('error', 'Network error. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -87,35 +59,75 @@ const PMReports = () => {
 
   const handleExportExcel = async () => {
     try {
+      setExporting(true);
       const token = localStorage.getItem('accessToken');
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/projectmanager/reports/export`,
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+
+      const params = new URLSearchParams({
+        startDate: dateRange.start,
+        endDate: dateRange.end
+      });
+
+      const response = await fetch(
+        `${API_URL}/api/project/reports/export?${params}`,
         {
-          headers: { Authorization: `Bearer ${token}` },
-          responseType: 'blob',
-          params: {
-            startDate: dateRange.start,
-            endDate: dateRange.end
-          }
+          headers: { Authorization: `Bearer ${token}` }
         }
       );
 
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `pm_reports_${Date.now()}.xlsx`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `trip_reports_${dateRange.start}_to_${dateRange.end}.xlsx`);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+        showAlert('success', 'Report exported successfully!');
+      } else {
+        showAlert('error', 'Failed to export report');
+      }
     } catch (err) {
-      alert('Export successful! (Demo mode)');
+      console.error('Export error:', err);
+      showAlert('error', 'Export failed. Please try again.');
+    } finally {
+      setExporting(false);
     }
   };
 
+  const calculateDuration = (entryTime, exitTime) => {
+    if (!exitTime) return '-';
+    
+    const diff = new Date(exitTime) - new Date(entryTime);
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    
+    return `${hours}h ${minutes}m`;
+  };
+
+  const formatDateTime = (dateString) => {
+    if (!dateString) return '-';
+    return new Date(dateString).toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
   const filteredReports = reports.filter(report =>
-    report.vehicleNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    report.vendor.toLowerCase().includes(searchTerm.toLowerCase())
+    report.vehicleId?.vehicleNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    report.vendorId?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    report.tripId?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const stats = {
+    total: reports.length,
+    completed: reports.filter(r => r.status === 'completed').length,
+    active: reports.filter(r => r.status === 'active').length
+  };
 
   if (loading) {
     return (
@@ -129,6 +141,16 @@ const PMReports = () => {
     <div className="min-h-screen bg-gray-50">
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
+      {/* Alert */}
+      {alert && (
+        <div className={`fixed top-4 right-4 z-50 flex items-center gap-3 px-6 py-4 rounded-lg shadow-lg ${
+          alert.type === 'success' ? 'bg-green-500' : 'bg-red-500'
+        } text-white animate-slide-in`}>
+          {alert.type === 'success' ? <CheckCircle className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
+          <span className="font-medium">{alert.message}</span>
+        </div>
+      )}
+
       <div className="lg:ml-72">
         <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
           <div className="flex items-center justify-between px-6 py-4">
@@ -136,7 +158,7 @@ const PMReports = () => {
               <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-2 hover:bg-gray-100 rounded-lg">
                 <Menu className="w-6 h-6" />
               </button>
-              <h1 className="text-2xl font-bold text-gray-900">Reports</h1>
+              <h1 className="text-2xl font-bold text-gray-900">Trip Reports</h1>
             </div>
             <div className="flex items-center gap-4">
               <button className="p-2 hover:bg-gray-100 rounded-lg relative">
@@ -144,19 +166,37 @@ const PMReports = () => {
                 <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
               </button>
               <div className="w-10 h-10 bg-indigo-600 rounded-full flex items-center justify-center text-white font-semibold">
-                AM
+                PM
               </div>
             </div>
           </div>
         </header>
 
         <main className="max-w-7xl mx-auto px-6 py-8">
-          
+          {/* Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+              <div className="text-sm text-gray-600 mb-1">Total Trips</div>
+              <div className="text-3xl font-bold text-gray-900">{stats.total}</div>
+            </div>
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+              <div className="text-sm text-gray-600 mb-1">Completed Trips</div>
+              <div className="text-3xl font-bold text-green-600">{stats.completed}</div>
+            </div>
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+              <div className="text-sm text-gray-600 mb-1">Active Trips</div>
+              <div className="text-3xl font-bold text-blue-600">{stats.active}</div>
+            </div>
+          </div>
+
           {/* Filters */}
           <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 mb-6">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Start Date</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                  <Calendar className="w-4 h-4" />
+                  Start Date
+                </label>
                 <input
                   type="date"
                   value={dateRange.start}
@@ -165,7 +205,10 @@ const PMReports = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">End Date</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                  <Calendar className="w-4 h-4" />
+                  End Date
+                </label>
                 <input
                   type="date"
                   value={dateRange.end}
@@ -176,10 +219,20 @@ const PMReports = () => {
               <div className="md:col-span-2 flex items-end">
                 <button
                   onClick={handleExportExcel}
-                  className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold flex items-center justify-center gap-2"
+                  disabled={exporting || reports.length === 0}
+                  className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition"
                 >
-                  <Download className="w-4 h-4" />
-                  Export to Excel
+                  {exporting ? (
+                    <>
+                      <Loader className="w-4 h-4 animate-spin" />
+                      Exporting...
+                    </>
+                  ) : (
+                    <>
+                      <Download className="w-4 h-4" />
+                      Export to Excel
+                    </>
+                  )}
                 </button>
               </div>
             </div>
@@ -191,7 +244,7 @@ const PMReports = () => {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               <input
                 type="text"
-                placeholder="Search by vehicle number or vendor..."
+                placeholder="Search by trip ID, vehicle number, or vendor..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 outline-none"
@@ -216,37 +269,79 @@ const PMReports = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
-                  {filteredReports.map((report) => (
-                    <tr key={report.id} className="hover:bg-gray-50 transition">
-                      <td className="px-6 py-4 font-semibold text-gray-900">{report.id}</td>
-                      <td className="px-6 py-4 font-mono text-sm text-gray-900">{report.vehicleNumber}</td>
-                      <td className="px-6 py-4 text-sm text-gray-600">{report.vendor}</td>
-                      <td className="px-6 py-4 text-sm text-gray-600">{report.site}</td>
-                      <td className="px-6 py-4 text-sm text-gray-600">{report.entryTime}</td>
-                      <td className="px-6 py-4 text-sm text-gray-600">{report.exitTime}</td>
-                      <td className="px-6 py-4 text-sm text-gray-600">{report.duration}</td>
-                      <td className="px-6 py-4">
-                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
-                          report.status === 'Completed' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
-                        }`}>
-                          {report.status}
-                        </span>
+                  {filteredReports.length === 0 ? (
+                    <tr>
+                      <td colSpan="8" className="px-6 py-12 text-center">
+                        <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                        <p className="text-gray-500 text-lg font-medium">No reports found</p>
+                        <p className="text-gray-400 text-sm mt-1">Try adjusting your date range or search filters</p>
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    filteredReports.map((report) => (
+                      <tr key={report._id} className="hover:bg-gray-50 transition">
+                        <td className="px-6 py-4 font-semibold text-indigo-600">{report.tripId}</td>
+                        <td className="px-6 py-4 font-mono text-sm text-gray-900">
+                          {report.vehicleId?.vehicleNumber || 'N/A'}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-600">
+                          {report.vendorId?.name || 'N/A'}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-600">
+                          {report.siteId?.name || 'N/A'}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-600">
+                          {formatDateTime(report.entryTime)}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-600">
+                          {formatDateTime(report.exitTime)}
+                        </td>
+                        <td className="px-6 py-4 text-sm font-semibold text-gray-900">
+                          {calculateDuration(report.entryTime, report.exitTime)}
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
+                            report.status === 'completed' ? 'bg-green-100 text-green-700' : 
+                            report.status === 'active' ? 'bg-blue-100 text-blue-700' :
+                            'bg-gray-100 text-gray-700'
+                          }`}>
+                            {report.status === 'completed' ? 'Completed' :
+                             report.status === 'active' ? 'Active' :
+                             report.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
-
-            {filteredReports.length === 0 && (
-              <div className="text-center py-12">
-                <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                <p className="text-gray-500">No reports found</p>
-              </div>
-            )}
           </div>
+
+          {/* Summary */}
+          {filteredReports.length > 0 && (
+            <div className="mt-4 text-sm text-gray-600 text-center">
+              Showing {filteredReports.length} of {reports.length} trip(s)
+            </div>
+          )}
         </main>
       </div>
+
+      <style jsx>{`
+        @keyframes slide-in {
+          from {
+            transform: translateX(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+        .animate-slide-in {
+          animation: slide-in 0.3s ease-out;
+        }
+      `}</style>
     </div>
   );
 };

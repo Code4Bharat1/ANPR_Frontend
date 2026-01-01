@@ -26,7 +26,7 @@ const UserManagement = () => {
       const token = localStorage.getItem('accessToken');
 
       const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/users?role=${activeTab}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/client-admin/users?role=${activeTab}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -38,53 +38,7 @@ const UserManagement = () => {
     } catch (err) {
       console.error('Error fetching users:', err);
       // Mock data
-      setUsers([
-        {
-          id: 1,
-          name: 'Sarah Jenning',
-          email: 'sarah.j@example.com',
-          role: 'Project Manager',
-          assignedSite: 'North City Plaza',
-          status: 'Active',
-          phone: '+44 20 1234 5678'
-        },
-        {
-          id: 2,
-          name: 'Michael Ross',
-          email: 'm.ross@logistics.co',
-          role: 'Project Manager',
-          assignedSite: 'Westside Logistics Hub',
-          status: 'Active',
-          phone: '+44 20 8765 4321'
-        },
-        {
-          id: 3,
-          name: 'David Chen',
-          email: 'd.chen@example.com',
-          role: 'Project Manager',
-          assignedSite: 'Central Station Parking',
-          status: 'Inactive',
-          phone: '+44 20 5555 6666'
-        },
-        {
-          id: 4,
-          name: 'Emily Blunt',
-          email: 'emily.b@airport.com',
-          role: 'Project Manager',
-          assignedSite: 'Airport Cargo Zone',
-          status: 'Active',
-          phone: '+44 20 7777 8888'
-        },
-        {
-          id: 5,
-          name: 'James Wilson',
-          email: 'j.wilson@retail.co.uk',
-          role: 'Project Manager',
-          assignedSite: 'East Retail Park',
-          status: 'Active',
-          phone: '+44 20 9999 0000'
-        },
-      ]);
+      
     } finally {
       setLoading(false);
     }

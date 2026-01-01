@@ -1,7 +1,12 @@
 import LiveMonitoring from '@/components/projectmanager/livemonitoring'
+import React from 'react'
 
 const page = () => {
-  return <LiveMonitoring/>
+  return (
+    <div>
+      <LiveMonitoring/>
+    </div>
+  )
 }
 
 export default page
