@@ -60,24 +60,7 @@ const AdminDashboard = () => {
       setDashboardData(response.data);
     } catch (err) {
       console.error('Error:', err);
-      setDashboardData({
-        totalSites: 12,
-        totalUsers: 2340,
-        projectManagers: 8,
-        supervisors: 24,
-        totalDevices: 48,
-        activeDevices: 46,
-        todayEntries: 843,
-        todayExits: 612,
-        packageInfo: {
-          plan: 'Enterprise Tier 1',
-          status: 'Active',
-          sitesIncluded: 'Up to 20',
-          devices: 'Unlimited',
-          storage: '1 Year Retention',
-          expiryDate: 'Dec 31, 2025'
-        }
-      });
+     
     } finally {
       setLoading(false);
     }
@@ -132,8 +115,8 @@ const AdminDashboard = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <DashboardCard icon={Camera} value={dashboardData?.totalDevices || 0} label="Total Devices" bgColor="bg-orange-50" iconColor="text-orange-600" />
               <DashboardCard icon={Activity} value={dashboardData?.activeDevices || 0} label="Active Devices" bgColor="bg-green-50" iconColor="text-green-600" />
-              <DashboardCard icon={ArrowUpRight} value={dashboardData?.todayEntries || 0} label="Today Entries" bgColor="bg-emerald-50" iconColor="text-emerald-600" trend={12} />
-              <DashboardCard icon={ArrowDownRight} value={dashboardData?.todayExits || 0} label="Today Exits" bgColor="bg-cyan-50" iconColor="text-cyan-600" trend={8} />
+              <DashboardCard icon={ArrowUpRight} value={dashboardData?.todayEntries || 0} label="Today Entries" bgColor="bg-emerald-50" iconColor="text-emerald-600"/>
+              <DashboardCard icon={ArrowDownRight} value={dashboardData?.todayExits || 0} label="Today Exits" bgColor="bg-cyan-50" iconColor="text-cyan-600"  />
             </div>
           </div>
 
@@ -141,10 +124,10 @@ const AdminDashboard = () => {
             <div className="lg:col-span-2">
               <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
                 <h2 className="text-xl font-bold text-gray-900 mb-6">Recent Activity</h2>
-                <ActivityItem icon={CheckCircle} iconColor="bg-green-500" title="Entry granted to Vehicle AB12 CDE" description="Site A - Main Gate" time="2 mins ago" />
+                {/* <ActivityItem icon={CheckCircle} iconColor="bg-green-500" title="Entry granted to Vehicle AB12 CDE" description="Site A - Main Gate" time="2 mins ago" />
                 <ActivityItem icon={AlertTriangle} iconColor="bg-yellow-500" title="Device Offline Alert: Cam-04" description="Site B - Rear Exit" time="15 mins ago" />
                 <ActivityItem icon={Users} iconColor="bg-blue-500" title="New User Added: Sarah Jenkins" description="By Admin" time="1 hour ago" />
-                <ActivityItem icon={CheckCircle} iconColor="bg-green-500" title="Exit recorded for Vehicle XY99 ZZZ" description="Site A - Main Gate" time="1.5 hours ago" />
+                <ActivityItem icon={CheckCircle} iconColor="bg-green-500" title="Exit recorded for Vehicle XY99 ZZZ" description="Site A - Main Gate" time="1.5 hours ago" /> */}
               </div>
             </div>
 

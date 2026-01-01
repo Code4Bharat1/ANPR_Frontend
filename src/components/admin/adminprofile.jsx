@@ -1,40 +1,101 @@
 "use client";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { 
   Bell, Menu, User, Mail, Phone, Shield, Clock, 
-  Calendar, MapPin, Edit2, Save, Upload, Camera, X
+  MapPin, Edit2, Save, Camera, X
 } from 'lucide-react';
+
 import Sidebar from './sidebar';
 
 const AdminProfile = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [pageLoading, setPageLoading] = useState(true);
   const [profileImage, setProfileImage] = useState(null);
-
+  
   const [profileData, setProfileData] = useState({
-    fullName: 'Alex Morgan',
-    role: 'Client Super Admin',
-    email: 'alex.morgan@secureguard.com',
-    phone: '+1 (555) 123-4567',
+    fullName: '',
+    role: '',
+    email: '',
+    phone: '',
     accountStatus: 'Active',
-    lastLogin: 'Oct 24, 2023 at 09:42 AM',
-    location: 'San Francisco, US'
+    lastLogin: '—',
+    location: ''
   });
 
   const [companyData, setCompanyData] = useState({
-    name: 'SecureGuard Systems Ltd.',
-    address: '124 Tech Park Blvd, Suite 400, San Francisco, CA 94107',
-    supportEmail: 'support@secureguard.com',
-    supportPhone: '+1 (800) 555-0199'
+    name: '',
+    address: '',
+    supportEmail: '',
+    supportPhone: ''
   });
 
-  const [preferences, setPreferences] = useState({
-    dateFormat: 'DD/MM/YYYY',
-    timeZone: '(GMT+00:00) UTC',
-    language: 'English (US)'
-  });
+  const [preferences, setPreferences] = useState({});
+
+  useEffect(() => {
+    fetchProfile();
+  }, []);
+
+  const fetchProfile = async () => {
+    try {
+      const token = localStorage.getItem("accessToken");
+
+      if (!token) {
+        console.error("No access token found");
+        setPageLoading(false);
+        return;
+      }
+
+      const res = await axios.get(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/client-admin/profile`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const { role, data } = res.data;
+
+      // Set profile data
+      setProfileData({
+        fullName: data.name || '',
+        role: role === 'client' ? 'Client Super Admin' 
+              : role === 'client_admin' ? 'Client Admin'
+              : role === 'admin' ? 'System Admin' 
+              : role,
+        email: data.email || '',
+        phone: data.phone || '',
+        accountStatus: 'Active',
+        lastLogin: data.lastLogin || '—',
+        location: data.location || ''
+      });
+
+      // Set company data (for client roles)
+      if (data.company) {
+        setCompanyData({
+          name: data.company.name || '',
+          address: data.company.address || '',
+          supportEmail: data.company.supportEmail || '',
+          supportPhone: data.company.supportPhone || ''
+        });
+      }
+
+      // Set preferences
+      if (data.preferences) {
+        setPreferences(data.preferences);
+      }
+    } catch (err) {
+      console.error("Failed to load profile:", err);
+      if (err.response?.status === 401) {
+        console.error("Unauthorized - please login again");
+      }
+    } finally {
+      setPageLoading(false);
+    }
+  };
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
@@ -52,30 +113,54 @@ const AdminProfile = () => {
       setLoading(true);
       const token = localStorage.getItem('accessToken');
 
-      await axios.put(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/profile`,
-        {
-          profile: profileData,
-          company: companyData,
-          preferences
+      if (!token) {
+        alert('No access token found. Please login again.');
+        return;
+      }
+
+      // Prepare data according to backend structure
+      const updateData = {
+        profile: {
+          fullName: profileData.fullName,
+          email: profileData.email,
+          phone: profileData.phone,
+          location: profileData.location
         },
+        company: companyData,
+        preferences: preferences
+      };
+
+      await axios.put(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/client-admin/profile`,
+        updateData,
         {
           headers: {
             Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
           },
         }
       );
 
       alert('Profile updated successfully!');
       setIsEditing(false);
+      
+      // Refresh profile data
+      fetchProfile();
     } catch (err) {
       console.error('Error updating profile:', err);
-      alert('Profile updated! (Demo mode)');
-      setIsEditing(false);
+      alert(err.response?.data?.message || 'Failed to update profile. Please try again.');
     } finally {
       setLoading(false);
     }
   };
+
+  if (pageLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -100,7 +185,7 @@ const AdminProfile = () => {
                 <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
               </button>
               <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-semibold">
-                AD
+                {profileData.fullName.charAt(0) || 'A'}
               </div>
             </div>
           </div>
@@ -117,7 +202,7 @@ const AdminProfile = () => {
                   {profileImage ? (
                     <img src={profileImage} alt="Profile" className="w-full h-full object-cover" />
                   ) : (
-                    profileData.fullName.charAt(0)
+                    profileData.fullName.charAt(0) || 'A'
                   )}
                 </div>
                 <label className="absolute bottom-0 right-0 w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center cursor-pointer hover:bg-blue-700 transition border-4 border-white">
@@ -146,10 +231,12 @@ const AdminProfile = () => {
                     <Phone className="w-4 h-4" />
                     {profileData.phone}
                   </div>
-                  <div className="flex items-center gap-2">
-                    <MapPin className="w-4 h-4" />
-                    {profileData.location}
-                  </div>
+                  {profileData.location && (
+                    <div className="flex items-center gap-2">
+                      <MapPin className="w-4 h-4" />
+                      {profileData.location}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -200,6 +287,15 @@ const AdminProfile = () => {
                         className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                       />
                     </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Location</label>
+                      <input
+                        type="text"
+                        value={profileData.location}
+                        onChange={(e) => setProfileData({...profileData, location: e.target.value})}
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                      />
+                    </div>
                   </div>
                 ) : (
                   <div className="space-y-4">
@@ -230,7 +326,7 @@ const AdminProfile = () => {
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center justify-between py-3">
+                    <div className="flex items-center justify-between py-3 border-b border-gray-100">
                       <div className="flex items-center gap-3">
                         <Phone className="w-5 h-5 text-gray-600" />
                         <div>
@@ -239,105 +335,70 @@ const AdminProfile = () => {
                         </div>
                       </div>
                     </div>
+                    <div className="flex items-center justify-between py-3">
+                      <div className="flex items-center gap-3">
+                        <MapPin className="w-5 h-5 text-gray-600" />
+                        <div>
+                          <div className="text-sm text-gray-600">Location</div>
+                          <div className="font-semibold text-gray-900">{profileData.location || 'Not specified'}</div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
 
-              {/* Company Details */}
-              <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-                <h2 className="text-xl font-bold text-gray-900 mb-6">Company Details</h2>
-                
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Company Name</label>
-                    <input
-                      type="text"
-                      value={companyData.name}
-                      onChange={(e) => setCompanyData({...companyData, name: e.target.value})}
-                      disabled={!isEditing}
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none disabled:bg-gray-50"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Registered Address</label>
-                    <input
-                      type="text"
-                      value={companyData.address}
-                      onChange={(e) => setCompanyData({...companyData, address: e.target.value})}
-                      disabled={!isEditing}
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none disabled:bg-gray-50"
-                    />
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Company Details - Only show for client roles */}
+              {(companyData.name || isEditing) && (
+                <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+                  <h2 className="text-xl font-bold text-gray-900 mb-6">Company Details</h2>
+                  
+                  <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Support Email</label>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Company Name</label>
                       <input
-                        type="email"
-                        value={companyData.supportEmail}
-                        onChange={(e) => setCompanyData({...companyData, supportEmail: e.target.value})}
+                        type="text"
+                        value={companyData.name}
+                        onChange={(e) => setCompanyData({...companyData, name: e.target.value})}
                         disabled={!isEditing}
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none disabled:bg-gray-50"
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none disabled:bg-gray-50 disabled:text-gray-600"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Support Number</label>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Registered Address</label>
                       <input
-                        type="tel"
-                        value={companyData.supportPhone}
-                        onChange={(e) => setCompanyData({...companyData, supportPhone: e.target.value})}
+                        type="text"
+                        value={companyData.address}
+                        onChange={(e) => setCompanyData({...companyData, address: e.target.value})}
                         disabled={!isEditing}
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none disabled:bg-gray-50"
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none disabled:bg-gray-50 disabled:text-gray-600"
                       />
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">Support Email</label>
+                        <input
+                          type="email"
+                          value={companyData.supportEmail}
+                          onChange={(e) => setCompanyData({...companyData, supportEmail: e.target.value})}
+                          disabled={!isEditing}
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none disabled:bg-gray-50 disabled:text-gray-600"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">Support Number</label>
+                        <input
+                          type="tel"
+                          value={companyData.supportPhone}
+                          onChange={(e) => setCompanyData({...companyData, supportPhone: e.target.value})}
+                          disabled={!isEditing}
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none disabled:bg-gray-50 disabled:text-gray-600"
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-
-              {/* Preferences */}
-              <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-                <h2 className="text-xl font-bold text-gray-900 mb-6">Preferences</h2>
-                
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Date Format</label>
-                    <select
-                      value={preferences.dateFormat}
-                      onChange={(e) => setPreferences({...preferences, dateFormat: e.target.value})}
-                      disabled={!isEditing}
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none disabled:bg-gray-50"
-                    >
-                      <option value="DD/MM/YYYY">DD/MM/YYYY</option>
-                      <option value="MM/DD/YYYY">MM/DD/YYYY</option>
-                      <option value="YYYY-MM-DD">YYYY-MM-DD</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Time Zone</label>
-                    <select
-                      value={preferences.timeZone}
-                      onChange={(e) => setPreferences({...preferences, timeZone: e.target.value})}
-                      disabled={!isEditing}
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none disabled:bg-gray-50"
-                    >
-                      <option value="(GMT+00:00) UTC">(GMT+00:00) UTC</option>
-                      <option value="(GMT+5:30) IST">(GMT+5:30) IST</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Language</label>
-                    <select
-                      value={preferences.language}
-                      onChange={(e) => setPreferences({...preferences, language: e.target.value})}
-                      disabled={!isEditing}
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none disabled:bg-gray-50"
-                    >
-                      <option value="English (US)">English (US)</option>
-                      <option value="English (UK)">English (UK)</option>
-                      <option value="Hindi">Hindi</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
+              )}
 
               {isEditing && (
                 <div className="flex justify-end gap-4">
@@ -359,47 +420,24 @@ const AdminProfile = () => {
               )}
             </div>
 
-            {/* Right Column */}
+            {/* Right Column - Account Status */}
             <div className="space-y-6">
-              
-              {/* Account Status */}
               <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
                 <h2 className="text-xl font-bold text-gray-900 mb-6">Account Status</h2>
-                
                 <div className="space-y-4">
-                  <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                    <div className="text-sm text-green-700 mb-1">Account Status</div>
-                    <div className="text-xl font-bold text-green-900">{profileData.accountStatus}</div>
-                  </div>
-
-                  <div className="p-4 bg-gray-50 rounded-lg">
-                    <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">
-                      <Clock className="w-4 h-4" />
-                      Last Login
+                  <div>
+                    <div className="text-sm text-gray-600 mb-1">Status</div>
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                      <span className="font-semibold text-gray-900">{profileData.accountStatus}</span>
                     </div>
-                    <div className="font-semibold text-gray-900">{profileData.lastLogin}</div>
                   </div>
-                </div>
-              </div>
-
-              {/* Security */}
-              <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-                <h2 className="text-xl font-bold text-gray-900 mb-6">Security</h2>
-                
-                <div className="space-y-4">
-                  <div className="p-4 bg-gray-50 rounded-lg">
-                    <div className="text-sm text-gray-600 mb-2">Password</div>
-                    <div className="text-sm text-gray-500 mb-3">Last changed 3 months ago</div>
-                    <button className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-semibold">
-                      Change Password
-                    </button>
-                  </div>
-
-                  <div className="p-4 bg-gray-50 rounded-lg">
-                    <div className="text-sm text-gray-600 mb-1">Active Session</div>
-                    <div className="font-semibold text-gray-900">Chrome on MacOS</div>
-                    <div className="text-sm text-gray-500">San Francisco, US</div>
-                    <div className="text-xs text-green-600 mt-1">Current Session</div>
+                  <div>
+                    <div className="text-sm text-gray-600 mb-1">Last Login</div>
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-gray-600" />
+                      <span className="font-semibold text-gray-900">{profileData.lastLogin}</span>
+                    </div>
                   </div>
                 </div>
               </div>

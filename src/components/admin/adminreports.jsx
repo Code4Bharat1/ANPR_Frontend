@@ -2,8 +2,8 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { 
-  Bell, Menu, Search, Download, Filter, Calendar,
-  FileText, TrendingUp, ArrowUpRight, ArrowDownRight
+  Bell, Menu, Search, Download, Calendar,
+  FileText, TrendingUp, X
 } from 'lucide-react';
 import Sidebar from './sidebar';
 
@@ -11,12 +11,13 @@ const AdminReports = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [trips, setTrips] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterSite, setFilterSite] = useState('All Sites');
   const [filterStatus, setFilterStatus] = useState('All Status');
   const [dateRange, setDateRange] = useState({
-    start: '2025-10-25',
-    end: '2025-10-25'
+    start: new Date().toISOString().split('T')[0],
+    end: new Date().toISOString().split('T')[0]
   });
 
   useEffect(() => {
@@ -29,7 +30,7 @@ const AdminReports = () => {
       const token = localStorage.getItem('accessToken');
 
       const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/reports`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/client-admin/reports`,
         {
           headers: { Authorization: `Bearer ${token}` },
           params: {
@@ -42,60 +43,17 @@ const AdminReports = () => {
       setTrips(response.data);
     } catch (err) {
       console.error('Error fetching reports:', err);
-      setTrips([
-        {
-          id: 'TR-82910',
-          vehicleNumber: 'KA-01-MJ-2023',
-          entryTime: 'Oct 25, 10:45 AM',
-          exitTime: 'Oct 25, 02:30 PM',
-          status: 'Completed'
-        },
-        {
-          id: 'TR-82911',
-          vehicleNumber: 'TN-09-BC-9921',
-          entryTime: 'Oct 25, 11:15 AM',
-          exitTime: '-',
-          status: 'Active'
-        },
-        {
-          id: 'TR-82912',
-          vehicleNumber: 'MH-02-X-4421',
-          entryTime: 'Oct 25, 11:30 AM',
-          exitTime: 'Oct 25, 12:45 PM',
-          status: 'Completed'
-        },
-        {
-          id: 'TR-82913',
-          vehicleNumber: 'DL-3C-AB-1234',
-          entryTime: 'Oct 25, 12:00 PM',
-          exitTime: '-',
-          status: 'Active'
-        },
-        {
-          id: 'TR-82914',
-          vehicleNumber: 'KA-53-Z-8888',
-          entryTime: 'Oct 25, 01:20 PM',
-          exitTime: 'Oct 25, 03:10 PM',
-          status: 'Completed'
-        },
-        {
-          id: 'TR-82915',
-          vehicleNumber: 'WB-06-K-9090',
-          entryTime: 'Oct 25, 02:05 PM',
-          exitTime: '-',
-          status: 'Active'
-        },
-      ]);
     } finally {
       setLoading(false);
     }
   };
 
   const filteredTrips = trips.filter(trip => {
-    const matchesSearch = trip.vehicleNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         trip.id.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = trip.vehicleNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         trip.id?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = filterStatus === 'All Status' || trip.status === filterStatus;
-    return matchesSearch && matchesStatus;
+    const matchesSite = filterSite === 'All Sites' || trip.site === filterSite;
+    return matchesSearch && matchesStatus && matchesSite;
   });
 
   const totalTrips = trips.length;
@@ -104,11 +62,19 @@ const AdminReports = () => {
 
   const handleExportExcel = async () => {
     try {
+      setExporting(true);
       const token = localStorage.getItem('accessToken');
+      
       const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/reports/export`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/client-admin/reports/export`,
         {
           headers: { Authorization: `Bearer ${token}` },
+          params: {
+            startDate: dateRange.start,
+            endDate: dateRange.end,
+            status: filterStatus !== 'All Status' ? filterStatus : undefined,
+            site: filterSite !== 'All Sites' ? filterSite : undefined
+          },
           responseType: 'blob'
         }
       );
@@ -116,20 +82,26 @@ const AdminReports = () => {
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `reports_${Date.now()}.xlsx`);
+      link.setAttribute('download', `trips_report_${dateRange.start}_to_${dateRange.end}.xlsx`);
       document.body.appendChild(link);
       link.click();
       link.remove();
+      window.URL.revokeObjectURL(url);
     } catch (err) {
       console.error('Error exporting report:', err);
-      alert('Export successful! (Demo mode)');
+      alert('Failed to export report. Please try again.');
+    } finally {
+      setExporting(false);
     }
   };
 
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading reports...</p>
+        </div>
       </div>
     );
   }
@@ -139,81 +111,93 @@ const AdminReports = () => {
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       <div className="lg:ml-72">
+        {/* Header */}
         <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
-          <div className="flex items-center justify-between px-6 py-4">
-            <div className="flex items-center gap-4">
-              <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-2 hover:bg-gray-100 rounded-lg">
-                <Menu className="w-6 h-6" />
+          <div className="flex items-center justify-between px-4 sm:px-6 py-4">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <button 
+                onClick={() => setSidebarOpen(true)} 
+                className="lg:hidden p-2 hover:bg-gray-100 rounded-lg transition"
+              >
+                <Menu className="w-6 h-6 text-gray-700" />
               </button>
-              <h1 className="text-2xl font-bold text-gray-900">Reports</h1>
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Reports</h1>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 sm:gap-4">
               <button className="p-2 hover:bg-gray-100 rounded-lg relative">
-                <Bell className="w-6 h-6 text-gray-600" />
+                <Bell className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600" />
                 <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
               </button>
-              <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-semibold">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-semibold text-sm">
                 AD
               </div>
             </div>
           </div>
         </header>
 
-        <main className="max-w-7xl mx-auto px-6 py-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+          {/* Stats Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+            <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100">
               <div className="flex items-center justify-between mb-2">
-                <div className="text-sm text-gray-600">Total Trips</div>
-                <FileText className="w-5 h-5 text-blue-600" />
+                <div className="text-xs sm:text-sm text-gray-600">Total Trips</div>
+                <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
               </div>
-              <div className="text-3xl font-bold text-gray-900">{totalTrips.toLocaleString()}</div>
+              <div className="text-2xl sm:text-3xl font-bold text-gray-900">{totalTrips.toLocaleString()}</div>
             </div>
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+            <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100">
               <div className="flex items-center justify-between mb-2">
-                <div className="text-sm text-gray-600">Completed Trips</div>
-                <TrendingUp className="w-5 h-5 text-green-600" />
+                <div className="text-xs sm:text-sm text-gray-600">Completed Trips</div>
+                <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
               </div>
-              <div className="text-3xl font-bold text-green-600">{completedTrips.toLocaleString()}</div>
+              <div className="text-2xl sm:text-3xl font-bold text-green-600">{completedTrips.toLocaleString()}</div>
               <div className="text-xs text-gray-500 mt-1">
-                {((completedTrips / totalTrips) * 100).toFixed(0)}% completion rate
+                {totalTrips > 0 ? ((completedTrips / totalTrips) * 100).toFixed(0) : 0}% completion rate
               </div>
             </div>
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+            <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100 sm:col-span-2 lg:col-span-1">
               <div className="flex items-center justify-between mb-2">
-                <div className="text-sm text-gray-600">Active Trips</div>
-                <TrendingUp className="w-5 h-5 text-orange-600" />
+                <div className="text-xs sm:text-sm text-gray-600">Active Trips</div>
+                <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-orange-600" />
               </div>
-              <div className="text-3xl font-bold text-orange-600">{activeTrips.toLocaleString()}</div>
+              <div className="text-2xl sm:text-3xl font-bold text-orange-600">{activeTrips.toLocaleString()}</div>
               <div className="text-xs text-gray-500 mt-1">Currently active</div>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 mb-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          {/* Filters */}
+          <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100 mb-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Start Date</label>
+                <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-2">
+                  <Calendar className="w-4 h-4 inline mr-1" />
+                  Start Date
+                </label>
                 <input
                   type="date"
                   value={dateRange.start}
                   onChange={(e) => setDateRange({...dateRange, start: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">End Date</label>
+                <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-2">
+                  <Calendar className="w-4 h-4 inline mr-1" />
+                  End Date
+                </label>
                 <input
                   type="date"
                   value={dateRange.end}
                   onChange={(e) => setDateRange({...dateRange, end: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Site</label>
+                <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-2">Site</label>
                 <select
                   value={filterSite}
                   onChange={(e) => setFilterSite(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                 >
                   <option value="All Sites">All Sites</option>
                   <option value="Site A">Site A</option>
@@ -221,11 +205,11 @@ const AdminReports = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Status</label>
+                <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-2">Status</label>
                 <select
                   value={filterStatus}
                   onChange={(e) => setFilterStatus(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                 >
                   <option value="All Status">All Status</option>
                   <option value="Active">Active</option>
@@ -235,15 +219,26 @@ const AdminReports = () => {
               <div className="flex items-end">
                 <button
                   onClick={handleExportExcel}
-                  className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold flex items-center justify-center gap-2"
+                  disabled={exporting || filteredTrips.length === 0}
+                  className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed font-semibold flex items-center justify-center gap-2 text-sm transition"
                 >
-                  <Download className="w-4 h-4" />
-                  Export Excel
+                  {exporting ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      Exporting...
+                    </>
+                  ) : (
+                    <>
+                      <Download className="w-4 h-4" />
+                      Export Excel
+                    </>
+                  )}
                 </button>
               </div>
             </div>
           </div>
 
+          {/* Search */}
           <div className="mb-6">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -252,12 +247,13 @@ const AdminReports = () => {
                 placeholder="Search Vehicle or Trip ID..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                className="w-full pl-10 pr-4 py-2.5 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
               />
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          {/* Table - Desktop */}
+          <div className="hidden md:block bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-gray-50 border-b border-gray-200">
@@ -289,10 +285,10 @@ const AdminReports = () => {
                         {trip.vehicleNumber}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-600">
-                        {trip.entryTime}
+                        {trip.entryTime || '-'}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-600">
-                        {trip.exitTime}
+                        {trip.exitTime || '-'}
                       </td>
                       <td className="px-6 py-4">
                         <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
@@ -313,11 +309,57 @@ const AdminReports = () => {
               <div className="text-center py-12">
                 <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                 <p className="text-gray-500">No trips found</p>
+                <p className="text-sm text-gray-400 mt-2">Try adjusting your filters</p>
               </div>
             )}
           </div>
 
-          <div className="mt-4 text-sm text-gray-600 text-center">
+          {/* Cards - Mobile */}
+          <div className="md:hidden space-y-4">
+            {filteredTrips.map((trip) => (
+              <div key={trip.id} className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+                <div className="flex items-start justify-between mb-3">
+                  <div>
+                    <div className="font-semibold text-gray-900 text-sm mb-1">
+                      Trip ID: {trip.id}
+                    </div>
+                    <div className="text-base font-mono font-semibold text-blue-600">
+                      {trip.vehicleNumber}
+                    </div>
+                  </div>
+                  <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${
+                    trip.status === 'Completed'
+                      ? 'bg-green-100 text-green-700'
+                      : 'bg-blue-100 text-blue-700'
+                  }`}>
+                    {trip.status}
+                  </span>
+                </div>
+                
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Entry:</span>
+                    <span className="text-gray-900 font-medium">{trip.entryTime || '-'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Exit:</span>
+                    <span className="text-gray-900 font-medium">{trip.exitTime || '-'}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            {filteredTrips.length === 0 && (
+              <div className="bg-white rounded-xl p-12 text-center">
+                <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                <p className="text-gray-500">No trips found</p>
+                <p className="text-sm text-gray-400 mt-2">Try adjusting your filters</p>
+              </div>
+            )}
+          </div>
+
+          {/* Summary */}
+          <div className="mt-4 sm:mt-6 text-xs sm:text-sm text-gray-600 text-center">
             Showing {filteredTrips.length} of {totalTrips} trips
           </div>
         </main>

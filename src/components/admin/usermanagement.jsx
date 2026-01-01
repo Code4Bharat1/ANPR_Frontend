@@ -2,22 +2,36 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { 
-  Bell, Menu, Search, Filter, Plus, User, Mail, 
-  Phone, MapPin, MoreVertical, Edit, Trash2, Power
+  Bell, Menu, Search, Plus, User, Mail, 
+  Phone, Edit, Power, X, Building2, Lock,
+  UserCheck, UserX
 } from 'lucide-react';
 import Sidebar from './sidebar';
+
 
 const UserManagement = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterRole, setFilterRole] = useState('All');
   const [filterStatus, setFilterStatus] = useState('All');
   const [activeTab, setActiveTab] = useState('Project Managers');
+  const [showAdd, setShowAdd] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    role: 'Project Managers',
+    password: '',
+    assignedSite: '',
+  });
 
   useEffect(() => {
     fetchUsers();
+  }, [activeTab]);
+
+  useEffect(() => {
+    setFormData(prev => ({ ...prev, role: activeTab }));
   }, [activeTab]);
 
   const fetchUsers = async () => {
@@ -26,48 +40,71 @@ const UserManagement = () => {
       const token = localStorage.getItem('accessToken');
 
       const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/client-admin/users?role=${activeTab}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/client-admin/users`,
         {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
+          params: { role: activeTab }
         }
       );
 
       setUsers(response.data);
     } catch (err) {
       console.error('Error fetching users:', err);
-      // Mock data
-      
     } finally {
       setLoading(false);
     }
   };
 
-  const filteredUsers = users.filter(user => {
-    const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = filterStatus === 'All' || user.status === filterStatus;
-    return matchesSearch && matchesStatus;
-  });
+  const handleCreateUser = async () => {
+    try {
+      const token = localStorage.getItem('accessToken');
+
+      await axios.post(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/client-admin/users`,
+        formData,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      setShowAdd(false);
+      setFormData({
+        name: '',
+        email: '',
+        phone: '',
+        role: activeTab,
+        password: '',
+        assignedSite: '',
+      });
+
+      fetchUsers();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to create user');
+    }
+  };
 
   const handleToggleStatus = async (userId, currentStatus) => {
     try {
       const token = localStorage.getItem('accessToken');
       await axios.patch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/users/${userId}/status`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/client-admin/users/${userId}/status`,
         { status: currentStatus === 'Active' ? 'Inactive' : 'Active' },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
       fetchUsers();
     } catch (err) {
-      console.error('Error toggling user status:', err);
+      alert('Failed to update status');
     }
   };
+
+  const filteredUsers = users.filter(user => {
+    const matchesSearch = user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         user.email?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = filterStatus === 'All' || user.status === filterStatus;
+    return matchesSearch && matchesStatus;
+  });
+
+  const totalPMs = users.filter(u => u.role === 'Project Manager').length;
+  const totalSupervisors = users.filter(u => u.role === 'Supervisor').length;
+  const activeUsers = users.filter(u => u.status === 'Active').length;
 
   if (loading) {
     return (
@@ -87,22 +124,22 @@ const UserManagement = () => {
       <div className="lg:ml-72">
         {/* Header */}
         <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
-          <div className="flex items-center justify-between px-6 py-4">
-            <div className="flex items-center gap-4">
+          <div className="flex items-center justify-between px-4 sm:px-6 py-4">
+            <div className="flex items-center gap-3 sm:gap-4">
               <button 
                 onClick={() => setSidebarOpen(true)}
                 className="lg:hidden p-2 hover:bg-gray-100 rounded-lg transition"
               >
                 <Menu className="w-6 h-6 text-gray-700" />
               </button>
-              <h1 className="text-2xl font-bold text-gray-900">Users</h1>
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Users</h1>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 sm:gap-4">
               <button className="p-2 hover:bg-gray-100 rounded-lg transition relative">
-                <Bell className="w-6 h-6 text-gray-600" />
+                <Bell className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600" />
                 <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
               </button>
-              <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-semibold">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-semibold text-sm">
                 AD
               </div>
             </div>
@@ -110,30 +147,30 @@ const UserManagement = () => {
         </header>
 
         {/* Main Content */}
-        <main className="max-w-7xl mx-auto px-6 py-8">
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
           
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-              <div className="text-sm text-gray-600 mb-1">Total Project Managers</div>
-              <div className="text-3xl font-bold text-gray-900">24</div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+            <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100">
+              <div className="text-xs sm:text-sm text-gray-600 mb-1">Total Project Managers</div>
+              <div className="text-2xl sm:text-3xl font-bold text-gray-900">{totalPMs}</div>
             </div>
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-              <div className="text-sm text-gray-600 mb-1">Total Supervisors</div>
-              <div className="text-3xl font-bold text-gray-900">142</div>
+            <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100">
+              <div className="text-xs sm:text-sm text-gray-600 mb-1">Total Supervisors</div>
+              <div className="text-2xl sm:text-3xl font-bold text-gray-900">{totalSupervisors}</div>
             </div>
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-              <div className="text-sm text-gray-600 mb-1">Active Users</div>
-              <div className="text-3xl font-bold text-gray-900">158</div>
+            <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100 sm:col-span-2 lg:col-span-1">
+              <div className="text-xs sm:text-sm text-gray-600 mb-1">Active Users</div>
+              <div className="text-2xl sm:text-3xl font-bold text-gray-900">{activeUsers}</div>
             </div>
           </div>
 
           {/* Tabs */}
-          <div className="mb-6 border-b border-gray-200">
-            <div className="flex gap-6">
+          <div className="mb-6 border-b border-gray-200 overflow-x-auto">
+            <div className="flex gap-4 sm:gap-6 min-w-max">
               <button
                 onClick={() => setActiveTab('Project Managers')}
-                className={`pb-3 px-1 font-semibold transition ${
+                className={`pb-3 px-1 font-semibold transition whitespace-nowrap ${
                   activeTab === 'Project Managers'
                     ? 'text-blue-600 border-b-2 border-blue-600'
                     : 'text-gray-600 hover:text-gray-900'
@@ -143,7 +180,7 @@ const UserManagement = () => {
               </button>
               <button
                 onClick={() => setActiveTab('Supervisors')}
-                className={`pb-3 px-1 font-semibold transition ${
+                className={`pb-3 px-1 font-semibold transition whitespace-nowrap ${
                   activeTab === 'Supervisors'
                     ? 'text-blue-600 border-b-2 border-blue-600'
                     : 'text-gray-600 hover:text-gray-900'
@@ -155,34 +192,37 @@ const UserManagement = () => {
           </div>
 
           {/* Search and Filters */}
-          <div className="flex flex-col md:flex-row gap-4 mb-6">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-6">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               <input
                 type="text"
-                placeholder="Search users by name or email..."
+                placeholder="Search users..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm sm:text-base"
               />
             </div>
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
-              className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+              className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm sm:text-base"
             >
               <option value="All">All Status</option>
               <option value="Active">Active</option>
               <option value="Inactive">Inactive</option>
             </select>
-            <button className="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold flex items-center gap-2">
-              <Plus className="w-5 h-5" />
+            <button 
+              onClick={() => setShowAdd(true)}
+              className="px-4 sm:px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold flex items-center justify-center gap-2 text-sm sm:text-base whitespace-nowrap"
+            >
+              <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
               Add User
             </button>
           </div>
 
-          {/* Users Table */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          {/* Users Table - Desktop */}
+          <div className="hidden md:block bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-gray-50 border-b border-gray-200">
@@ -219,7 +259,7 @@ const UserManagement = () => {
                         </span>
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-900">
-                        {user.assignedSite}
+                        {user.assignedSite || '-'}
                       </td>
                       <td className="px-6 py-4">
                         <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
@@ -231,19 +271,15 @@ const UserManagement = () => {
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-                          <button className="p-2 hover:bg-gray-100 rounded-lg transition text-blue-600">
-                            <Edit className="w-4 h-4" />
-                          </button>
-                          <button 
-                            onClick={() => handleToggleStatus(user.id, user.status)}
-                            className={`p-2 hover:bg-gray-100 rounded-lg transition ${
-                              user.status === 'Active' ? 'text-red-600' : 'text-green-600'
-                            }`}
-                          >
-                            <Power className="w-4 h-4" />
-                          </button>
-                        </div>
+                        <button 
+                          onClick={() => handleToggleStatus(user.id, user.status)}
+                          className={`p-2 hover:bg-gray-100 rounded-lg transition ${
+                            user.status === 'Active' ? 'text-red-600' : 'text-green-600'
+                          }`}
+                          title={user.status === 'Active' ? 'Disable' : 'Enable'}
+                        >
+                          <Power className="w-4 h-4" />
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -258,8 +294,187 @@ const UserManagement = () => {
               </div>
             )}
           </div>
+
+          {/* Users Cards - Mobile */}
+          <div className="md:hidden space-y-4">
+            {filteredUsers.map((user) => (
+              <div key={user.id} className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-gray-900">{user.name}</h3>
+                    <p className="text-sm text-gray-600">{user.email}</p>
+                  </div>
+                  <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${
+                    user.status === 'Active'
+                      ? 'bg-green-100 text-green-700'
+                      : 'bg-gray-100 text-gray-700'
+                  }`}>
+                    {user.status}
+                  </span>
+                </div>
+                
+                <div className="space-y-2 mb-3">
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">
+                      {user.role}
+                    </span>
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    <Building2 className="w-4 h-4 inline mr-1" />
+                    {user.assignedSite || '-'}
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <button 
+                    onClick={() => handleToggleStatus(user.id, user.status)}
+                    className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm transition ${
+                      user.status === 'Active'
+                        ? 'bg-red-50 text-red-600 hover:bg-red-100'
+                        : 'bg-green-50 text-green-600 hover:bg-green-100'
+                    }`}
+                  >
+                    {user.status === 'Active' ? (
+                      <>
+                        <UserX className="w-4 h-4" />
+                        Disable
+                      </>
+                    ) : (
+                      <>
+                        <UserCheck className="w-4 h-4" />
+                        Enable
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            ))}
+
+            {filteredUsers.length === 0 && (
+              <div className="bg-white rounded-xl p-12 text-center">
+                <User className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                <p className="text-gray-500">No users found</p>
+              </div>
+            )}
+          </div>
         </main>
       </div>
+
+      {/* ADD USER MODAL */}
+      {showAdd && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white flex items-center justify-between p-4 sm:p-6 border-b border-gray-200">
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
+                Add {activeTab.slice(0, -1)}
+              </h2>
+              <button
+                onClick={() => setShowAdd(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="p-4 sm:p-6 space-y-4">
+              <div>
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                  <User className="w-4 h-4" />
+                  Full Name
+                </label>
+                <input
+                  placeholder="John Doe"
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
+                  className="w-full border border-gray-300 px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                  <Mail className="w-4 h-4" />
+                  Email Address
+                </label>
+                <input
+                  placeholder="john@example.com"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) =>
+                    setFormData({ ...formData, email: e.target.value })
+                  }
+                  className="w-full border border-gray-300 px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                  <Phone className="w-4 h-4" />
+                  Phone Number
+                </label>
+                <input
+                  placeholder="+1 (555) 000-0000"
+                  type="tel"
+                  value={formData.phone}
+                  onChange={(e) =>
+                    setFormData({ ...formData, phone: e.target.value })
+                  }
+                  className="w-full border border-gray-300 px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                  <Lock className="w-4 h-4" />
+                  Password
+                </label>
+                <input
+                  placeholder="Enter password"
+                  type="password"
+                  value={formData.password}
+                  onChange={(e) =>
+                    setFormData({ ...formData, password: e.target.value })
+                  }
+                  className="w-full border border-gray-300 px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                  <Building2 className="w-4 h-4" />
+                  Assigned Site
+                </label>
+                <input
+                  placeholder="Site name or location"
+                  type="text"
+                  value={formData.assignedSite}
+                  onChange={(e) =>
+                    setFormData({ ...formData, assignedSite: e.target.value })
+                  }
+                  className="w-full border border-gray-300 px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+
+            <div className="sticky bottom-0 bg-gray-50 flex flex-col sm:flex-row justify-end gap-3 p-4 sm:p-6 border-t border-gray-200">
+              <button
+                onClick={() => setShowAdd(false)}
+                className="w-full sm:w-auto px-6 py-2.5 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-100 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCreateUser}
+                className="w-full sm:w-auto px-6 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200"
+              >
+                Create User
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

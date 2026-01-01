@@ -22,7 +22,7 @@ const DeviceMonitoring = () => {
       const token = localStorage.getItem('accessToken');
 
       const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/devices`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/client-admin/devices`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -34,50 +34,7 @@ const DeviceMonitoring = () => {
     } catch (err) {
       console.error('Error fetching devices:', err);
       // Mock data
-      setDevices([
-        {
-          id: 'CAM-2983',
-          type: 'ANPR Camera',
-          site: 'North City Plaza',
-          status: 'Online',
-          lastActive: 'Just now'
-        },
-        {
-          id: 'BAR-1042',
-          type: 'Barrier Gate',
-          site: 'North City Plaza',
-          status: 'Online',
-          lastActive: '5 mins ago'
-        },
-        {
-          id: 'CAM-4421',
-          type: 'ANPR Camera',
-          site: 'Westside Logistics Hub',
-          status: 'Offline',
-          lastActive: '2 hours ago'
-        },
-        {
-          id: 'BAR-3301',
-          type: 'Barrier Gate',
-          site: 'Westside Logistics Hub',
-          status: 'Online',
-          lastActive: '12 mins ago'
-        },
-        {
-          id: 'CAM-1109',
-          type: 'ANPR Camera',
-          site: 'Airport Cargo Zone',
-          status: 'Online',
-          lastActive: 'Just now'
-        },
-        {
-          id: 'BAR-9921',
-          type: 'Barrier Gate',
-          site: 'Airport Cargo Zone',
-          status: 'Offline',
-          lastActive: '1 day ago'
-        },
-      ]);
+     
     } finally {
       setLoading(false);
     }

@@ -9,67 +9,165 @@ import Sidebar from './sidebar';
 
 const AdminSettings = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [logoPreview, setLogoPreview] = useState(null);
+  const [logoFile, setLogoFile] = useState(null);
 
   const [companyData, setCompanyData] = useState({
-    name: 'SecureGuard Systems Ltd.',
-    address: '124 Tech Park Blvd, Suite 400, San Francisco, CA',
-    supportEmail: 'admin@secureguard.com',
+    name: '',
+    address: '',
+    supportEmail: '',
     logo: null
   });
 
-  const [preferences, setPreferences] = useState({
-    dateFormat: 'DD/MM/YYYY',
-    timeZone: '(GMT+00:00) UTC',
-    currency: 'USD'
-  });
+  
 
-  const [security, setSecurity] = useState({
-    sessionTimeout: '30',
-    twoFactorEnabled: false,
-    loginNotifications: true
-  });
 
-  const handleLogoUpload = (e) => {
+ 
+
+  useEffect(() => {
+    fetchSettings();
+  }, []);
+
+  const fetchSettings = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('accessToken');
+
+      const response = await axios.get(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/client-admin/settings`,
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+
+      const { data } = response.data;
+
+      setCompanyData(data.company);
+      
+      // Set logo preview if exists
+      if (data.company.logo) {
+        setLogoPreview(`${process.env.NEXT_PUBLIC_API_URL}${data.company.logo}`);
+      }
+    } catch (err) {
+      console.error('Error fetching settings:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLogoUpload = async (e) => {
     const file = e.target.files[0];
     if (file) {
+      // Validate file size (5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('File size must be less than 5MB');
+        return;
+      }
+
       const reader = new FileReader();
       reader.onloadend = () => {
         setLogoPreview(reader.result);
-        setCompanyData({ ...companyData, logo: file });
+        setLogoFile(file);
       };
       reader.readAsDataURL(file);
+
+      // Upload immediately
+      await uploadLogoToServer(file);
+    }
+  };
+
+  const uploadLogoToServer = async (file) => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      const formData = new FormData();
+      formData.append('logo', file);
+
+      const response = await axios.post(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/client-admin/settings/logo`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data'
+          }
+        }
+      );
+
+      setCompanyData({
+        ...companyData,
+        logo: response.data.logoUrl
+      });
+
+      alert('Logo uploaded successfully!');
+    } catch (err) {
+      console.error('Error uploading logo:', err);
+      alert('Failed to upload logo');
+    }
+  };
+
+  const handleDeleteLogo = async () => {
+    try {
+      const token = localStorage.getItem('accessToken');
+
+      await axios.delete(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/client-admin/settings/logo`,
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+
+      setLogoPreview(null);
+      setLogoFile(null);
+      setCompanyData({ ...companyData, logo: null });
+      
+      alert('Logo deleted successfully!');
+    } catch (err) {
+      console.error('Error deleting logo:', err);
+      alert('Failed to delete logo');
     }
   };
 
   const handleSaveSettings = async () => {
     try {
-      setLoading(true);
+      setSaving(true);
       const token = localStorage.getItem('accessToken');
 
       await axios.put(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/settings`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/client-admin/settings`,
         {
-          company: companyData,
-          preferences,
-          security
+          company: {
+            name: companyData.name,
+            address: companyData.address,
+            supportEmail: companyData.supportEmail
+          }
         },
         {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` }
         }
       );
 
       alert('Settings saved successfully!');
+      fetchSettings(); // Refresh to get updated data
     } catch (err) {
       console.error('Error saving settings:', err);
-      alert('Settings saved! (Demo mode)');
+      alert('Failed to save settings');
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading settings...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -78,22 +176,22 @@ const AdminSettings = () => {
       <div className="lg:ml-72">
         {/* Header */}
         <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
-          <div className="flex items-center justify-between px-6 py-4">
-            <div className="flex items-center gap-4">
+          <div className="flex items-center justify-between px-4 sm:px-6 py-4">
+            <div className="flex items-center gap-3 sm:gap-4">
               <button 
                 onClick={() => setSidebarOpen(true)}
                 className="lg:hidden p-2 hover:bg-gray-100 rounded-lg transition"
               >
                 <Menu className="w-6 h-6 text-gray-700" />
               </button>
-              <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Settings</h1>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 sm:gap-4">
               <button className="p-2 hover:bg-gray-100 rounded-lg transition relative">
-                <Bell className="w-6 h-6 text-gray-600" />
+                <Bell className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600" />
                 <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
               </button>
-              <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-semibold">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-semibold text-sm">
                 AD
               </div>
             </div>
@@ -101,72 +199,69 @@ const AdminSettings = () => {
         </header>
 
         {/* Main Content */}
-        <main className="max-w-4xl mx-auto px-6 py-8">
+        <main className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
           
           {/* Company Profile */}
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 mb-6">
-            <div className="flex items-center gap-3 mb-6">
-              <Building2 className="w-6 h-6 text-blue-600" />
+          <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100 mb-6">
+            <div className="flex items-start gap-3 mb-6">
+              <Building2 className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 flex-shrink-0 mt-1" />
               <div>
-                <h2 className="text-xl font-bold text-gray-900">Company Profile</h2>
-                <p className="text-sm text-gray-600">Manage your organizations public information and branding</p>
+                <h2 className="text-lg sm:text-xl font-bold text-gray-900">Company Profile</h2>
+                <p className="text-xs sm:text-sm text-gray-600">Manage your organization's public information and branding</p>
               </div>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Company Name</label>
+                <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-2">Company Name</label>
                 <input
                   type="text"
                   value={companyData.name}
                   onChange={(e) => setCompanyData({...companyData, name: e.target.value})}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  className="w-full px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Headquarters Address</label>
+                <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-2">Headquarters Address</label>
                 <input
                   type="text"
                   value={companyData.address}
                   onChange={(e) => setCompanyData({...companyData, address: e.target.value})}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  className="w-full px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Support Email</label>
+                <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-2">Support Email</label>
                 <input
                   type="email"
                   value={companyData.supportEmail}
                   onChange={(e) => setCompanyData({...companyData, supportEmail: e.target.value})}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  className="w-full px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Upload New Logo</label>
-                <div className="flex items-center gap-4">
+                <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-2">Company Logo</label>
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
                   {logoPreview ? (
-                    <div className="relative w-20 h-20 border-2 border-gray-200 rounded-lg overflow-hidden">
+                    <div className="relative w-20 h-20 border-2 border-gray-200 rounded-lg overflow-hidden flex-shrink-0">
                       <img src={logoPreview} alt="Logo" className="w-full h-full object-cover" />
                       <button
-                        onClick={() => {
-                          setLogoPreview(null);
-                          setCompanyData({...companyData, logo: null});
-                        }}
-                        className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full hover:bg-red-600"
+                        onClick={handleDeleteLogo}
+                        className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition"
                       >
                         <X className="w-3 h-3" />
                       </button>
                     </div>
                   ) : (
-                    <div className="w-20 h-20 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-gray-50">
+                    <div className="w-20 h-20 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-gray-50 flex-shrink-0">
                       <Building2 className="w-8 h-8 text-gray-400" />
                     </div>
                   )}
-                  <div>
-                    <label className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer transition inline-flex items-center gap-2">
+                  <div className="flex-1">
+                    <label className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 cursor-pointer transition inline-flex items-center gap-2">
                       <Upload className="w-4 h-4" />
                       Upload Logo
                       <input
@@ -176,170 +271,30 @@ const AdminSettings = () => {
                         className="hidden"
                       />
                     </label>
-                    <p className="text-xs text-gray-500 mt-2">Recommended size 200x200px (PNG, JPG)</p>
+                    <p className="text-xs text-gray-500 mt-2">Recommended 200x200px (PNG, JPG, Max 5MB)</p>
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* System Preferences */}
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 mb-6">
-            <div className="flex items-center gap-3 mb-6">
-              <Globe className="w-6 h-6 text-blue-600" />
-              <div>
-                <h2 className="text-xl font-bold text-gray-900">System Preferences</h2>
-                <p className="text-sm text-gray-600">Customize how dates, times, and other data formats appear across the system</p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Date Format</label>
-                <select
-                  value={preferences.dateFormat}
-                  onChange={(e) => setPreferences({...preferences, dateFormat: e.target.value})}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                >
-                  <option value="DD/MM/YYYY">DD/MM/YYYY</option>
-                  <option value="MM/DD/YYYY">MM/DD/YYYY</option>
-                  <option value="YYYY-MM-DD">YYYY-MM-DD</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Time Zone</label>
-                <select
-                  value={preferences.timeZone}
-                  onChange={(e) => setPreferences({...preferences, timeZone: e.target.value})}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                >
-                  <option value="(GMT+00:00) UTC">(GMT+00:00) UTC</option>
-                  <option value="(GMT+5:30) IST">(GMT+5:30) IST</option>
-                  <option value="(GMT-5:00) EST">(GMT-5:00) EST</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Default Currency</label>
-                <select
-                  value={preferences.currency}
-                  onChange={(e) => setPreferences({...preferences, currency: e.target.value})}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                >
-                  <option value="USD">USD - US Dollar</option>
-                  <option value="INR">INR - Indian Rupee</option>
-                  <option value="EUR">EUR - Euro</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          {/* Security Settings */}
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 mb-6">
-            <div className="flex items-center gap-3 mb-6">
-              <Shield className="w-6 h-6 text-blue-600" />
-              <div>
-                <h2 className="text-xl font-bold text-gray-900">Security Settings</h2>
-                <p className="text-sm text-gray-600">Manage password policies and session security controls</p>
-              </div>
-            </div>
-
-            <div className="space-y-6">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Session Timeout (Minutes)</label>
-                <input
-                  type="number"
-                  value={security.sessionTimeout}
-                  onChange={(e) => setSecurity({...security, sessionTimeout: e.target.value})}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                />
-              </div>
-
-              <div className="flex items-center justify-between py-4 border-t border-gray-100">
-                <div>
-                  <div className="font-semibold text-gray-900">Enforce Two-Factor Authentication</div>
-                  <div className="text-sm text-gray-600">Require all admins to use 2FA for login</div>
-                </div>
-                <button
-                  onClick={() => setSecurity({...security, twoFactorEnabled: !security.twoFactorEnabled})}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
-                    security.twoFactorEnabled ? 'bg-blue-600' : 'bg-gray-300'
-                  }`}
-                >
-                  <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${
-                      security.twoFactorEnabled ? 'translate-x-6' : 'translate-x-1'
-                    }`}
-                  />
-                </button>
-              </div>
-
-              <div className="flex items-center justify-between py-4 border-t border-gray-100">
-                <div>
-                  <div className="font-semibold text-gray-900">Login Notification Emails</div>
-                  <div className="text-sm text-gray-600">Send an email alert when a new device logs in</div>
-                </div>
-                <button
-                  onClick={() => setSecurity({...security, loginNotifications: !security.loginNotifications})}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
-                    security.loginNotifications ? 'bg-blue-600' : 'bg-gray-300'
-                  }`}
-                >
-                  <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${
-                      security.loginNotifications ? 'translate-x-6' : 'translate-x-1'
-                    }`}
-                  />
-                </button>
-              </div>
-
-              <button className="w-full px-4 py-2.5 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 transition font-semibold flex items-center justify-center gap-2">
-                <Lock className="w-4 h-4" />
-                Change Admin Password
-              </button>
-            </div>
-          </div>
-
-          {/* About */}
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 mb-6">
-            <div className="flex items-center gap-3 mb-6">
-              <Info className="w-6 h-6 text-blue-600" />
-              <h2 className="text-xl font-bold text-gray-900">About</h2>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <div className="text-sm text-gray-600 mb-1">Application Version</div>
-                <div className="font-semibold text-gray-900">v2.4.1 Stable</div>
-              </div>
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <div className="text-sm text-gray-600 mb-1">Last Updated</div>
-                <div className="font-semibold text-gray-900">October 12, 2023</div>
-              </div>
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <div className="text-sm text-gray-600 mb-1">License Status</div>
-                <div className="font-semibold text-green-600">Active</div>
-              </div>
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <div className="text-sm text-gray-600 mb-1">License Type</div>
-                <div className="font-semibold text-gray-900">Enterprise Plan</div>
-              </div>
-            </div>
-          </div>
+          
 
           {/* Save Button */}
-          <div className="flex justify-end gap-4">
-            <button className="px-6 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-semibold">
+          <div className="flex flex-col sm:flex-row justify-end gap-3 sm:gap-4">
+            <button 
+              onClick={fetchSettings}
+              className="w-full sm:w-auto px-6 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-semibold text-sm sm:text-base"
+            >
               Cancel Changes
             </button>
             <button
               onClick={handleSaveSettings}
-              disabled={loading}
-              className="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed font-semibold flex items-center gap-2"
+              disabled={saving}
+              className="w-full sm:w-auto px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed font-semibold flex items-center justify-center gap-2 text-sm sm:text-base"
             >
               <Save className="w-4 h-4" />
-              {loading ? 'Saving...' : 'Save Settings'}
+              {saving ? 'Saving...' : 'Save Settings'}
             </button>
           </div>
         </main>
