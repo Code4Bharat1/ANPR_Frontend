@@ -13,57 +13,9 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 const SupervisorDashboard = () => {
   const router = useRouter();
-  const [stats, setStats] = useState({
-    todayEntry: 482,
-    todayExit: 395,
-    vehiclesInside: 87,
-    pendingExit: 12,
-    deniedEntries: 4
-  });
-  const [recentActivity, setRecentActivity] = useState([
-    {
-      id: 1,
-      vehicleNumber: 'XYZ-9821',
-      type: 'entry',
-      visitor: 'John Doe',
-      gate: 'Gate 1 (Main)',
-      time: '10:42 AM',
-      status: 'allowed'
-    },
-    {
-      id: 2,
-      vehicleNumber: 'DEL-5599',
-      type: 'exit',
-      visitor: 'Delivery Truck',
-      gate: 'Gate 2 (Rear)',
-      time: '10:38 AM',
-      status: 'allowed'
-    },
-    {
-      id: 3,
-      vehicleNumber: 'UNK-0000',
-      type: 'entry',
-      visitor: 'Unknown Vehicle',
-      gate: 'Gate 1 (Main)',
-      time: '10:15 AM',
-      status: 'denied'
-    },
-    {
-      id: 4,
-      vehicleNumber: 'ABC-1234',
-      type: 'entry',
-      visitor: 'Staff Member',
-      gate: 'Gate 1 (Main)',
-      time: '09:55 AM',
-      status: 'allowed'
-    }
-  ]);
-  const [siteInfo, setSiteInfo] = useState({
-    name: 'Tech Park - Sector 4',
-    gates: 3,
-    shift: '08:00 AM - 04:00 PM',
-    status: 'Operational'
-  });
+  const [stats, setStats] = useState({});
+  const [recentActivity, setRecentActivity] = useState([]);
+  const [siteInfo, setSiteInfo] = useState({});
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -75,7 +27,7 @@ const SupervisorDashboard = () => {
       const token = localStorage.getItem('accessToken');
       
       const response = await axios.get(
-        `${API_URL}/api/supervisor/dashboard/stats`,
+        `${API_URL}/api/supervisor/dashboard/`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -107,10 +59,10 @@ const SupervisorDashboard = () => {
             </div>
           </div>
           <div className="text-3xl font-bold text-gray-900 mb-1">{stats.todayEntry}</div>
-          <div className="flex items-center gap-1 text-xs text-green-600">
+          {/* <div className="flex items-center gap-1 text-xs text-green-600">
             <TrendingUp className="w-3 h-3" />
             <span>+12% from yesterday</span>
-          </div>
+          </div> */}
         </div>
 
         {/* Today Exit */}
@@ -134,7 +86,7 @@ const SupervisorDashboard = () => {
             </div>
           </div>
           <div className="text-3xl font-bold text-gray-900 mb-1">{stats.vehiclesInside}</div>
-          <div className="text-xs text-gray-500">45% Capacity</div>
+          {/* <div className="text-xs text-gray-500">45% Capacity</div> */}
         </div>
 
         {/* Pending Exit */}
@@ -264,20 +216,7 @@ const SupervisorDashboard = () => {
             <h3 className="text-lg font-bold text-gray-900 mb-4">Active Vehicles</h3>
             <div className="text-sm text-gray-600 mb-3">Inside: {stats.vehiclesInside} vehicles</div>
             
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-sm p-2 bg-gray-50 rounded">
-                <span className="text-gray-700">ABC-1234</span>
-                <span className="text-xs text-gray-500">01:12 hrs</span>
-              </div>
-              <div className="flex items-center justify-between text-sm p-2 bg-gray-50 rounded">
-                <span className="text-gray-700">XYZ-7788</span>
-                <span className="text-xs text-gray-500">00:34 hrs</span>
-              </div>
-              <div className="flex items-center justify-between text-sm p-2 bg-gray-50 rounded">
-                <span className="text-gray-700">LOG-4521</span>
-                <span className="text-xs text-gray-500">03:45 hrs</span>
-              </div>
-            </div>
+           
             
             <button
               onClick={() => router.push('/supervisor/active-vehicles')}
