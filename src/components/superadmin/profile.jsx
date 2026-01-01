@@ -1,8 +1,8 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { 
-  User, Mail, Phone, Shield, Clock, Calendar, MapPin, Edit2, Save, X, 
+import {
+  User, Mail, Phone, Shield, Clock, Calendar, MapPin, Edit2, Save, X,
   Monitor, Smartphone, LogOut, CheckCircle, Camera
 } from 'lucide-react';
 import SuperAdminLayout from './layout';
@@ -68,7 +68,7 @@ const SessionCard = ({ device, location, ipAddress, lastActive, isCurrent, onRev
         Current
       </span>
     ) : (
-      <button 
+      <button
         onClick={onRevoke}
         className="p-2 hover:bg-red-50 rounded-lg text-red-600 transition self-start sm:self-center"
       >
@@ -226,22 +226,22 @@ const Profile = () => {
 
   return (
     <SuperAdminLayout title="My Profile">
-      
+
       {/* Profile Header Card */}
       <div className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl p-6 md:p-8 mb-6 text-white">
         <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
           {/* Profile Picture */}
           <div className="w-24 h-24 md:w-32 md:h-32 bg-white rounded-full flex items-center justify-center text-purple-600 text-3xl md:text-4xl font-bold overflow-hidden">
-  {profileImage ? (
-    <img
-      src={profileImage}
-      alt="Profile"
-      className="w-full h-full object-cover"
-    />
-  ) : (
-    profileData.fullName?.charAt(0) || 'A'
-  )}
-</div>
+            {profileImage ? (
+              <img
+                src={profileImage}
+                alt="Profile"
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              profileData.fullName?.charAt(0) || 'A'
+            )}
+          </div>
 
 
           {/* Profile Info */}
@@ -292,7 +292,7 @@ const Profile = () => {
                   <input
                     type="text"
                     value={profileData.fullName}
-                    onChange={(e) => setProfileData({...profileData, fullName: e.target.value})}
+                    onChange={(e) => setProfileData({ ...profileData, fullName: e.target.value })}
                     className="w-full px-3 md:px-4 py-2 md:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none text-sm md:text-base"
                   />
                 </div>
@@ -303,7 +303,7 @@ const Profile = () => {
                   <input
                     type="email"
                     value={profileData.email}
-                    onChange={(e) => setProfileData({...profileData, email: e.target.value})}
+                    onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
                     className="w-full px-3 md:px-4 py-2 md:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none text-sm md:text-base"
                   />
                 </div>
@@ -314,7 +314,7 @@ const Profile = () => {
                   <input
                     type="tel"
                     value={profileData.phone}
-                    onChange={(e) => setProfileData({...profileData, phone: e.target.value})}
+                    onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
                     className="w-full px-3 md:px-4 py-2 md:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none text-sm md:text-base"
                   />
                 </div>
@@ -325,7 +325,7 @@ const Profile = () => {
                   <input
                     type="text"
                     value={profileData.location}
-                    onChange={(e) => setProfileData({...profileData, location: e.target.value})}
+                    onChange={(e) => setProfileData({ ...profileData, location: e.target.value })}
                     className="w-full px-3 md:px-4 py-2 md:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none text-sm md:text-base"
                   />
                 </div>
@@ -349,79 +349,11 @@ const Profile = () => {
             )}
           </ProfileSection>
 
-          {/* Account Security */}
-          <ProfileSection title="Active Sessions">
-            <SessionCard
-              device="Chrome on Windows"
-              location="Mumbai, India"
-              ipAddress="192.168.1.100"
-              lastActive="Active now"
-              isCurrent={true}
-            />
-            <SessionCard
-              device="Safari on iPhone"
-              location="Mumbai, India"
-              ipAddress="192.168.1.45"
-              lastActive="2 hours ago"
-              isCurrent={false}
-              onRevoke={() => handleRevokeSession('session-2')}
-            />
-            <SessionCard
-              device="Firefox on MacOS"
-              location="Delhi, India"
-              ipAddress="103.45.67.89"
-              lastActive="Yesterday"
-              isCurrent={false}
-              onRevoke={() => handleRevokeSession('session-3')}
-            />
-          </ProfileSection>
+
         </div>
 
         {/* Right Column */}
-        <div>
-          {/* Account Stats */}
-          <ProfileSection title="Account Details">
-            <div className="space-y-4">
-              <div className="p-3 md:p-4 bg-green-50 border border-green-200 rounded-lg">
-                <div className="flex items-center gap-2 mb-1">
-                  <CheckCircle className="w-4 h-4 text-green-600" />
-                  <span className="text-xs md:text-sm text-green-800 font-semibold">Account Status</span>
-                </div>
-                <div className="text-xl md:text-2xl font-bold text-green-900">{profileData.accountStatus}</div>
-              </div>
 
-              <div className="p-3 md:p-4 bg-gray-50 rounded-lg">
-                <div className="flex items-center gap-2 text-xs md:text-sm text-gray-600 mb-1">
-                  <Clock className="w-4 h-4" />
-                  Last Login
-                </div>
-                <div className="font-semibold text-gray-900 text-sm md:text-base">{profileData.lastLogin}</div>
-              </div>
-
-              <div className="p-3 md:p-4 bg-gray-50 rounded-lg">
-                <div className="flex items-center gap-2 text-xs md:text-sm text-gray-600 mb-1">
-                  <Calendar className="w-4 h-4" />
-                  Member Since
-                </div>
-                <div className="font-semibold text-gray-900 text-sm md:text-base">{profileData.createdAt}</div>
-              </div>
-            </div>
-          </ProfileSection>
-
-          {/* Recent Activity */}
-          <ProfileSection title="Recent Activity">
-            <div className="max-h-96 overflow-y-auto">
-              {recentActivity.map((activity, index) => (
-                <ActivityLogItem
-                  key={index}
-                  action={activity.action}
-                  module={activity.module}
-                  timestamp={activity.timestamp}
-                />
-              ))}
-            </div>
-          </ProfileSection>
-        </div>
       </div>
     </SuperAdminLayout>
   );

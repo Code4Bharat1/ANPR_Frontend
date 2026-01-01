@@ -3,8 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import {
-  Users, UserCheck, UserX, MapPin, Camera,
-  Activity, DollarSign, TrendingUp, AlertTriangle, CheckCircle
+  Users, UserCheck, UserX, MapPin, Camera, IndianRupeeIcon,
+  Activity,  TrendingUp, AlertTriangle, CheckCircle
 } from 'lucide-react';
 import SuperAdminLayout from './layout'; // ← Import Layout
 import api from '@/lib/axios';
@@ -31,23 +31,29 @@ const DashboardCard = ({ icon: Icon, value, label, bgColor, iconColor, trend }) 
   </div>
 );
 
-// System Health Card
-const SystemHealthCard = ({ title, status, count, icon: Icon, statusColor }) => (
-  <div className="bg-white rounded-lg p-3 md:p-4 border border-gray-100 hover:shadow-sm transition-shadow">
-    <div className="flex items-center justify-between gap-2">
-      <div className="flex items-center gap-2 md:gap-3 min-w-0">
-        <Icon className="w-4 h-4 md:w-5 md:h-5 text-gray-600 flex-shrink-0" />
-        <div className="min-w-0">
-          <div className="font-semibold text-gray-900 text-sm md:text-base truncate">{title}</div>
-          <div className="text-xs md:text-sm text-gray-600">{count} units</div>
-        </div>
+const SystemHealthCard = ({
+  title,
+  subtitle,
+  count,
+  icon: Icon,
+  statusColor,
+}) => (
+  <div className="p-4 border border-gray-200 rounded-lg bg-gray-50">
+    <div className="flex items-center justify-between mb-2">
+      <div className="flex items-center gap-2">
+        <Icon className="w-5 h-5 text-blue-600" />
+        <div className="font-semibold text-gray-900">{title}</div>
       </div>
-      <span className={`px-2 md:px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${statusColor}`}>
-        {status}
-      </span>
+    </div>
+
+    <div className="text-sm text-gray-600 mb-1">{subtitle}</div>
+
+    <div className={`text-2xl font-bold ${statusColor}`}>
+      {count}
     </div>
   </div>
 );
+
 
 // Recent Activity Item
 const ActivityItem = ({ client, action, time, status }) => (
@@ -107,29 +113,7 @@ const fetchDashboardData = async () => {
     console.error('Error fetching dashboard data:', err);
     setError(err.response?.data?.message || err.message);
 
-    // Mock data fallback
-    setDashboardData({
-      totalClients: 48,
-      activeClients: 42,
-      expiredClients: 6,
-      totalSites: 156,
-      totalDevices: 892,
-      activeDevices: 856,
-      offlineDevices: 36,
-      totalTrips: 15847,
-      totalRevenue: 284500,
-      systemHealth: {
-        anprCameras: { online: 445, offline: 12 },
-        barriers: { online: 411, offline: 24 },
-        apiUptime: 99.8
-      },
-      recentActivity: [
-        { id: 1, client: "Enterprise Corp", action: "Package renewed - Gold Plan", time: "5m ago", status: "success" },
-        { id: 2, client: "TechStart Ltd", action: "New client registered", time: "1h ago", status: "success" },
-        { id: 3, client: "Global Industries", action: "Added 12 new devices", time: "2h ago", status: "success" },
-        { id: 4, client: "Metro Logistics", action: "Package expires in 7 days", time: "3h ago", status: "warning" }
-      ]
-    });
+    
   } finally {
     setLoading(false);
   }
@@ -169,7 +153,7 @@ const fetchDashboardData = async () => {
             label="Total Clients"
             bgColor="bg-purple-50"
             iconColor="text-purple-600"
-            trend={12}
+            // trend={12}
           />
           <DashboardCard
             icon={UserCheck}
@@ -212,105 +196,86 @@ const fetchDashboardData = async () => {
             label="Total Trips"
             bgColor="bg-orange-50"
             iconColor="text-orange-600"
-            trend={8}
+            // trend={8}
           />
           <DashboardCard
-            icon={DollarSign}
-            value={`$${(dashboardData?.totalRevenue || 0).toLocaleString()}`}
+            icon={IndianRupeeIcon}
+            value={`${(dashboardData?.totalRevenue || 0).toLocaleString()}`}
             label="Total Revenue"
             bgColor="bg-green-50"
             iconColor="text-green-600"
-            trend={15}
+            // trend={15}
           />
         </div>
       </div>
 
       {/* System Health */}
-      <div className="mb-6 md:mb-8">
-        <h2 className="text-lg md:text-xl font-bold text-gray-900 mb-3 md:mb-4">System Health</h2>
-        <div className="bg-white rounded-xl p-4 md:p-6 shadow-sm border border-gray-100">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mb-4 md:mb-6">
-            <div>
-              <div className="flex items-center justify-between mb-3 md:mb-4">
-                <h3 className="font-semibold text-gray-900 text-sm md:text-base">Device Status</h3>
-                <div className="text-xs md:text-sm text-gray-600">
-                  {dashboardData?.activeDevices || 0} / {dashboardData?.totalDevices || 0} Online
-                </div>
-              </div>
-              <div className="space-y-3">
-                <SystemHealthCard
-                  title="ANPR Cameras"
-                  status="Operational"
-                  count={dashboardData?.systemHealth?.anprCameras?.online || 0}
-                  icon={Camera}
-                  statusColor="bg-green-100 text-green-700"
-                />
-                <SystemHealthCard
-                  title="Barriers"
-                  status="Operational"
-                  count={dashboardData?.systemHealth?.barriers?.online || 0}
-                  icon={Activity}
-                  statusColor="bg-green-100 text-green-700"
-                />
-              </div>
-            </div>
+<div className="mb-6 md:mb-8">
+  <h2 className="text-lg md:text-xl font-bold text-gray-900 mb-3 md:mb-4">
+    System Health
+  </h2>
 
-            <div>
-              <h3 className="font-semibold text-gray-900 mb-3 md:mb-4 text-sm md:text-base">API Performance</h3>
-              <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-4 md:p-6 border border-green-100">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs md:text-sm text-gray-600">Uptime</span>
-                  <CheckCircle className="w-4 h-4 md:w-5 md:h-5 text-green-600" />
-                </div>
-                <div className="text-3xl md:text-4xl font-bold text-gray-900 mb-1">
-                  {dashboardData?.systemHealth?.apiUptime || 0}%
-                </div>
-                <div className="text-xs md:text-sm text-gray-600">Last 30 days</div>
-              </div>
-            </div>
+  <div className="bg-white rounded-xl p-4 md:p-6 shadow-sm border border-gray-100">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-4 md:mb-6">
+
+      {/* ANPR Active */}
+      <SystemHealthCard
+        title="ANPR Cameras"
+        subtitle="Active"
+        count={dashboardData?.systemHealth?.anprCameras?.online || 0}
+        icon={Camera}
+        statusColor="text-green-700"
+      />
+
+      {/* ANPR Inactive */}
+      <SystemHealthCard
+        title="ANPR Cameras"
+        subtitle="Inactive"
+        count={dashboardData?.systemHealth?.anprCameras?.offline || 0}
+        icon={Camera}
+        statusColor="text-red-600"
+      />
+
+      {/* Barrier Active */}
+      <SystemHealthCard
+        title="Barriers"
+        subtitle="Active"
+        count={dashboardData?.systemHealth?.barriers?.online || 0}
+        icon={Activity}
+        statusColor="text-green-700"
+      />
+
+      {/* Barrier Inactive */}
+      <SystemHealthCard
+        title="Barriers"
+        subtitle="Inactive"
+        count={dashboardData?.systemHealth?.barriers?.offline || 0}
+        icon={Activity}
+        statusColor="text-red-600"
+      />
+    </div>
+
+    {/* Offline Devices Alert */}
+    {(dashboardData?.offlineDevices || 0) > 0 && (
+      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 md:p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+        <AlertTriangle className="w-5 h-5 text-yellow-600 flex-shrink-0" />
+        <div className="flex-1 min-w-0">
+          <div className="font-semibold text-yellow-900 text-sm md:text-base">
+            {dashboardData?.offlineDevices} Devices Inactive
           </div>
-
-          {/* Offline Devices Alert */}
-          {(dashboardData?.offlineDevices || 0) > 0 && (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 md:p-4 flex flex-col sm:flex-row sm:items-center gap-3">
-              <AlertTriangle className="w-5 h-5 text-yellow-600 flex-shrink-0" />
-              <div className="flex-1 min-w-0">
-                <div className="font-semibold text-yellow-900 text-sm md:text-base">
-                  {dashboardData?.offlineDevices} Devices Offline
-                </div>
-                <div className="text-xs md:text-sm text-yellow-700">
-                  Immediate attention required for optimal system performance
-                </div>
-              </div>
-              <button className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition text-xs md:text-sm font-semibold whitespace-nowrap">
-                View Details
-              </button>
-            </div>
-          )}
+          <div className="text-xs md:text-sm text-yellow-700">
+            Immediate attention required for optimal system performance
+          </div>
         </div>
+        <button className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition text-xs md:text-sm font-semibold whitespace-nowrap">
+          View Details
+        </button>
       </div>
+    )}
+  </div>
+</div>
 
-      {/* Recent Activity */}
-      <div>
-        <h2 className="text-lg md:text-xl font-bold text-gray-900 mb-3 md:mb-4">Recent Activity</h2>
-        <div className="bg-white rounded-xl p-4 md:p-6 shadow-sm border border-gray-100">
-          {dashboardData?.recentActivity?.length > 0 ? (
-            dashboardData.recentActivity.map((activity) => (
-              <ActivityItem
-                key={activity.id}
-                client={activity.client}
-                action={activity.action}
-                time={activity.time}
-                status={activity.status}
-              />
-            ))
-          ) : (
-            <div className="text-center py-8 text-gray-500 text-sm">
-              No recent activity
-            </div>
-          )}
-        </div>
-      </div>
+    
     </SuperAdminLayout>
   );
 };

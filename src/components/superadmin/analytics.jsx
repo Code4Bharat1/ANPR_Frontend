@@ -1,11 +1,47 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import {
   TrendingUp, TrendingDown, Users, MapPin, Camera, Activity, 
-  DollarSign, Download, Calendar
+  DollarSign, Download, Calendar, Menu, X, LayoutDashboard, 
+  BarChart3, Settings, LogOut, FileText, Server, User
 } from 'lucide-react';
-import SuperAdminLayout from './layout';
+import Sidebar from './sidebar';
+
+// Header Component
+const Header = ({ title, onMenuClick }) => (
+  <header className="lg:hidden sticky top-0 bg-white border-b border-gray-200 px-4 py-4 flex items-center justify-between z-30">
+    <button 
+      onClick={onMenuClick}
+      className="text-gray-600 hover:text-gray-900"
+    >
+      <Menu className="w-6 h-6" />
+    </button>
+    <h2 className="text-lg font-bold text-gray-900">{title}</h2>
+    <div className="w-6"></div>
+  </header>
+);
+
+// Layout Component
+const SuperAdminLayout = ({ children, title = "Dashboard" }) => {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+
+      <div className="lg:ml-72">
+        <Header 
+          title={title} 
+          onMenuClick={() => setSidebarOpen(true)} 
+        />
+
+        <main className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8">
+          {children}
+        </main>
+      </div>
+    </div>
+  );
+};
 
 // Stat Card Component
 const StatCard = ({ icon: Icon, title, value, trend, trendValue, bgColor, iconColor }) => (
@@ -24,7 +60,7 @@ const StatCard = ({ icon: Icon, title, value, trend, trendValue, bgColor, iconCo
       )}
     </div>
     <div className="text-xs md:text-sm text-gray-600 mb-1">{title}</div>
-    <div className="text-xl md:text-3xl font-bold text-gray-900 truncate">{value}</div>
+    <div className="text-xl md:text-3xl font-bold text-gray-900">{value}</div>
   </div>
 );
 
@@ -35,7 +71,7 @@ const TopClientCard = ({ client, rank }) => (
       <div className="w-10 h-10 md:w-12 md:h-12 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
         <span className="text-base md:text-lg font-bold text-purple-600">#{rank}</span>
       </div>
-      <div className="min-w-0">
+      <div className="min-w-0 flex-1">
         <div className="font-semibold text-gray-900 text-sm md:text-base truncate">{client.name}</div>
         <div className="text-xs md:text-sm text-gray-600 truncate">{client.sites} sites • {client.devices} devices</div>
       </div>
@@ -47,9 +83,9 @@ const TopClientCard = ({ client, rank }) => (
   </div>
 );
 
-// Trip Trend Chart (Simple Bar Chart)
+// Trip Trend Chart
 const TripTrendChart = ({ data }) => {
-  const maxValue = Math.max(...data.map(d => d.value));
+  const maxValue = Math.max(...data.map(d => d.value), 1);
   
   return (
     <div className="bg-white rounded-xl p-4 md:p-6 shadow-sm border border-gray-100">
@@ -57,7 +93,7 @@ const TripTrendChart = ({ data }) => {
       <div className="flex items-end justify-between gap-1 md:gap-2 h-40 md:h-48">
         {data.map((item, index) => (
           <div key={index} className="flex-1 flex flex-col items-center">
-            <div className="w-full bg-purple-100 rounded-t-lg relative" style={{ 
+            <div className="w-full bg-purple-500 rounded-t-lg relative transition-all duration-300 hover:bg-purple-600" style={{ 
               height: `${(item.value / maxValue) * 100}%`,
               minHeight: '20px'
             }}>
@@ -75,7 +111,7 @@ const TripTrendChart = ({ data }) => {
 
 // Revenue Chart
 const RevenueChart = ({ data }) => {
-  const maxValue = Math.max(...data.map(d => d.value));
+  const maxValue = Math.max(...data.map(d => d.value), 1);
   
   return (
     <div className="bg-white rounded-xl p-4 md:p-6 shadow-sm border border-gray-100">
@@ -86,12 +122,12 @@ const RevenueChart = ({ data }) => {
       <div className="flex items-end justify-between gap-1 md:gap-2 h-40 md:h-48">
         {data.map((item, index) => (
           <div key={index} className="flex-1 flex flex-col items-center">
-            <div className="w-full bg-gradient-to-t from-green-400 to-green-600 rounded-t-lg relative" style={{ 
+            <div className="w-full bg-gradient-to-t from-green-400 to-green-600 rounded-t-lg relative transition-all duration-300 hover:from-green-500 hover:to-green-700" style={{ 
               height: `${(item.value / maxValue) * 100}%`,
               minHeight: '30px'
             }}>
               <div className="absolute -top-5 md:-top-6 left-0 right-0 text-center text-xs font-semibold text-gray-900">
-                ${item.value}k
+                ₹{item.value}k
               </div>
             </div>
             <div className="text-xs text-gray-600 mt-2">{item.month}</div>
@@ -106,7 +142,7 @@ const RevenueChart = ({ data }) => {
 const SuperAdminAnalytics = () => {
   const [analyticsData, setAnalyticsData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [exporting, setExporting] = useState(false);
   const [dateRange, setDateRange] = useState('7days');
 
   useEffect(() => {
@@ -114,97 +150,91 @@ const SuperAdminAnalytics = () => {
   }, [dateRange]);
 
   const fetchAnalytics = async () => {
-    try {
-      setLoading(true);
-      const token = localStorage.getItem('accessToken');
-
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/superadmin/analytics/summary`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      setAnalyticsData(response.data);
-      setError(null);
-    } catch (err) {
-      console.error('Error fetching analytics:', err);
-      setError(err.response?.data?.message || err.message);
-      
-      // Mock data fallback
-      setAnalyticsData({
-        totalClients: 48,
-        totalSites: 156,
-        totalDevices: 892,
-        totalTrips: 15847,
-        totalRevenue: 284500,
-        tripTrends: [
-          { day: 'Mon', value: 2341 },
-          { day: 'Tue', value: 2156 },
-          { day: 'Wed', value: 2489 },
-          { day: 'Thu', value: 2234 },
-          { day: 'Fri', value: 2678 },
-          { day: 'Sat', value: 1987 },
-          { day: 'Sun', value: 1962 }
-        ],
-        revenueData: [
-          { month: 'Jul', value: 42 },
-          { month: 'Aug', value: 45 },
-          { month: 'Sep', value: 48 },
-          { month: 'Oct', value: 51 },
-          { month: 'Nov', value: 49 },
-          { month: 'Dec', value: 52 }
-        ],
-        topClients: [
-          { name: 'Enterprise Corp', sites: 12, devices: 145, trips: 4567 },
-          { name: 'Global Industries', sites: 8, devices: 98, trips: 3421 },
-          { name: 'TechStart Ltd', sites: 6, devices: 76, trips: 2890 },
-          { name: 'Metro Logistics', sites: 5, devices: 65, trips: 2234 },
-          { name: 'Swift Transport', sites: 4, devices: 52, trips: 1987 }
-        ]
-      });
-    } finally {
-      setLoading(false);
-    }
+    setLoading(true);
+    
+    
   };
 
-  const handleExport = async () => {
+  const exportToCSV = () => {
+    if (!analyticsData) return;
+    
+    setExporting(true);
+    
     try {
-      const token = localStorage.getItem('accessToken');
-      await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/superadmin/analytics/summary`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          responseType: 'blob'
-        }
-      );
-      alert('Analytics report exported successfully!');
+      let csvContent = "data:text/csv;charset=utf-8,";
+      
+      csvContent += "Analytics Summary Report\n";
+      csvContent += `Generated on:,${new Date().toLocaleString()}\n`;
+      csvContent += `Date Range:,${dateRange}\n\n`;
+      csvContent += "Metric,Value\n";
+      csvContent += `Total Clients,${analyticsData.totalClients}\n`;
+      csvContent += `Total Sites,${analyticsData.totalSites}\n`;
+      csvContent += `Total Devices,${analyticsData.totalDevices}\n`;
+      csvContent += `Total Trips,${analyticsData.totalTrips}\n`;
+      csvContent += `Total Revenue (₹),${analyticsData.totalRevenue.toLocaleString()}\n\n`;
+      
+      csvContent += "Trip Trends - Last 7 Days\n";
+      csvContent += "Day,Trips\n";
+      analyticsData.tripTrends.forEach(item => {
+        csvContent += `${item.day},${item.value}\n`;
+      });
+      csvContent += "\n";
+      
+      csvContent += "Revenue Analytics - Last 6 Months\n";
+      csvContent += "Month,Revenue (₹ thousands)\n";
+      analyticsData.revenueData.forEach(item => {
+        csvContent += `${item.month},${item.value}\n`;
+      });
+      csvContent += "\n";
+      
+      csvContent += "Top Performing Clients\n";
+      csvContent += "Rank,Client Name,Sites,Devices,Total Trips\n";
+      analyticsData.topClients.forEach((client, index) => {
+        csvContent += `${index + 1},${client.name},${client.sites},${client.devices},${client.trips}\n`;
+      });
+      
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      const timestamp = new Date().toISOString().split('T')[0];
+      link.setAttribute("download", `Analytics_Report_${timestamp}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      setExporting(false);
     } catch (err) {
-      console.error(err);
-      alert('Exporting analytics report... (Demo mode)');
+      console.error('Error exporting to CSV:', err);
+      alert('Error exporting report. Please try again.');
+      setExporting(false);
     }
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="text-center">
-          <div className="w-12 h-12 md:w-16 md:h-16 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600 text-sm md:text-base">Loading analytics...</p>
+      <SuperAdminLayout title="Analytics">
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <div className="w-12 h-12 md:w-16 md:h-16 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-gray-600 text-sm md:text-base">Loading analytics...</p>
+          </div>
         </div>
-      </div>
+      </SuperAdminLayout>
     );
   }
 
   return (
-    <SuperAdminLayout title="System Analytics">
+    <SuperAdminLayout title="Analytics">
+      {/* Header */}
+      <div className="mb-6 md:mb-8">
+        <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 mb-2">
+          System Analytics
+        </h1>
+        <p className="text-sm md:text-base text-gray-600">
+          Comprehensive overview of system performance and metrics
+        </p>
+      </div>
+
       {/* Controls */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
         <div className="flex items-center gap-2 md:gap-3">
@@ -212,7 +242,7 @@ const SuperAdminAnalytics = () => {
           <select
             value={dateRange}
             onChange={(e) => setDateRange(e.target.value)}
-            className="px-3 md:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base"
+            className="px-3 md:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base bg-white"
           >
             <option value="7days">Last 7 Days</option>
             <option value="30days">Last 30 Days</option>
@@ -221,21 +251,14 @@ const SuperAdminAnalytics = () => {
           </select>
         </div>
         <button
-          onClick={handleExport}
-          className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition font-semibold text-sm md:text-base"
+          onClick={exportToCSV}
+          disabled={exporting}
+          className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition font-semibold text-sm md:text-base disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Download className="w-4 h-4" />
-          Export Report
+          {exporting ? 'Exporting...' : 'Export to CSV'}
         </button>
       </div>
-
-      {error && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 md:p-4 mb-6">
-          <p className="text-xs md:text-sm text-yellow-800">
-            Demo mode: Using sample data. API Error: {error}
-          </p>
-        </div>
-      )}
 
       {/* Key Metrics */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 md:gap-6 mb-6 md:mb-8">
@@ -243,8 +266,6 @@ const SuperAdminAnalytics = () => {
           icon={Users}
           title="Total Clients"
           value={analyticsData?.totalClients || 0}
-          trend="up"
-          trendValue="12"
           bgColor="bg-purple-50"
           iconColor="text-purple-600"
         />
@@ -252,8 +273,6 @@ const SuperAdminAnalytics = () => {
           icon={MapPin}
           title="Total Sites"
           value={analyticsData?.totalSites || 0}
-          trend="up"
-          trendValue="8"
           bgColor="bg-blue-50"
           iconColor="text-blue-600"
         />
@@ -261,8 +280,6 @@ const SuperAdminAnalytics = () => {
           icon={Camera}
           title="Total Devices"
           value={analyticsData?.totalDevices || 0}
-          trend="up"
-          trendValue="5"
           bgColor="bg-indigo-50"
           iconColor="text-indigo-600"
         />
@@ -270,17 +287,13 @@ const SuperAdminAnalytics = () => {
           icon={Activity}
           title="Total Trips"
           value={(analyticsData?.totalTrips || 0).toLocaleString()}
-          trend="up"
-          trendValue="15"
           bgColor="bg-orange-50"
           iconColor="text-orange-600"
         />
         <StatCard
           icon={DollarSign}
           title="Total Revenue"
-          value={`$${(analyticsData?.totalRevenue || 0).toLocaleString()}`}
-          trend="up"
-          trendValue="18"
+          value={`₹${(analyticsData?.totalRevenue || 0).toLocaleString()}`}
           bgColor="bg-green-50"
           iconColor="text-green-600"
         />
@@ -293,7 +306,7 @@ const SuperAdminAnalytics = () => {
       </div>
 
       {/* Top Clients */}
-      <div className="bg-white rounded-xl p-4 md:p-6 shadow-sm border border-gray-100 mb-6 md:mb-8">
+      <div className="bg-white rounded-xl p-4 md:p-6 shadow-sm border border-gray-100">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 md:mb-6">
           <h3 className="text-base md:text-lg font-bold text-gray-900">Top Performing Clients</h3>
           <div className="text-xs md:text-sm text-gray-600">By total trips</div>
@@ -302,75 +315,6 @@ const SuperAdminAnalytics = () => {
           {(analyticsData?.topClients || []).map((client, index) => (
             <TopClientCard key={index} client={client} rank={index + 1} />
           ))}
-        </div>
-      </div>
-
-      {/* Client Distribution */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-        <div className="bg-white rounded-xl p-4 md:p-6 shadow-sm border border-gray-100">
-          <h3 className="text-base md:text-lg font-bold text-gray-900 mb-4">Client Distribution</h3>
-          <div className="space-y-4">
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs md:text-sm text-gray-600">Active Clients</span>
-                <span className="text-xs md:text-sm font-semibold text-gray-900">42 (87.5%)</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="bg-green-500 h-2 rounded-full" style={{ width: '87.5%' }}></div>
-              </div>
-            </div>
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs md:text-sm text-gray-600">Expired Clients</span>
-                <span className="text-xs md:text-sm font-semibold text-gray-900">6 (12.5%)</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="bg-red-500 h-2 rounded-full" style={{ width: '12.5%' }}></div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl p-4 md:p-6 shadow-sm border border-gray-100">
-          <h3 className="text-base md:text-lg font-bold text-gray-900 mb-4">Device Status</h3>
-          <div className="space-y-4">
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs md:text-sm text-gray-600">Online Devices</span>
-                <span className="text-xs md:text-sm font-semibold text-gray-900">856 (96%)</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="bg-green-500 h-2 rounded-full" style={{ width: '96%' }}></div>
-              </div>
-            </div>
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs md:text-sm text-gray-600">Offline Devices</span>
-                <span className="text-xs md:text-sm font-semibold text-gray-900">36 (4%)</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="bg-red-500 h-2 rounded-full" style={{ width: '4%' }}></div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl p-4 md:p-6 shadow-sm border border-gray-100">
-          <h3 className="text-base md:text-lg font-bold text-gray-900 mb-4">System Health</h3>
-          <div className="space-y-3 md:space-y-4">
-            <div className="flex items-center justify-between">
-              <span className="text-xs md:text-sm text-gray-600">API Uptime</span>
-              <span className="text-base md:text-lg font-bold text-green-600">99.8%</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs md:text-sm text-gray-600">Avg Response Time</span>
-              <span className="text-base md:text-lg font-bold text-gray-900">142ms</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs md:text-sm text-gray-600">Error Rate</span>
-              <span className="text-base md:text-lg font-bold text-green-600">0.02%</span>
-            </div>
-          </div>
         </div>
       </div>
     </SuperAdminLayout>
