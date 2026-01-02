@@ -111,7 +111,7 @@ const EditClientModal = ({ isOpen, onClose, onSubmit, loading, client }) => {
   useEffect(() => {
     if (client) {
       setFormData({
-        clientname: client. client.name ||'',
+        clientname: client. clientname ||'',
         companyName: client.companyName || '',
         email: client.email || '',
         phone: client.phone || '',
@@ -470,13 +470,14 @@ const AddClientModal = ({ isOpen, onClose, onSubmit, loading }) => {
 
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Address
+                Address *
               </label>
               <textarea
                 name="address"
                 value={formData.address}
                 onChange={handleChange}
                 rows={2}
+                required
                 placeholder="Full address"
                 className="w-full px-3 md:px-4 py-2 md:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base"
               />
