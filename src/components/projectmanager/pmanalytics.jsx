@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { 
   Bell, Menu, TrendingUp, TrendingDown, Activity, 
-  Calendar, MapPin, Package, Users
+  Calendar, MapPin, Package, AlertCircle
 } from 'lucide-react';
 import Sidebar from './sidebar';
 
@@ -31,7 +31,32 @@ const PMAnalytics = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [analyticsData, setAnalyticsData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [timeRange, setTimeRange] = useState('30days');
+
+  // Configure axios instance
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+  
+  const axiosInstance = axios.create({
+    baseURL: API_URL,
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  });
+
+  // Add request interceptor to include token
+  axiosInstance.interceptors.request.use(
+    (config) => {
+      const token = localStorage.getItem('accessToken');
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+      return config;
+    },
+    (error) => {
+      return Promise.reject(error);
+    }
+  );
 
   useEffect(() => {
     fetchAnalytics();
@@ -40,46 +65,18 @@ const PMAnalytics = () => {
   const fetchAnalytics = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('accessToken');
+      setError(null);
 
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/project/analytics`,
-        { 
-          headers: { Authorization: `Bearer ${token}` },
-          params: { timeRange }
-        }
-      );
+      const response = await axiosInstance.get('/api/project/analytics', {
+        params: { timeRange }
+      });
 
       setAnalyticsData(response.data);
+      console.log(response.data);
+      
     } catch (err) {
-      // setAnalyticsData({
-      //   totalTrips: 3429,
-      //   avgDuration: '2h 15m',
-      //   peakHours: '10 AM - 2 PM',
-      //   utilizationRate: '78%',
-      //   topVendors: [
-      //     { name: 'Apex Logistics', trips: 856, percentage: 25 },
-      //     { name: 'Global Freight', trips: 742, percentage: 22 },
-      //     { name: 'Rapid Courier', trips: 628, percentage: 18 },
-      //     { name: 'Maritime Transports', trips: 514, percentage: 15 },
-      //     { name: 'City Haulage', trips: 689, percentage: 20 }
-      //   ],
-      //   topSites: [
-      //     { name: 'North Logistics Hub', trips: 1245, percentage: 36 },
-      //     { name: 'Port Gate 7', trips: 892, percentage: 26 },
-      //     { name: 'Westside Distribution', trips: 658, percentage: 19 },
-      //     { name: 'Central Storage', trips: 634, percentage: 19 }
-      //   ],
-      //   weeklyData: [
-      //     { day: 'Mon', trips: 142 },
-      //     { day: 'Tue', trips: 158 },
-      //     { day: 'Wed', trips: 134 },
-      //     { day: 'Thu', trips: 167 },
-      //     { day: 'Fri', trips: 189 },
-      //     { day: 'Sat', trips: 98 },
-      //     { day: 'Sun', trips: 76 }
-      //   ]
-      // });
+      console.error('Error fetching analytics:', err);
+      setError(err.response?.data?.message || 'Failed to load analytics data');
     } finally {
       setLoading(false);
     }
@@ -89,6 +86,41 @@ const PMAnalytics = () => {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="w-16 h-16 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+        <div className="lg:ml-72">
+          <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
+            <div className="flex items-center justify-between px-6 py-4">
+              <div className="flex items-center gap-4">
+                <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-2 hover:bg-gray-100 rounded-lg">
+                  <Menu className="w-6 h-6" />
+                </button>
+                <h1 className="text-2xl font-bold text-gray-900">Analytics</h1>
+              </div>
+            </div>
+          </header>
+          <main className="max-w-7xl mx-auto px-6 py-8">
+            <div className="bg-red-50 border border-red-200 rounded-xl p-6 flex items-start gap-4">
+              <AlertCircle className="w-6 h-6 text-red-600 flex-shrink-0 mt-1" />
+              <div>
+                <h3 className="text-lg font-semibold text-red-900 mb-2">Error Loading Analytics</h3>
+                <p className="text-red-700 mb-4">{error}</p>
+                <button
+                  onClick={fetchAnalytics}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-semibold"
+                >
+                  Try Again
+                </button>
+              </div>
+            </div>
+          </main>
+        </div>
       </div>
     );
   }
@@ -112,7 +144,7 @@ const PMAnalytics = () => {
                 <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
               </button>
               <div className="w-10 h-10 bg-indigo-600 rounded-full flex items-center justify-center text-white font-semibold">
-                AM
+                PM
               </div>
             </div>
           </div>
@@ -127,10 +159,10 @@ const PMAnalytics = () => {
               onChange={(e) => setTimeRange(e.target.value)}
               className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 outline-none"
             >
+              <option value="today">Today</option>
               <option value="7days">Last 7 Days</option>
               <option value="30days">Last 30 Days</option>
-              <option value="90days">Last 90 Days</option>
-              {/* <option value="1year">Last Year</option> */}
+              
             </select>
           </div>
 
@@ -138,32 +170,29 @@ const PMAnalytics = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <StatCard
               icon={Activity}
-              value={analyticsData?.totalTrips?.toLocaleString() || 0}
+              value={analyticsData?.totalTrips?.toLocaleString() || '0'}
               label="Total Trips"
-              // change={12}
               bgColor="bg-blue-50"
               iconColor="text-blue-600"
             />
             <StatCard
               icon={Calendar}
-              value={analyticsData?.avgDuration || '-'}
+              value={analyticsData?.avgDuration || '0h 0m'}
               label="Avg Duration"
-              // change={-5}
               bgColor="bg-purple-50"
               iconColor="text-purple-600"
             />
             <StatCard
               icon={TrendingUp}
-              value={analyticsData?.peakHours || '-'}
+              value={analyticsData?.peakHours || 'N/A'}
               label="Peak Hours"
               bgColor="bg-orange-50"
               iconColor="text-orange-600"
             />
             <StatCard
               icon={Activity}
-              value={analyticsData?.utilizationRate || '-'}
+              value={analyticsData?.utilizationRate || '0%'}
               label="Utilization Rate"
-              // change={8}
               bgColor="bg-green-50"
               iconColor="text-green-600"
             />
@@ -178,20 +207,27 @@ const PMAnalytics = () => {
                 <h2 className="text-xl font-bold text-gray-900">Top Vendors by Trips</h2>
               </div>
               <div className="space-y-4">
-                {analyticsData?.topVendors?.map((vendor, index) => (
-                  <div key={index}>
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="font-semibold text-gray-900">{vendor.name}</div>
-                      <div className="text-sm text-gray-600">{vendor.trips} trips</div>
+                {analyticsData?.topVendors && analyticsData.topVendors.length > 0 ? (
+                  analyticsData.topVendors.map((vendor, index) => (
+                    <div key={index}>
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="font-semibold text-gray-900">{vendor.name}</div>
+                        <div className="text-sm text-gray-600">{vendor.trips} trips</div>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div
+                          className="bg-indigo-600 h-2 rounded-full transition-all"
+                          style={{ width: `${vendor.percentage}%` }}
+                        ></div>
+                      </div>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div
-                        className="bg-indigo-600 h-2 rounded-full transition-all"
-                        style={{ width: `${vendor.percentage}%` }}
-                      ></div>
-                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <Package className="w-12 h-12 mx-auto mb-2 text-gray-400" />
+                    <p>No vendor data available</p>
                   </div>
-                ))}
+                )}
               </div>
             </div>
 
@@ -202,20 +238,27 @@ const PMAnalytics = () => {
                 <h2 className="text-xl font-bold text-gray-900">Top Sites by Activity</h2>
               </div>
               <div className="space-y-4">
-                {analyticsData?.topSites?.map((site, index) => (
-                  <div key={index}>
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="font-semibold text-gray-900">{site.name}</div>
-                      <div className="text-sm text-gray-600">{site.trips} trips</div>
+                {analyticsData?.topSites && analyticsData.topSites.length > 0 ? (
+                  analyticsData.topSites.map((site, index) => (
+                    <div key={index}>
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="font-semibold text-gray-900">{site.name}</div>
+                        <div className="text-sm text-gray-600">{site.trips} trips</div>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div
+                          className="bg-green-600 h-2 rounded-full transition-all"
+                          style={{ width: `${site.percentage}%` }}
+                        ></div>
+                      </div>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div
-                        className="bg-green-600 h-2 rounded-full transition-all"
-                        style={{ width: `${site.percentage}%` }}
-                      ></div>
-                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <MapPin className="w-12 h-12 mx-auto mb-2 text-gray-400" />
+                    <p>No site data available</p>
                   </div>
-                ))}
+                )}
               </div>
             </div>
           </div>
@@ -223,18 +266,31 @@ const PMAnalytics = () => {
           {/* Weekly Trips Chart */}
           <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
             <h2 className="text-xl font-bold text-gray-900 mb-6">Weekly Trip Distribution</h2>
-            <div className="flex items-end justify-between gap-4 h-64">
-              {analyticsData?.weeklyData?.map((day, index) => (
-                <div key={index} className="flex-1 flex flex-col items-center justify-end">
-                  <div className="text-sm font-semibold text-gray-900 mb-2">{day.trips}</div>
-                  <div
-                    className="w-full bg-indigo-600 rounded-t-lg transition-all hover:bg-indigo-700"
-                    style={{ height: `${(day.trips / 200) * 100}%` }}
-                  ></div>
-                  <div className="text-xs text-gray-600 mt-2">{day.day}</div>
-                </div>
-              ))}
-            </div>
+            {analyticsData?.weeklyData && analyticsData.weeklyData.length > 0 ? (
+              <div className="flex items-end justify-between gap-4 h-64">
+                {analyticsData.weeklyData.map((day, index) => {
+                  const maxTrips = Math.max(...analyticsData.weeklyData.map(d => d.trips), 1);
+                  const height = (day.trips / maxTrips) * 100;
+                  
+                  return (
+                    <div key={index} className="flex-1 flex flex-col items-center justify-end">
+                      <div className="text-sm font-semibold text-gray-900 mb-2">{day.trips}</div>
+                      <div
+                        className="w-full bg-indigo-600 rounded-t-lg transition-all hover:bg-indigo-700 cursor-pointer"
+                        style={{ height: `${height}%`, minHeight: day.trips > 0 ? '20px' : '4px' }}
+                        title={`${day.day}: ${day.trips} trips`}
+                      ></div>
+                      <div className="text-xs text-gray-600 mt-2 font-medium">{day.day}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-16 text-gray-500">
+                <Activity className="w-12 h-12 mx-auto mb-2 text-gray-400" />
+                <p>No weekly data available</p>
+              </div>
+            )}
           </div>
         </main>
       </div>

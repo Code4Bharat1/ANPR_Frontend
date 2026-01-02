@@ -73,6 +73,8 @@ const PMSites = () => {
       );
 
       setSites(response.data);
+      console.log(response.data);
+      
     } catch (err) {
      
     } finally {

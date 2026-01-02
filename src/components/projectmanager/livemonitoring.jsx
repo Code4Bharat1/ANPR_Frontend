@@ -1,10 +1,10 @@
 "use client";
 import { useState, useEffect } from 'react';
+import axios from 'axios';
 import { 
   Bell, Menu, MapPin, Activity, AlertCircle, CheckCircle, Camera, Truck, Users, Clock
 } from 'lucide-react';
 import Sidebar from './sidebar';
-
 
 const LiveMonitoring = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -24,6 +24,30 @@ const LiveMonitoring = () => {
   const [sites, setSites] = useState([]);
   const [lastUpdate, setLastUpdate] = useState(new Date());
 
+  // Configure axios instance
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+  
+  const axiosInstance = axios.create({
+    baseURL: API_URL,
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  });
+
+  // Add request interceptor to include token
+  axiosInstance.interceptors.request.use(
+    (config) => {
+      const token = localStorage.getItem('accessToken');
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+      return config;
+    },
+    (error) => {
+      return Promise.reject(error);
+    }
+  );
+
   useEffect(() => {
     fetchInitialData();
     const interval = setInterval(fetchLiveData, 5000); // Refresh every 5s
@@ -33,18 +57,10 @@ const LiveMonitoring = () => {
   const fetchInitialData = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('accessToken');
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
       // Fetch sites for filter
-      const sitesRes = await fetch(`${API_URL}/api/project/sites`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
-      if (sitesRes.ok) {
-        const sitesData = await sitesRes.json();
-        setSites(sitesData);
-      }
+      const sitesRes = await axiosInstance.get('/api/project/sites');
+      setSites(sitesRes.data);
 
       await fetchLiveData();
     } catch (err) {
@@ -56,50 +72,37 @@ const LiveMonitoring = () => {
 
   const fetchLiveData = async () => {
     try {
-      const token = localStorage.getItem('accessToken');
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-
-      const params = new URLSearchParams();
-      if (selectedSite !== 'all') params.append('siteId', selectedSite);
-
-      // Fetch live vehicles
-      const vehiclesRes = await fetch(
-        `${API_URL}/api/projectmanager/live-monitoring/vehicles?${params}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      // Fetch live barriers
-      const barriersRes = await fetch(
-        `${API_URL}/api/projectmanager/live-monitoring/barriers?${params}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      // Fetch recent activities
-      const activitiesRes = await fetch(
-        `${API_URL}/api/projectmanager/live-monitoring/activities?${params}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      if (vehiclesRes.ok && barriersRes.ok && activitiesRes.ok) {
-        const vehicles = await vehiclesRes.json();
-        const barriers = await barriersRes.json();
-        const activities = await activitiesRes.json();
-
-        setLiveData({
-          vehicles,
-          barriers,
-          activities,
-          stats: {
-            activeVehicles: vehicles.filter(v => v.status === 'inside').length,
-            totalBarriers: barriers.length,
-            activeBarriers: barriers.filter(b => b.isOnline).length,
-            pendingExits: vehicles.filter(v => v.status === 'pending_exit').length
-          }
-        });
-        setLastUpdate(new Date());
+      const params = {};
+      if (selectedSite !== 'all') {
+        params.siteId = selectedSite;
       }
+
+      // Fetch all data in parallel
+      const [vehiclesRes, barriersRes, activitiesRes] = await Promise.all([
+        axiosInstance.get('/api/projectmanager/live-monitoring/vehicles', { params }),
+        axiosInstance.get('/api/projectmanager/live-monitoring/barriers', { params }),
+        axiosInstance.get('/api/projectmanager/live-monitoring/activities', { params })
+      ]);
+
+      const vehicles = vehiclesRes.data;
+      const barriers = barriersRes.data;
+      const activities = activitiesRes.data;
+
+      setLiveData({
+        vehicles,
+        barriers,
+        activities,
+        stats: {
+          activeVehicles: vehicles.filter(v => v.status === 'inside').length,
+          totalBarriers: barriers.length,
+          activeBarriers: barriers.filter(b => b.isOnline).length,
+          pendingExits: vehicles.filter(v => v.status === 'pending_exit').length
+        }
+      });
+      setLastUpdate(new Date());
     } catch (err) {
       console.error('Error fetching live data:', err);
+      // Don't show error alerts on auto-refresh to avoid disrupting UX
     }
   };
 

@@ -83,6 +83,8 @@ const PMDashboard = () => {
       );
 
       setDashboardData(response.data);
+      console.log(response.data);
+      
     } catch (err) {
       // setDashboardData({
       //   totalSites: 12,

@@ -1,10 +1,10 @@
 "use client";
 import { useState, useEffect } from 'react';
+import axios from 'axios';
 import { 
   Bell, Menu, Search, Plus, Package, Eye, Edit, Mail, Phone, X, AlertCircle, CheckCircle, Building
 } from 'lucide-react';
 import Sidebar from './sidebar';
-
 
 const VendorManagement = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -25,6 +25,31 @@ const VendorManagement = () => {
   const [formErrors, setFormErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
 
+  // Configure axios defaults
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+  
+  // Create axios instance with default config
+  const axiosInstance = axios.create({
+    baseURL: API_URL,
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  });
+
+  // Add request interceptor to include token
+  axiosInstance.interceptors.request.use(
+    (config) => {
+      const token = localStorage.getItem('accessToken');
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+      return config;
+    },
+    (error) => {
+      return Promise.reject(error);
+    }
+  );
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -32,30 +57,19 @@ const VendorManagement = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('accessToken');
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
       // Fetch vendors
-      const vendorsRes = await fetch(`${API_URL}/api/projectmanager/vendors`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const vendorsRes = await axiosInstance.get('/api/projectmanager/vendors');
+      setVendors(vendorsRes.data);
+      console.log(vendorsRes.data);
       
-      if (vendorsRes.ok) {
-        const data = await vendorsRes.json();
-        setVendors(data);
-      }
 
       // Fetch sites for dropdown
-      const sitesRes = await fetch(`${API_URL}/api/project/sites`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
-      if (sitesRes.ok) {
-        const sitesData = await sitesRes.json();
-        setSites(sitesData);
-      }
+      const sitesRes = await axiosInstance.get('/api/project/sites');
+      setSites(sitesRes.data);
     } catch (err) {
-      showAlert('error', 'Failed to load data');
+      console.error('Fetch error:', err);
+      showAlert('error', err.response?.data?.message || 'Failed to load data');
     } finally {
       setLoading(false);
     }
@@ -92,30 +106,16 @@ const VendorManagement = () => {
     
     try {
       setSubmitting(true);
-      const token = localStorage.getItem('accessToken');
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-
-      const response = await fetch(`${API_URL}/api/projectmanager/vendors`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify(formData)
-      });
-
-      if (response.ok) {
-        const newVendor = await response.json();
-        setVendors([...vendors, newVendor]);
-        showAlert('success', 'Vendor added successfully!');
-        setShowAddModal(false);
-        resetForm();
-      } else {
-        const error = await response.json();
-        showAlert('error', error.message || 'Failed to add vendor');
-      }
+      
+      const response = await axiosInstance.post('/api/projectmanager/vendors', formData);
+      
+      setVendors([...vendors, response.data]);
+      showAlert('success', 'Vendor added successfully!');
+      setShowAddModal(false);
+      resetForm();
     } catch (err) {
-      showAlert('error', 'Network error. Please try again.');
+      console.error('Submit error:', err);
+      showAlert('error', err.response?.data?.message || 'Failed to add vendor');
     } finally {
       setSubmitting(false);
     }
