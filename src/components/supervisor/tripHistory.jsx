@@ -38,6 +38,8 @@ const TripHistory = () => {
         `${API_URL}/api/supervisor/trips?period=${dateFilter}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
+      console.log(response.data);
+      
       
       const data = response.data.data || response.data || [];
       setTrips(data);
@@ -156,8 +158,6 @@ const TripHistory = () => {
             >
               <option value="today">Today</option>
               <option value="last7days">Last 7 Days</option>
-              <option value="last30days">Last 30 Days</option>
-              <option value="thismonth">This Month</option>
             </select>
 
             <select
