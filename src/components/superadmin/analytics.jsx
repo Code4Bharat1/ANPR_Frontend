@@ -3,45 +3,16 @@ import React, { useState, useEffect } from 'react';
 import {
   TrendingUp, TrendingDown, Users, MapPin, Camera, Activity, 
   DollarSign, Download, Calendar, Menu, X, LayoutDashboard, 
-  BarChart3, Settings, LogOut, FileText, Server, User
+  BarChart3, Settings, LogOut, FileText, Server, User,
+  IndianRupeeIcon
 } from 'lucide-react';
 import Sidebar from './sidebar';
+import SuperAdminLayout from './layout';
 
-// Header Component
-const Header = ({ title, onMenuClick }) => (
-  <header className="lg:hidden sticky top-0 bg-white border-b border-gray-200 px-4 py-4 flex items-center justify-between z-30">
-    <button 
-      onClick={onMenuClick}
-      className="text-gray-600 hover:text-gray-900"
-    >
-      <Menu className="w-6 h-6" />
-    </button>
-    <h2 className="text-lg font-bold text-gray-900">{title}</h2>
-    <div className="w-6"></div>
-  </header>
-);
+
 
 // Layout Component
-const SuperAdminLayout = ({ children, title = "Dashboard" }) => {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-
-      <div className="lg:ml-72">
-        <Header 
-          title={title} 
-          onMenuClick={() => setSidebarOpen(true)} 
-        />
-
-        <main className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8">
-          {children}
-        </main>
-      </div>
-    </div>
-  );
-};
 
 // Stat Card Component
 const StatCard = ({ icon: Icon, title, value, trend, trendValue, bgColor, iconColor }) => (
@@ -117,7 +88,7 @@ const RevenueChart = ({ data }) => {
     <div className="bg-white rounded-xl p-4 md:p-6 shadow-sm border border-gray-100">
       <div className="flex items-center justify-between mb-4 md:mb-6">
         <h3 className="text-base md:text-lg font-bold text-gray-900">Revenue Analytics</h3>
-        <div className="text-xs md:text-sm text-gray-600">Last 6 Months</div>
+        {/* <div className="text-xs md:text-sm text-gray-600">Last 6 Months</div> */}
       </div>
       <div className="flex items-end justify-between gap-1 md:gap-2 h-40 md:h-48">
         {data.map((item, index) => (
@@ -150,7 +121,7 @@ const SuperAdminAnalytics = () => {
   }, [dateRange]);
 
   const fetchAnalytics = async () => {
-    setLoading(true);
+    setLoading(false);
     
     
   };
@@ -244,10 +215,10 @@ const SuperAdminAnalytics = () => {
             onChange={(e) => setDateRange(e.target.value)}
             className="px-3 md:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base bg-white"
           >
+            <option value="1year">Today</option>
             <option value="7days">Last 7 Days</option>
             <option value="30days">Last 30 Days</option>
             <option value="90days">Last 90 Days</option>
-            <option value="1year">Last Year</option>
           </select>
         </div>
         <button
@@ -291,7 +262,7 @@ const SuperAdminAnalytics = () => {
           iconColor="text-orange-600"
         />
         <StatCard
-          icon={DollarSign}
+          icon={IndianRupeeIcon}
           title="Total Revenue"
           value={`₹${(analyticsData?.totalRevenue || 0).toLocaleString()}`}
           bgColor="bg-green-50"
