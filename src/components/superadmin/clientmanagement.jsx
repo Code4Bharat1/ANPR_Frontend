@@ -4,50 +4,10 @@ import axios from 'axios';
 import {
   Plus, Search, Users, ChevronLeft, ChevronRight, X, Menu
 } from 'lucide-react';
-import Sidebar from './sidebar';
+import SuperAdminLayout from './layout';
 
-// SuperAdminLayout with Sidebar
-const SuperAdminLayout = ({ children, title }) => {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      
-      {/* Main Content */}
-      <div className="lg:ml-72">
-        {/* Header */}
-        <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
-          <div className="flex items-center justify-between px-4 md:px-6 py-4">
-            <div className="flex items-center gap-4">
-              <button 
-                onClick={() => setSidebarOpen(true)}
-                className="lg:hidden p-2 hover:bg-gray-100 rounded-lg transition"
-              >
-                <Menu className="w-6 h-6 text-gray-700" />
-              </button>
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-900">{title}</h1>
-            </div>
-            <div className="flex items-center gap-3">
-              <button className="p-2 hover:bg-gray-100 rounded-lg transition relative">
-                <span className="text-xl">🔔</span>
-                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-              </button>
-              <div className="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center text-white font-semibold">
-                SA
-              </div>
-            </div>
-          </div>
-        </header>
 
-        {/* Page Content */}
-        <main className="p-4 md:p-6 lg:p-8">
-          {children}
-        </main>
-      </div>
-    </div>
-  );
-};
 
 // Client Card Component
 const ClientCard = ({ client, onEdit, onActivate, onDeactivate }) => (
