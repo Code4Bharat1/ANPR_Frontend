@@ -13,7 +13,18 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 const Analytics = () => {
   const [loading, setLoading] = useState(false);
   const [timeFilter, setTimeFilter] = useState('last7days');
-  const [analytics, setAnalytics] = useState({});
+  const [analytics, setAnalytics] = useState({
+  todayTrips: 0,
+  todayChange: 0,
+  weekTrips: 0,
+  avgProcessingTime: "--",
+  peakHour: "--",
+  totalEntries: 0,
+  totalExits: 0,
+  activeVehicles: 0,
+  avgDuration: "--",
+});
+
 
   const [dailyTrends, setDailyTrends] = useState([]);
 
@@ -35,6 +46,8 @@ const Analytics = () => {
         `${API_URL}/api/supervisor/analytics?period=${timeFilter}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
+      console.log(response.data);
+      
       
       if (response.data) {
         setAnalytics(response.data.analytics || analytics);
@@ -58,8 +71,16 @@ const Analytics = () => {
     }
   };
 
-  const maxDailyValue = Math.max(...dailyTrends.map(d => Math.max(d.entries, d.exits)));
-  const maxHourlyValue = Math.max(...hourlyTrends.map(h => h.count));
+  const maxDailyValue =
+  dailyTrends.length > 0
+    ? Math.max(...dailyTrends.map(d => Math.max(d.entries, d.exits)))
+    : 1;
+
+const maxHourlyValue =
+  hourlyTrends.length > 0
+    ? Math.max(...hourlyTrends.map(h => h.count))
+    : 1;
+
 
   return (
     <SupervisorLayout>
@@ -78,8 +99,6 @@ const Analytics = () => {
             >
               <option value="today">Today</option>
               <option value="last7days">Last 7 Days</option>
-              <option value="last30days">Last 30 Days</option>
-              <option value="thismonth">This Month</option>
             </select>
             <button
               onClick={handleDownloadReport}

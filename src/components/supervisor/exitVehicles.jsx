@@ -14,6 +14,7 @@ const ExitVehicles = () => {
   const [currentView, setCurrentView] = useState('list'); // 'list' or 'process' or 'camera'
   const [searchQuery, setSearchQuery] = useState('');
   const [activeVehicles, setActiveVehicles] = useState([]);
+  const [filteredVehicles, setFilteredVehicles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState(null);
   const [cameraField, setCameraField] = useState(null); // Track which field is being captured
@@ -47,6 +48,10 @@ const ExitVehicles = () => {
     };
   }, []);
 
+  useEffect(() => {
+    applySearchFilter();
+  }, [searchQuery, activeVehicles]);
+
   const fetchActiveVehicles = async () => {
     try {
       setLoading(true);
@@ -54,28 +59,39 @@ const ExitVehicles = () => {
       const response = await axios.get(`${API_URL}/api/supervisor/vehicles/active`, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      console.log('Active vehicles response:', response.data);
       
-      setActiveVehicles(response.data.data || response.data || []);
+      // Extract data from response - handle both response.data.data and response.data
+      const data = response.data.data || response.data || [];
+      const vehiclesArray = Array.isArray(data) ? data : [];
+      
+      setActiveVehicles(vehiclesArray);
+      setFilteredVehicles(vehiclesArray);
     } catch (error) {
       console.error('Error fetching active vehicles:', error);
-      // Mock data
-  
+      setActiveVehicles([]);
+      setFilteredVehicles([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSearch = () => {
+  const applySearchFilter = () => {
     if (!searchQuery.trim()) {
-      fetchActiveVehicles();
+      setFilteredVehicles(activeVehicles);
       return;
     }
     
     const filtered = activeVehicles.filter(v =>
-      v.vehicleNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      v.vendor.toLowerCase().includes(searchQuery.toLowerCase())
+      (v.vehicleNumber || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (v.vendor || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (v.driver || '').toLowerCase().includes(searchQuery.toLowerCase())
     );
-    setActiveVehicles(filtered);
+    setFilteredVehicles(filtered);
+  };
+
+  const handleSearch = () => {
+    applySearchFilter();
   };
 
   const handleSelectVehicle = (vehicle) => {
@@ -217,35 +233,62 @@ const ExitVehicles = () => {
       setLoading(true);
       const token = localStorage.getItem('accessToken');
 
+      // Prepare payload matching backend expectations
       const exitPayload = {
         vehicleId: selectedVehicle._id,
         vehicleNumber: selectedVehicle.vehicleNumber,
         exitTime: new Date().toISOString(),
         exitLoadStatus: exitData.exitLoadStatus,
-        returnMaterialType: exitData.returnMaterialType,
+        returnMaterialType: exitData.returnMaterialType || '',
         papersVerified: exitData.papersVerified,
         physicalInspection: exitData.physicalInspection,
         materialMatched: exitData.materialMatched,
-        exitNotes: exitData.exitNotes,
-        exitMedia: exitData.exitMedia
+        exitNotes: exitData.exitNotes || '',
+        exitMedia: {
+          frontView: exitData.exitMedia.frontView || '',
+          backView: exitData.exitMedia.backView || '',
+          loadView: exitData.exitMedia.loadView || '',
+          videoClip: exitData.exitMedia.videoClip || ''
+        }
       };
 
-      await axios.post(`${API_URL}/api/supervisor/vehicles/exit`, exitPayload, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      console.log('Exit payload:', exitPayload);
 
-      alert('✅ Vehicle exit allowed successfully!');
+      const response = await axios.post(
+        `${API_URL}/api/supervisor/vehicles/exit`, 
+        exitPayload, 
+        {
+          headers: { 
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      console.log('Exit response:', response.data);
+
+      alert(`✅ Vehicle exit allowed successfully!\nTrip ID: ${response.data.tripId || 'N/A'}`);
       handleBackToList();
       fetchActiveVehicles();
     } catch (error) {
       console.error('Error allowing exit:', error);
-      alert(error.response?.data?.message || 'Failed to process exit');
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to process exit';
+      alert(`❌ Error: ${errorMessage}`);
     } finally {
       setLoading(false);
     }
   };
 
-  const filteredVehicles = activeVehicles;
+  const getStatusBadge = (status) => {
+    const configs = {
+      loading: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Loading' },
+      unloading: { bg: 'bg-green-100', text: 'text-green-700', label: 'Unloading' },
+      overstay: { bg: 'bg-orange-100', text: 'text-orange-700', label: 'Overstay' }
+    };
+    
+    const config = configs[status] || configs.loading;
+    return { config, label: config.label };
+  };
 
   return (
     <SupervisorLayout>
@@ -272,7 +315,7 @@ const ExitVehicles = () => {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                    placeholder="Search vehicle, vendor..."
+                    placeholder="Search vehicle, vendor, driver..."
                     className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                   />
                 </div>
@@ -282,6 +325,9 @@ const ExitVehicles = () => {
                 >
                   Search
                 </button>
+              </div>
+              <div className="mt-3 text-sm text-gray-600">
+                Showing <span className="font-bold text-blue-600">{filteredVehicles.length}</span> of {activeVehicles.length} vehicles
               </div>
             </div>
 
@@ -303,64 +349,65 @@ const ExitVehicles = () => {
                 <div className="p-12 text-center">
                   <Package className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                   <h3 className="text-xl font-bold text-gray-900 mb-2">No active vehicles</h3>
-                  <p className="text-gray-600">All vehicles have exited the premises</p>
+                  <p className="text-gray-600">
+                    {activeVehicles.length === 0 
+                      ? 'All vehicles have exited the premises'
+                      : 'Try adjusting your search'}
+                  </p>
                 </div>
               ) : (
                 <div className="divide-y divide-gray-200">
-                  {filteredVehicles.map((vehicle) => (
-                    <div
-                      key={vehicle._id}
-                      className="p-5 hover:bg-gray-50 transition"
-                    >
-                      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
-                        <div className="flex-1 w-full">
-                          <div className="flex items-center gap-3 mb-2">
-                            <h3 className="text-lg font-bold text-gray-900">{vehicle.vehicleNumber}</h3>
-                            <span className={`px-2 py-1 rounded text-xs font-semibold ${
-                              vehicle.status === 'loading'
-                                ? 'bg-blue-100 text-blue-700'
-                                : vehicle.status === 'overstay'
-                                ? 'bg-orange-100 text-orange-700'
-                                : 'bg-green-100 text-green-700'
-                            }`}>
-                              {vehicle.status === 'loading' ? 'Loading' : vehicle.status === 'overstay' ? 'Overstay' : 'Unloading'}
-                            </span>
-                          </div>
-                          
-                          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
-                            <div>
-                              <div className="text-gray-500">Vendor</div>
-                              <div className="font-semibold text-gray-900">{vehicle.vendor}</div>
+                  {filteredVehicles.map((vehicle) => {
+                    const statusInfo = getStatusBadge(vehicle.status);
+                    return (
+                      <div
+                        key={vehicle._id}
+                        className="p-5 hover:bg-gray-50 transition"
+                      >
+                        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+                          <div className="flex-1 w-full">
+                            <div className="flex items-center gap-3 mb-2">
+                              <h3 className="text-lg font-bold text-gray-900">{vehicle.vehicleNumber || 'N/A'}</h3>
+                              <span className={`px-2 py-1 rounded text-xs font-semibold ${statusInfo.config.bg} ${statusInfo.config.text}`}>
+                                {statusInfo.label}
+                              </span>
                             </div>
-                            <div>
-                              <div className="text-gray-500">Driver</div>
-                              <div className="font-semibold text-gray-900">{vehicle.driver}</div>
-                            </div>
-                            <div>
-                              <div className="text-gray-500">Entry Time</div>
-                              <div className="font-semibold text-gray-900">{vehicle.entryTime}</div>
-                            </div>
-                            <div>
-                              <div className="text-gray-500">Duration</div>
-                              <div className={`font-semibold ${
-                                vehicle.status === 'overstay' ? 'text-orange-600' : 'text-gray-900'
-                              }`}>
-                                {vehicle.duration}
+                            
+                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+                              <div>
+                                <div className="text-gray-500">Vendor</div>
+                                <div className="font-semibold text-gray-900">{vehicle.vendor || 'Unknown'}</div>
+                              </div>
+                              <div>
+                                <div className="text-gray-500">Driver</div>
+                                <div className="font-semibold text-gray-900">{vehicle.driver || 'N/A'}</div>
+                              </div>
+                              <div>
+                                <div className="text-gray-500">Entry Time</div>
+                                <div className="font-semibold text-gray-900">{vehicle.entryTime || 'N/A'}</div>
+                              </div>
+                              <div>
+                                <div className="text-gray-500">Duration</div>
+                                <div className={`font-semibold ${
+                                  vehicle.status === 'overstay' ? 'text-orange-600' : 'text-gray-900'
+                                }`}>
+                                  {vehicle.duration || '0h 0m'}
+                                </div>
                               </div>
                             </div>
                           </div>
-                        </div>
 
-                        <button
-                          onClick={() => handleSelectVehicle(vehicle)}
-                          className="w-full lg:w-auto px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-semibold flex items-center justify-center gap-2"
-                        >
-                          Allow Exit
-                          <ArrowRight className="w-4 h-4" />
-                        </button>
+                          <button
+                            onClick={() => handleSelectVehicle(vehicle)}
+                            className="w-full lg:w-auto px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-semibold flex items-center justify-center gap-2"
+                          >
+                            Allow Exit
+                            <ArrowRight className="w-4 h-4" />
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -436,27 +483,27 @@ const ExitVehicles = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   <div className="bg-gray-50 rounded-lg p-4">
                     <div className="text-xs text-gray-500 mb-1">Vehicle Number</div>
-                    <div className="text-xl font-bold text-gray-900">{selectedVehicle.vehicleNumber}</div>
+                    <div className="text-xl font-bold text-gray-900">{selectedVehicle.vehicleNumber || 'N/A'}</div>
                   </div>
                   <div className="bg-gray-50 rounded-lg p-4">
                     <div className="text-xs text-gray-500 mb-1">Vendor</div>
-                    <div className="font-semibold text-gray-900">{selectedVehicle.vendor}</div>
+                    <div className="font-semibold text-gray-900">{selectedVehicle.vendor || 'Unknown'}</div>
                   </div>
                   <div className="bg-gray-50 rounded-lg p-4">
                     <div className="text-xs text-gray-500 mb-1">Driver</div>
-                    <div className="font-semibold text-gray-900">{selectedVehicle.driver}</div>
+                    <div className="font-semibold text-gray-900">{selectedVehicle.driver || 'N/A'}</div>
                   </div>
                   <div className="bg-gray-50 rounded-lg p-4">
                     <div className="text-xs text-gray-500 mb-1">Material Type</div>
-                    <div className="font-semibold text-gray-900">{selectedVehicle.materialType}</div>
+                    <div className="font-semibold text-gray-900">{selectedVehicle.materialType || 'N/A'}</div>
                   </div>
                   <div className="bg-gray-50 rounded-lg p-4">
                     <div className="text-xs text-gray-500 mb-1">Entry Time</div>
-                    <div className="font-semibold text-gray-900">{selectedVehicle.entryTime}</div>
+                    <div className="font-semibold text-gray-900">{selectedVehicle.entryTime || 'N/A'}</div>
                   </div>
                   <div className="bg-gray-50 rounded-lg p-4">
                     <div className="text-xs text-gray-500 mb-1">Duration</div>
-                    <div className="font-semibold text-gray-900">{selectedVehicle.duration}</div>
+                    <div className="font-semibold text-gray-900">{selectedVehicle.duration || '0h 0m'}</div>
                   </div>
                 </div>
               </div>
@@ -607,7 +654,7 @@ const ExitVehicles = () => {
                   value={exitData.exitNotes}
                   onChange={(e) => setExitData({ ...exitData, exitNotes: e.target.value })}
                   rows={3}
-                  placeholder="Enter any observations..."
+                  placeholder="Enter any observations, issues, or special notes..."
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none"
                 />
               </div>
@@ -623,15 +670,18 @@ const ExitVehicles = () => {
                 <button
                   onClick={handleAllowExit}
                   disabled={loading}
-                  className="flex-1 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-semibold disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="flex-1 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {loading ? (
                     <>
                       <Loader2 className="w-5 h-5 animate-spin" />
-                      Processing...
+                      Processing Exit...
                     </>
                   ) : (
-                    'Approve & Allow Exit'
+                    <>
+                      <CheckCircle className="w-5 h-5" />
+                      Approve & Allow Exit
+                    </>
                   )}
                 </button>
               </div>

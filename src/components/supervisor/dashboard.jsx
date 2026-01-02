@@ -13,10 +13,21 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 const SupervisorDashboard = () => {
   const router = useRouter();
-  const [stats, setStats] = useState({});
+  const [stats, setStats] = useState({
+    todayEntry: 0,
+    todayExit: 0,
+    vehiclesInside: 0,
+    pendingExit: 0,
+    deniedEntries: 0
+  });
   const [recentActivity, setRecentActivity] = useState([]);
-  const [siteInfo, setSiteInfo] = useState({});
-  const [loading, setLoading] = useState(false);
+  const [siteInfo, setSiteInfo] = useState({
+    name: '',
+    gates: 0,
+    shift: '',
+    status: ''
+  });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchDashboardData();
@@ -24,21 +35,48 @@ const SupervisorDashboard = () => {
 
   const fetchDashboardData = async () => {
     try {
+      setLoading(true);
       const token = localStorage.getItem('accessToken');
       
       const response = await axios.get(
         `${API_URL}/api/supervisor/dashboard/`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-
+      
+      console.log(response.data);
+      
       if (response.data) {
-        setStats(response.data.stats || response.data);
-        setRecentActivity(response.data.recentActivity || recentActivity);
+        // Set stats from response
+        if (response.data.stats) {
+          setStats(response.data.stats);
+        }
+        
+        // Set site info from response
+        if (response.data.siteInfo) {
+          setSiteInfo(response.data.siteInfo);
+        }
+        
+        // Set recent activity from response
+        if (response.data.recentActivity) {
+          setRecentActivity(response.data.recentActivity);
+        }
       }
     } catch (error) {
       console.error('Error fetching dashboard:', error);
+    } finally {
+      setLoading(false);
     }
   };
+
+  if (loading) {
+    return (
+      <SupervisorLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-gray-600">Loading dashboard...</div>
+        </div>
+      </SupervisorLayout>
+    );
+  }
 
   return (
     <SupervisorLayout>
@@ -58,11 +96,8 @@ const SupervisorDashboard = () => {
               <LogIn className="w-5 h-5 text-green-600" />
             </div>
           </div>
-          <div className="text-3xl font-bold text-gray-900 mb-1">{stats.todayEntry}</div>
-          {/* <div className="flex items-center gap-1 text-xs text-green-600">
-            <TrendingUp className="w-3 h-3" />
-            <span>+12% from yesterday</span>
-          </div> */}
+          <div className="text-3xl font-bold text-gray-900 mb-1">{stats.todayEntry || 0}</div>
+          <div className="text-xs text-gray-500">Entry count today</div>
         </div>
 
         {/* Today Exit */}
@@ -73,7 +108,7 @@ const SupervisorDashboard = () => {
               <ExitIcon className="w-5 h-5 text-blue-600" />
             </div>
           </div>
-          <div className="text-3xl font-bold text-gray-900 mb-1">{stats.todayExit}</div>
+          <div className="text-3xl font-bold text-gray-900 mb-1">{stats.todayExit || 0}</div>
           <div className="text-xs text-gray-500">Normal activity</div>
         </div>
 
@@ -85,8 +120,8 @@ const SupervisorDashboard = () => {
               <Car className="w-5 h-5 text-purple-600" />
             </div>
           </div>
-          <div className="text-3xl font-bold text-gray-900 mb-1">{stats.vehiclesInside}</div>
-          {/* <div className="text-xs text-gray-500">45% Capacity</div> */}
+          <div className="text-3xl font-bold text-gray-900 mb-1">{stats.vehiclesInside || 0}</div>
+          <div className="text-xs text-gray-500">Currently inside</div>
         </div>
 
         {/* Pending Exit */}
@@ -97,8 +132,8 @@ const SupervisorDashboard = () => {
               <Clock className="w-5 h-5 text-orange-600" />
             </div>
           </div>
-          <div className="text-3xl font-bold text-gray-900 mb-1">{stats.pendingExit}</div>
-          <div className="text-xs text-orange-600">Needs attention</div>
+          <div className="text-3xl font-bold text-gray-900 mb-1">{stats.pendingExit || 0}</div>
+          <div className="text-xs text-orange-600">{stats.pendingExit > 0 ? 'Needs attention' : 'All clear'}</div>
         </div>
 
         {/* Denied Entries */}
@@ -109,8 +144,8 @@ const SupervisorDashboard = () => {
               <AlertCircle className="w-5 h-5 text-red-600" />
             </div>
           </div>
-          <div className="text-3xl font-bold text-gray-900 mb-1">{stats.deniedEntries}</div>
-          <div className="text-xs text-red-600">Requires review</div>
+          <div className="text-3xl font-bold text-gray-900 mb-1">{stats.deniedEntries || 0}</div>
+          <div className="text-xs text-red-600">{stats.deniedEntries > 0 ? 'Requires review' : 'No denials'}</div>
         </div>
       </div>
 
@@ -129,52 +164,62 @@ const SupervisorDashboard = () => {
             </button>
           </div>
           
-          <div className="p-5 space-y-4">
-            {recentActivity.map((activity) => (
-              <div
-                key={activity.id}
-                className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition"
-              >
-                <div className="flex items-center gap-4">
-                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                    activity.status === 'allowed'
-                      ? activity.type === 'entry'
-                        ? 'bg-green-100'
-                        : 'bg-blue-100'
-                      : 'bg-red-100'
-                  }`}>
-                    {activity.type === 'entry' ? (
-                      <LogIn className={`w-5 h-5 ${
-                        activity.status === 'allowed' ? 'text-green-600' : 'text-red-600'
-                      }`} />
-                    ) : (
-                      <ExitIcon className="w-5 h-5 text-blue-600" />
-                    )}
-                  </div>
-                  
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-gray-900">{activity.vehicleNumber}</span>
-                      <span className={`px-2 py-0.5 rounded text-xs font-semibold ${
+          <div className="p-5">
+            {recentActivity.length > 0 ? (
+              <div className="space-y-4">
+                {recentActivity.map((activity) => (
+                  <div
+                    key={activity.id}
+                    className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
                         activity.status === 'allowed'
-                          ? 'bg-green-100 text-green-700'
-                          : 'bg-red-100 text-red-700'
+                          ? activity.type === 'entry'
+                            ? 'bg-green-100'
+                            : 'bg-blue-100'
+                          : 'bg-red-100'
                       }`}>
-                        {activity.status === 'allowed' ? 'Allowed' : 'Denied'}
-                      </span>
+                        {activity.type === 'entry' ? (
+                          <LogIn className={`w-5 h-5 ${
+                            activity.status === 'allowed' ? 'text-green-600' : 'text-red-600'
+                          }`} />
+                        ) : (
+                          <ExitIcon className="w-5 h-5 text-blue-600" />
+                        )}
+                      </div>
+                      
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-gray-900">{activity.vehicleNumber}</span>
+                          <span className={`px-2 py-0.5 rounded text-xs font-semibold ${
+                            activity.status === 'allowed'
+                              ? 'bg-green-100 text-green-700'
+                              : 'bg-red-100 text-red-700'
+                          }`}>
+                            {activity.status === 'allowed' ? 'Allowed' : 'Denied'}
+                          </span>
+                        </div>
+                        <div className="text-sm text-gray-600 mt-0.5">{activity.visitor}</div>
+                        <div className="text-xs text-gray-500 mt-0.5">
+                          {activity.gate} • {activity.type === 'entry' ? 'Entry' : 'Exit'}
+                        </div>
+                      </div>
                     </div>
-                    <div className="text-sm text-gray-600 mt-0.5">{activity.visitor}</div>
-                    <div className="text-xs text-gray-500 mt-0.5">
-                      {activity.gate} • {activity.type === 'entry' ? 'Entry' : 'Exit'}
+                    
+                    <div className="text-right">
+                      <div className="text-sm font-semibold text-gray-900">{activity.time}</div>
                     </div>
                   </div>
-                </div>
-                
-                <div className="text-right">
-                  <div className="text-sm font-semibold text-gray-900">{activity.time}</div>
-                </div>
+                ))}
               </div>
-            ))}
+            ) : (
+              <div className="text-center py-12">
+                <Activity className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                <p className="text-gray-500 text-sm">No recent activity</p>
+                <p className="text-gray-400 text-xs mt-1">Activity will appear here as vehicles pass through gates</p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -185,27 +230,31 @@ const SupervisorDashboard = () => {
             <div className="h-32 bg-gradient-to-br from-blue-500 to-purple-600 relative">
               <div className="absolute inset-0 bg-black/10"></div>
               <div className="absolute bottom-4 left-4 right-4">
-                <h3 className="text-white font-bold text-lg">{siteInfo.name}</h3>
+                <h3 className="text-white font-bold text-lg">{siteInfo.name || 'No Site Assigned'}</h3>
               </div>
             </div>
             
             <div className="p-5 space-y-3">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-gray-600">Site Name</span>
-                <span className="font-semibold text-gray-900">{siteInfo.name}</span>
+                <span className="font-semibold text-gray-900">{siteInfo.name || 'N/A'}</span>
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-gray-600">Active Gates</span>
-                <span className="font-semibold text-gray-900">{siteInfo.gates}</span>
+                <span className="font-semibold text-gray-900">{siteInfo.gates || 0}</span>
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-gray-600">Current Shift</span>
-                <span className="font-semibold text-gray-900">{siteInfo.shift}</span>
+                <span className="font-semibold text-gray-900">{siteInfo.shift || 'N/A'}</span>
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-gray-600">Status</span>
-                <span className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-semibold">
-                  {siteInfo.status}
+                <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                  siteInfo.status === 'Active' 
+                    ? 'bg-green-100 text-green-700' 
+                    : 'bg-gray-100 text-gray-700'
+                }`}>
+                  {siteInfo.status || 'N/A'}
                 </span>
               </div>
             </div>
@@ -214,9 +263,7 @@ const SupervisorDashboard = () => {
           {/* Active Vehicles Quick View */}
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
             <h3 className="text-lg font-bold text-gray-900 mb-4">Active Vehicles</h3>
-            <div className="text-sm text-gray-600 mb-3">Inside: {stats.vehiclesInside} vehicles</div>
-            
-           
+            <div className="text-sm text-gray-600 mb-3">Inside: {stats.vehiclesInside || 0} vehicles</div>
             
             <button
               onClick={() => router.push('/supervisor/active-vehicles')}

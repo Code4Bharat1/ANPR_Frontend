@@ -5,7 +5,7 @@ import SupervisorLayout from './SupervisorLayout';
 import axios from 'axios';
 import {
   Search, Filter, Car, Clock, Package, Eye, ArrowRight,
-  Loader2, TrendingUp, MapPin, User, Building2
+  Loader2, TrendingUp, MapPin, User, Building2, X
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -36,12 +36,14 @@ const ActiveVehicles = () => {
       const response = await axios.get(`${API_URL}/api/supervisor/vehicles/active`, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      console.log(response.data);
       
+      // Extract data from response - handle both response.data.data and response.data
       const data = response.data.data || response.data || [];
-      setVehicles(data);
+      setVehicles(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error fetching active vehicles:', error);
-      
+      setVehicles([]);
     } finally {
       setLoading(false);
     }
@@ -53,9 +55,9 @@ const ActiveVehicles = () => {
     // Search filter
     if (searchQuery.trim()) {
       filtered = filtered.filter(v =>
-        v.vehicleNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        v.vendor.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        v.driver.toLowerCase().includes(searchQuery.toLowerCase())
+        (v.vehicleNumber || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (v.vendor || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (v.driver || '').toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
 
@@ -99,6 +101,9 @@ const ActiveVehicles = () => {
     overstay: vehicles.filter(v => v.status === 'overstay').length
   };
 
+  // Calculate capacity percentage (assuming max capacity of 100)
+  const capacityPercentage = Math.min(Math.round((stats.total / 100) * 100), 100);
+
   return (
     <SupervisorLayout>
       <div className="max-w-7xl mx-auto">
@@ -118,7 +123,7 @@ const ActiveVehicles = () => {
               </div>
             </div>
             <div className="text-3xl font-bold text-gray-900">{stats.total}</div>
-            <div className="text-xs text-gray-500 mt-1">45% Capacity</div>
+            <div className="text-xs text-gray-500 mt-1">{capacityPercentage}% Capacity</div>
           </div>
 
           <div className="bg-white rounded-xl p-5 border border-gray-200 shadow-sm">
@@ -140,7 +145,7 @@ const ActiveVehicles = () => {
               </div>
             </div>
             <div className="text-3xl font-bold text-gray-900">{stats.overstay}</div>
-            <div className="text-xs text-orange-600 mt-1">Needs attention</div>
+            <div className="text-xs text-orange-600 mt-1">{stats.overstay > 0 ? 'Needs attention' : 'All clear'}</div>
           </div>
         </div>
 
@@ -153,7 +158,7 @@ const ActiveVehicles = () => {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search vehicle, vendor..."
+                placeholder="Search vehicle, vendor, driver..."
                 className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
               />
             </div>
@@ -186,7 +191,11 @@ const ActiveVehicles = () => {
             <div className="p-12 text-center">
               <Car className="w-16 h-16 text-gray-300 mx-auto mb-4" />
               <h3 className="text-xl font-bold text-gray-900 mb-2">No vehicles found</h3>
-              <p className="text-gray-600">Try adjusting your search or filters</p>
+              <p className="text-gray-600">
+                {vehicles.length === 0 
+                  ? 'No vehicles currently inside the premises'
+                  : 'Try adjusting your search or filters'}
+              </p>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -218,31 +227,31 @@ const ActiveVehicles = () => {
                     <tr key={vehicle._id} className="hover:bg-gray-50 transition">
                       <td className="px-6 py-4">
                         <div>
-                          <div className="font-bold text-gray-900">{vehicle.vehicleNumber}</div>
-                          <div className="text-xs text-gray-500">{vehicle.vehicleType}</div>
+                          <div className="font-bold text-gray-900">{vehicle.vehicleNumber || 'N/A'}</div>
+                          <div className="text-xs text-gray-500">{vehicle.vehicleType || 'Unknown'}</div>
                         </div>
                       </td>
                       <td className="px-6 py-4">
                         <div>
-                          <div className="font-semibold text-gray-900">{vehicle.vendor}</div>
-                          <div className="text-xs text-gray-500">Driver: {vehicle.driver}</div>
+                          <div className="font-semibold text-gray-900">{vehicle.vendor || 'Unknown'}</div>
+                          <div className="text-xs text-gray-500">Driver: {vehicle.driver || 'N/A'}</div>
                         </div>
                       </td>
                       <td className="px-6 py-4">
                         <div>
-                          <div className="font-semibold text-gray-900">{vehicle.entryTime}</div>
-                          <div className="text-xs text-gray-500">{vehicle.entryDate}</div>
+                          <div className="font-semibold text-gray-900">{vehicle.entryTime || 'N/A'}</div>
+                          <div className="text-xs text-gray-500">{vehicle.entryDate || 'Today'}</div>
                         </div>
                       </td>
                       <td className="px-6 py-4">
                         <div className={`font-semibold ${
                           vehicle.status === 'overstay' ? 'text-orange-600' : 'text-gray-900'
                         }`}>
-                          {vehicle.duration}
+                          {vehicle.duration || '0h 0m'}
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        {getStatusBadge(vehicle.status)}
+                        {getStatusBadge(vehicle.status || 'loading')}
                       </td>
                       <td className="px-6 py-4 text-right space-x-2">
                         <button
@@ -273,7 +282,7 @@ const ActiveVehicles = () => {
               <div className="bg-blue-600 px-6 py-4 flex items-center justify-between rounded-t-2xl">
                 <div>
                   <h2 className="text-xl font-bold text-white">Vehicle Details</h2>
-                  <p className="text-blue-100 text-sm">{selectedVehicle.vehicleNumber}</p>
+                  <p className="text-blue-100 text-sm">{selectedVehicle.vehicleNumber || 'N/A'}</p>
                 </div>
                 <button
                   onClick={() => setShowDetailsModal(false)}
@@ -288,11 +297,11 @@ const ActiveVehicles = () => {
                 <div className="grid grid-cols-2 gap-4 mb-6">
                   <div className="bg-gray-50 rounded-lg p-4">
                     <div className="text-xs text-gray-500 mb-1">Vehicle Number</div>
-                    <div className="text-lg font-bold text-gray-900">{selectedVehicle.vehicleNumber}</div>
+                    <div className="text-lg font-bold text-gray-900">{selectedVehicle.vehicleNumber || 'N/A'}</div>
                   </div>
                   <div className="bg-gray-50 rounded-lg p-4">
                     <div className="text-xs text-gray-500 mb-1">Vehicle Type</div>
-                    <div className="text-lg font-bold text-gray-900">{selectedVehicle.vehicleType}</div>
+                    <div className="text-lg font-bold text-gray-900">{selectedVehicle.vehicleType || 'Unknown'}</div>
                   </div>
                 </div>
 
@@ -305,15 +314,15 @@ const ActiveVehicles = () => {
                   <div className="space-y-3 text-sm">
                     <div className="flex items-center justify-between">
                       <span className="text-gray-600">Vendor / Agency</span>
-                      <span className="font-semibold text-gray-900">{selectedVehicle.vendor}</span>
+                      <span className="font-semibold text-gray-900">{selectedVehicle.vendor || 'Unknown'}</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-gray-600">Driver Name</span>
-                      <span className="font-semibold text-gray-900">{selectedVehicle.driver}</span>
+                      <span className="font-semibold text-gray-900">{selectedVehicle.driver || 'N/A'}</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-gray-600">Driver Phone</span>
-                      <span className="font-semibold text-gray-900">{selectedVehicle.driverPhone}</span>
+                      <span className="font-semibold text-gray-900">{selectedVehicle.driverPhone || 'N/A'}</span>
                     </div>
                   </div>
                 </div>
@@ -327,23 +336,25 @@ const ActiveVehicles = () => {
                   <div className="space-y-3 text-sm">
                     <div className="flex items-center justify-between">
                       <span className="text-gray-600">Entry Time</span>
-                      <span className="font-semibold text-gray-900">{selectedVehicle.entryTime} ({selectedVehicle.entryDate})</span>
+                      <span className="font-semibold text-gray-900">
+                        {selectedVehicle.entryTime || 'N/A'} {selectedVehicle.entryDate ? `(${selectedVehicle.entryDate})` : ''}
+                      </span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-gray-600">Duration Inside</span>
                       <span className={`font-semibold ${
                         selectedVehicle.status === 'overstay' ? 'text-orange-600' : 'text-gray-900'
                       }`}>
-                        {selectedVehicle.duration}
+                        {selectedVehicle.duration || '0h 0m'}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-gray-600">Entry Gate</span>
-                      <span className="font-semibold text-gray-900">{selectedVehicle.gate}</span>
+                      <span className="font-semibold text-gray-900">{selectedVehicle.gate || 'N/A'}</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-gray-600">Current Status</span>
-                      {getStatusBadge(selectedVehicle.status)}
+                      {getStatusBadge(selectedVehicle.status || 'loading')}
                     </div>
                   </div>
                 </div>
@@ -357,11 +368,11 @@ const ActiveVehicles = () => {
                   <div className="space-y-3 text-sm">
                     <div className="flex items-center justify-between">
                       <span className="text-gray-600">Material Type</span>
-                      <span className="font-semibold text-gray-900">{selectedVehicle.materialType}</span>
+                      <span className="font-semibold text-gray-900">{selectedVehicle.materialType || 'N/A'}</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-gray-600">Load Status</span>
-                      <span className="font-semibold text-gray-900">{selectedVehicle.loadStatus}</span>
+                      <span className="font-semibold text-gray-900">{selectedVehicle.loadStatus || 'N/A'}</span>
                     </div>
                   </div>
                 </div>
