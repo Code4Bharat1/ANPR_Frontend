@@ -1,11 +1,13 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { 
-  Bell, Menu, Search, Plus, User, Mail, 
+  Search, Plus, User, Mail, 
   Phone, Power, X, Building2, Lock,
   UserCheck, UserX, Check, Users
 } from 'lucide-react';
 import Sidebar from './sidebar';
+import Header from './header';  // ✅ Import Header
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 const UserManagement = () => {
@@ -34,7 +36,6 @@ const UserManagement = () => {
     projectManagerId: '',
   });
 
-
   useEffect(() => {
     fetchUsers();
   }, [activeTab]);
@@ -49,143 +50,93 @@ const UserManagement = () => {
       projectManagerId: '',
     }));
   }, [activeTab]);
-// ========================================
-// 2. FETCH USERS FUNCTION (Replace entire function)
-// ========================================
-const fetchUsers = async () => {
-  try {
-    setLoading(true);
-    const token = localStorage.getItem('accessToken');
 
-    const endpoint = activeTab === 'Project Managers' 
-      ? '/api/client-admin/project-managers'
-      : '/api/client-admin/supervisors';
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('accessToken');
 
-    const response = await fetch(`${API_URL}${endpoint}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
+      const endpoint = activeTab === 'Project Managers' 
+        ? '/api/client-admin/project-managers'
+        : '/api/client-admin/supervisors';
 
-    if (!response.ok) {
-      throw new Error('Failed to fetch users');
+      const response = await fetch(`${API_URL}${endpoint}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      const data = await response.json();
+      
+      if (activeTab === 'Project Managers') {
+        setUsers(data.projectManagers || data || []);
+      } else {
+        setUsers(data.supervisors || data || []);
+      }
+    } catch (err) {
+      console.error('Error fetching users:', err);
+      setUsers([]);
+    } finally {
+      setLoading(false);
     }
+  };
 
-    const data = await response.json();
-    
-    // ✅ FIXED: Always ensure users is an array
-    if (activeTab === 'Project Managers') {
-      const fetchedUsers = data.projectManagers || data.data || data || [];
-      setUsers(Array.isArray(fetchedUsers) ? fetchedUsers : []);
-    } else {
-      const fetchedUsers = data.supervisors || data.data || data || [];
-      setUsers(Array.isArray(fetchedUsers) ? fetchedUsers : []);
+  const fetchSites = async () => {
+    try {
+      setLoadingSites(true);
+      const token = localStorage.getItem('accessToken');
+
+      if (!token) {
+        alert('Please login first');
+        return;
+      }
+
+      const response = await fetch(`${API_URL}/api/client-admin/sites`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      const data = await response.json();
+      setSites(data.data || data.sites || []);
+    } catch (err) {
+      console.error('Error fetching sites:', err);
+    } finally {
+      setLoadingSites(false);
     }
-  } catch (err) {
-    console.error('Error fetching users:', err);
-    setUsers([]); // ✅ Always set to empty array on error
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
-// ========================================
-// 3. FILTERED USERS (Replace this section)
-// ========================================
-const filteredUsers = Array.isArray(users) ? users.filter(user => {
-  const matchesSearch = user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                       user.email?.toLowerCase().includes(searchTerm.toLowerCase());
-  const matchesStatus = filterStatus === 'All' || user.status === filterStatus;
-  return matchesSearch && matchesStatus;
-}) : [];
+  const fetchSupervisors = async () => {
+    try {
+      setLoadingSupervisors(true);
+      const token = localStorage.getItem('accessToken');
 
-// ========================================
-// 4. STATS CALCULATIONS (Replace these lines)
-// ========================================
-const totalPMs = Array.isArray(users) 
-  ? users.filter(u => u.role === 'project_manager').length 
-  : 0;
+      const response = await fetch(`${API_URL}/api/client-admin/supervisors`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
 
-const totalSupervisors = Array.isArray(users) 
-  ? users.filter(u => u.role === 'supervisor').length 
-  : 0;
-
-const activeUsers = Array.isArray(users) 
-  ? users.filter(u => u.status === 'Active').length 
-  : 0;
-
-
-  // ========================================
-// 5. FETCH SITES FUNCTION (Add safety check)
-// ========================================
-const fetchSites = async () => {
-  try {
-    setLoadingSites(true);
-    const token = localStorage.getItem('accessToken');
-
-    if (!token) {
-      alert('Please login first');
-      return;
+      const data = await response.json();
+      setSupervisors(data.supervisors || data || []);
+    } catch (err) {
+      console.error('Error fetching supervisors:', err);
+    } finally {
+      setLoadingSupervisors(false);
     }
+  };
 
-    const response = await fetch(`${API_URL}/api/client-admin/sites`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
+  const fetchProjectManagers = async () => {
+    try {
+      setLoadingPMs(true);
+      const token = localStorage.getItem('accessToken');
 
-    const data = await response.json();
-    const fetchedSites = data.data || data.sites || data || [];
-    setSites(Array.isArray(fetchedSites) ? fetchedSites : []); // ✅ Safety check
-  } catch (err) {
-    console.error('Error fetching sites:', err);
-    setSites([]); // ✅ Set empty array on error
-  } finally {
-    setLoadingSites(false);
-  }
-};
-// ========================================
-// 6. FETCH SUPERVISORS FUNCTION (Add safety check)
-// ========================================
-const fetchSupervisors = async () => {
-  try {
-    setLoadingSupervisors(true);
-    const token = localStorage.getItem('accessToken');
+      const response = await fetch(`${API_URL}/api/client-admin/project-managers`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
 
-    const response = await fetch(`${API_URL}/api/client-admin/supervisors`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-
-    const data = await response.json();
-    const fetchedSupervisors = data.supervisors || data.data || data || [];
-    setSupervisors(Array.isArray(fetchedSupervisors) ? fetchedSupervisors : []); // ✅ Safety check
-  } catch (err) {
-    console.error('Error fetching supervisors:', err);
-    setSupervisors([]); // ✅ Set empty array on error
-  } finally {
-    setLoadingSupervisors(false);
-  }
-};
-
-
-  // ========================================
-// 7. FETCH PROJECT MANAGERS FUNCTION (Add safety check)
-// ========================================
-const fetchProjectManagers = async () => {
-  try {
-    setLoadingPMs(true);
-    const token = localStorage.getItem('accessToken');
-
-    const response = await fetch(`${API_URL}/api/client-admin/project-managers`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-
-    const data = await response.json();
-    const fetchedPMs = data.projectManagers || data.data || data || [];
-    setProjectManagers(Array.isArray(fetchedPMs) ? fetchedPMs : []); // ✅ Safety check
-  } catch (err) {
-    console.error('Error fetching project managers:', err);
-    setProjectManagers([]); // ✅ Set empty array on error
-  } finally {
-    setLoadingPMs(false);
-  }
-};
+      const data = await response.json();
+      setProjectManagers(data.projectManagers || data || []);
+    } catch (err) {
+      console.error('Error fetching project managers:', err);
+    } finally {
+      setLoadingPMs(false);
+    }
+  };
 
   const handleOpenAddModal = () => {
     setShowAdd(true);
@@ -310,244 +261,245 @@ const fetchProjectManagers = async () => {
     }
   };
 
-  
+  const filteredUsers = users.filter(user => {
+    const matchesSearch = user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         user.email?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = filterStatus === 'All' || user.status === filterStatus;
+    return matchesSearch && matchesStatus;
+  });
+
+  const totalPMs = users.filter(u => u.role === 'project_manager').length;
+  const totalSupervisors = users.filter(u => u.role === 'supervisor').length;
+  const activeUsers = users.filter(u => u.status === 'Active').length;
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading users...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
-       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      <div className="lg:ml-72">
-        <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
-          <div className="flex items-center justify-between px-4 sm:px-6 py-4">
-            <div className="flex items-center gap-3 sm:gap-4">
-              <button 
-                onClick={() => setSidebarOpen(true)}
-                className="lg:hidden p-2 hover:bg-gray-100 rounded-lg transition"
-              >
-                <Menu className="w-6 h-6 text-gray-700" />
-              </button>
-              <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Users</h1>
-            </div>
-            <div className="flex items-center gap-2 sm:gap-4">
-              <button className="p-2 hover:bg-gray-100 rounded-lg transition relative">
-                <Bell className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-              </button>
-              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-semibold text-sm">
-                AD
-              </div>
-            </div>
-          </div>
-        </header>
+      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      
+      {/* ✅ Header Component with Dropdown */}
+      <Header title="User Management" onMenuClick={() => setSidebarOpen(true)} />
 
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
-            <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100">
-              <div className="text-xs sm:text-sm text-gray-600 mb-1">Total Project Managers</div>
-              <div className="text-2xl sm:text-3xl font-bold text-gray-900">{totalPMs}</div>
-            </div>
-            <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100">
-              <div className="text-xs sm:text-sm text-gray-600 mb-1">Total Supervisors</div>
-              <div className="text-2xl sm:text-3xl font-bold text-gray-900">{totalSupervisors}</div>
-            </div>
-            <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100 sm:col-span-2 lg:col-span-1">
-              <div className="text-xs sm:text-sm text-gray-600 mb-1">Active Users</div>
-              <div className="text-2xl sm:text-3xl font-bold text-gray-900">{activeUsers}</div>
-            </div>
+      {/* Main Content */}
+      <main className="lg:ml-72 max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+          <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100">
+            <div className="text-xs sm:text-sm text-gray-600 mb-1">Total Project Managers</div>
+            <div className="text-2xl sm:text-3xl font-bold text-gray-900">{totalPMs}</div>
           </div>
-
-          <div className="mb-6 border-b border-gray-200 overflow-x-auto">
-            <div className="flex gap-4 sm:gap-6 min-w-max">
-              <button
-                onClick={() => setActiveTab('Project Managers')}
-                className={`pb-3 px-1 font-semibold transition whitespace-nowrap ${
-                  activeTab === 'Project Managers'
-                    ? 'text-blue-600 border-b-2 border-blue-600'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                Project Managers
-              </button>
-              <button
-                onClick={() => setActiveTab('Supervisors')}
-                className={`pb-3 px-1 font-semibold transition whitespace-nowrap ${
-                  activeTab === 'Supervisors'
-                    ? 'text-blue-600 border-b-2 border-blue-600'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                Supervisors
-              </button>
-            </div>
+          <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100">
+            <div className="text-xs sm:text-sm text-gray-600 mb-1">Total Supervisors</div>
+            <div className="text-2xl sm:text-3xl font-bold text-gray-900">{totalSupervisors}</div>
           </div>
+          <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100 sm:col-span-2 lg:col-span-1">
+            <div className="text-xs sm:text-sm text-gray-600 mb-1">Active Users</div>
+            <div className="text-2xl sm:text-3xl font-bold text-gray-900">{activeUsers}</div>
+          </div>
+        </div>
 
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-6">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <input
-                type="text"
-                placeholder="Search users..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm sm:text-base"
-              />
-            </div>
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm sm:text-base"
+        <div className="mb-6 border-b border-gray-200 overflow-x-auto">
+          <div className="flex gap-4 sm:gap-6 min-w-max">
+            <button
+              onClick={() => setActiveTab('Project Managers')}
+              className={`pb-3 px-1 font-semibold transition whitespace-nowrap ${
+                activeTab === 'Project Managers'
+                  ? 'text-blue-600 border-b-2 border-blue-600'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
             >
-              <option value="All">All Status</option>
-              <option value="Active">Active</option>
-              <option value="Inactive">Inactive</option>
-            </select>
-            <button 
-              onClick={handleOpenAddModal}
-              className="px-4 sm:px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold flex items-center justify-center gap-2 text-sm sm:text-base whitespace-nowrap"
+              Project Managers
+            </button>
+            <button
+              onClick={() => setActiveTab('Supervisors')}
+              className={`pb-3 px-1 font-semibold transition whitespace-nowrap ${
+                activeTab === 'Supervisors'
+                  ? 'text-blue-600 border-b-2 border-blue-600'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
             >
-              <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
-              Add User
+              Supervisors
             </button>
           </div>
+        </div>
 
-          <div className="hidden md:block bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-200">
-                  <tr>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      Name
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      Role
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      Assigned Sites
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      Actions
-                    </th>
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-6">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <input
+              type="text"
+              placeholder="Search users..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm sm:text-base"
+            />
+          </div>
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm sm:text-base"
+          >
+            <option value="All">All Status</option>
+            <option value="Active">Active</option>
+            <option value="Inactive">Inactive</option>
+          </select>
+          <button 
+            onClick={handleOpenAddModal}
+            className="px-4 sm:px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold flex items-center justify-center gap-2 text-sm sm:text-base whitespace-nowrap"
+          >
+            <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
+            Add User
+          </button>
+        </div>
+
+        <div className="hidden md:block bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Name
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Role
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Assigned Sites
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {filteredUsers.map((user) => (
+                  <tr key={user._id || user.id} className="hover:bg-gray-50 transition">
+                    <td className="px-6 py-4">
+                      <div>
+                        <div className="font-semibold text-gray-900">{user.name}</div>
+                        <div className="text-sm text-gray-600">{user.email}</div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">
+                        {user.role}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-900">
+                      {user.assignedSites?.length > 0 
+                        ? `${user.assignedSites.length} sites`
+                        : user.siteId?.name || '-'}
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
+                        user.status === 'Active'
+                          ? 'bg-green-100 text-green-700'
+                          : 'bg-gray-100 text-gray-700'
+                      }`}>
+                        {user.status || 'Active'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <button 
+                        onClick={() => handleToggleStatus(user._id || user.id, user.status || 'Active')}
+                        className={`p-2 hover:bg-gray-100 rounded-lg transition ${
+                          user.status === 'Active' ? 'text-red-600' : 'text-green-600'
+                        }`}
+                        title={user.status === 'Active' ? 'Disable' : 'Enable'}
+                      >
+                        <Power className="w-4 h-4" />
+                      </button>
+                    </td>
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {filteredUsers.map((user) => (
-                    <tr key={user._id || user.id} className="hover:bg-gray-50 transition">
-                      <td className="px-6 py-4">
-                        <div>
-                          <div className="font-semibold text-gray-900">{user.name}</div>
-                          <div className="text-sm text-gray-600">{user.email}</div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">
-                          {user.role}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-900">
-                        {user.assignedSites?.length > 0 
-                          ? `${user.assignedSites.length} sites`
-                          : user.siteId?.name || '-'}
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
-                          user.status === 'Active'
-                            ? 'bg-green-100 text-green-700'
-                            : 'bg-gray-100 text-gray-700'
-                        }`}>
-                          {user.status || 'Active'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <button 
-                          onClick={() => handleToggleStatus(user._id || user.id, user.status || 'Active')}
-                          className={`p-2 hover:bg-gray-100 rounded-lg transition ${
-                            user.status === 'Active' ? 'text-red-600' : 'text-green-600'
-                          }`}
-                          title={user.status === 'Active' ? 'Disable' : 'Enable'}
-                        >
-                          <Power className="w-4 h-4" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {filteredUsers.length === 0 && (
-              <div className="text-center py-12">
-                <User className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                <p className="text-gray-500">No users found</p>
-              </div>
-            )}
+                ))}
+              </tbody>
+            </table>
           </div>
 
-          <div className="md:hidden space-y-4">
-            {filteredUsers.map((user) => (
-              <div key={user._id || user.id} className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-gray-900">{user.name}</h3>
-                    <p className="text-sm text-gray-600">{user.email}</p>
-                  </div>
-                  <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${
-                    user.status === 'Active'
-                      ? 'bg-green-100 text-green-700'
-                      : 'bg-gray-100 text-gray-700'
-                  }`}>
-                    {user.status || 'Active'}
+          {filteredUsers.length === 0 && (
+            <div className="text-center py-12">
+              <User className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+              <p className="text-gray-500">No users found</p>
+            </div>
+          )}
+        </div>
+
+        <div className="md:hidden space-y-4">
+          {filteredUsers.map((user) => (
+            <div key={user._id || user.id} className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex-1">
+                  <h3 className="font-semibold text-gray-900">{user.name}</h3>
+                  <p className="text-sm text-gray-600">{user.email}</p>
+                </div>
+                <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${
+                  user.status === 'Active'
+                    ? 'bg-green-100 text-green-700'
+                    : 'bg-gray-100 text-gray-700'
+                }`}>
+                  {user.status || 'Active'}
+                </span>
+              </div>
+              
+              <div className="space-y-2 mb-3">
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">
+                    {user.role}
                   </span>
                 </div>
-                
-                <div className="space-y-2 mb-3">
-                  <div className="flex items-center gap-2 text-sm">
-                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">
-                      {user.role}
-                    </span>
-                  </div>
-                  <div className="text-sm text-gray-600">
-                    <Building2 className="w-4 h-4 inline mr-1" />
-                    {user.assignedSites?.length > 0 
-                      ? `${user.assignedSites.length} sites`
-                      : user.siteId?.name || '-'}
-                  </div>
-                </div>
-
-                <div className="flex gap-2">
-                  <button 
-                    onClick={() => handleToggleStatus(user._id || user.id, user.status || 'Active')}
-                    className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm transition ${
-                      user.status === 'Active'
-                        ? 'bg-red-50 text-red-600 hover:bg-red-100'
-                        : 'bg-green-50 text-green-600 hover:bg-green-100'
-                    }`}
-                  >
-                    {user.status === 'Active' ? (
-                      <>
-                        <UserX className="w-4 h-4" />
-                        Disable
-                      </>
-                    ) : (
-                      <>
-                        <UserCheck className="w-4 h-4" />
-                        Enable
-                      </>
-                    )}
-                  </button>
+                <div className="text-sm text-gray-600">
+                  <Building2 className="w-4 h-4 inline mr-1" />
+                  {user.assignedSites?.length > 0 
+                    ? `${user.assignedSites.length} sites`
+                    : user.siteId?.name || '-'}
                 </div>
               </div>
-            ))}
 
-            {filteredUsers.length === 0 && (
-              <div className="bg-white rounded-xl p-12 text-center">
-                <User className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                <p className="text-gray-500">No users found</p>
+              <div className="flex gap-2">
+                <button 
+                  onClick={() => handleToggleStatus(user._id || user.id, user.status || 'Active')}
+                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm transition ${
+                    user.status === 'Active'
+                      ? 'bg-red-50 text-red-600 hover:bg-red-100'
+                      : 'bg-green-50 text-green-600 hover:bg-green-100'
+                  }`}
+                >
+                  {user.status === 'Active' ? (
+                    <>
+                      <UserX className="w-4 h-4" />
+                      Disable
+                    </>
+                  ) : (
+                    <>
+                      <UserCheck className="w-4 h-4" />
+                      Enable
+                    </>
+                  )}
+                </button>
               </div>
-            )}
-          </div>
-        </main>
-      </div>
+            </div>
+          ))}
+
+          {filteredUsers.length === 0 && (
+            <div className="bg-white rounded-xl p-12 text-center">
+              <User className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+              <p className="text-gray-500">No users found</p>
+            </div>
+          )}
+        </div>
+      </main>
 
       {showAdd && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">

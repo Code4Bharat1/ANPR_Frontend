@@ -82,10 +82,10 @@ const Sidebar = ({ isOpen, onClose }) => {
           </div>
         </nav>
 
-        <div className="p-4 border-t border-gray-200">
+        <div className="p-6 border-t border-gray-200">
           <button
             onClick={() => setShowLogoutModal(true)}
-            className="w-full flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg transition font-medium"
+            className="w-full flex items-center gap-3 px-4 py-70 text-red-600 hover:bg-red-50 rounded-lg transition font-medium"
           >
             <LogOut className="w-5 h-5" />
             <span>Logout</span>

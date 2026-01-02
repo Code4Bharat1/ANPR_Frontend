@@ -1,8 +1,8 @@
 "use client";
 import { useState, useEffect } from 'react';
 import {
-  Bell, Menu, MapPin, Users, Camera, Activity,
-  ArrowUpRight, ArrowDownRight, AlertCircle, Clock,
+  MapPin, Users, Camera, Activity,
+  ArrowUpRight, ArrowDownRight, AlertCircle,
   TrendingUp, Database, Wifi, WifiOff
 } from 'lucide-react';
 import axios from 'axios';
@@ -16,8 +16,7 @@ const DashboardCard = ({ icon: Icon, value, label, bgColor, iconColor, trend, su
         <Icon className={`w-6 h-6 ${iconColor}`} />
       </div>
       {trend !== undefined && (
-        <div className={`flex items-center gap-1 text-sm font-semibold ${trend >= 0 ? 'text-green-600' : 'text-red-600'
-          }`}>
+        <div className={`flex items-center gap-1 text-sm font-semibold ${trend >= 0 ? 'text-green-600' : 'text-red-600'}`}>
           {trend >= 0 ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
           {Math.abs(trend)}%
         </div>
@@ -60,10 +59,8 @@ const AdminDashboard = () => {
       );
       setDashboardData(response.data);
       console.log(response.data);
-
     } catch (err) {
       console.error('Error:', err);
-
     } finally {
       setLoading(false);
     }
@@ -72,28 +69,13 @@ const AdminDashboard = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600 font-medium">Loading dashboard...</p>
+        </div>
       </div>
     );
   }
-  // const formatDateTime = (dateString) => {
-  //   const date = new Date(dateString);
-  //   return date.toLocaleString('en-IN', {
-  //     dateStyle: 'medium',
-  //     timeStyle: 'short'
-  //   });
-  // };
-
-  // if (loading) {
-  //   return (
-  //     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-  //       <div className="text-center">
-  //         <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-  //         <p className="text-gray-600 font-medium">Loading dashboard...</p>
-  //       </div>
-  //     </div>
-  //   );
-  // }
 
   const deviceActivityRate = dashboardData.totalDevices > 0
     ? ((dashboardData.activeDevices / dashboardData.totalDevices) * 100).toFixed(1)
@@ -102,28 +84,17 @@ const AdminDashboard = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      {/* Header */}
-      <Header/>
+      
+      {/* ✅ Header Component with proper props */}
+      <Header title="Dashboard" onMenuClick={() => setSidebarOpen(true)} />
 
-      <main className="max-w-7xl mx-auto px-6 ">
-        {/* Last Updated */}
-        {/* <div className="mb-6 flex items-center justify-between">
-          <div className="flex items-center gap-2 text-sm text-gray-600">
-            <Clock className="w-4 h-4" />
-            <span>Last updated: {formatDateTime(dashboardData.lastUpdated)}</span>
-          </div>
-          <button 
-            onClick={fetchDashboardData}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm"
-          >
-            Refresh Data
-          </button>
-        </div> */}
-
+      {/* ✅ Main Content with proper margin and padding */}
+      <main className="lg:ml-72 max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+        
         {/* Site & User Overview */}
         <div className="mb-8">
           <h2 className="text-xl font-bold text-gray-900 mb-4">Infrastructure Overview</h2>
-          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
             <DashboardCard
               icon={MapPin}
               value={dashboardData.totalSites}
@@ -156,13 +127,12 @@ const AdminDashboard = () => {
               iconColor="text-purple-600"
             />
           </div>
-
         </div>
 
         {/* Device Status */}
         <div className="mb-8">
           <h2 className="text-xl font-bold text-gray-900 mb-4">Device Status</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-gray-900">Active Devices</h3>
@@ -182,7 +152,6 @@ const AdminDashboard = () => {
                     Operational
                   </span>
                 </div>
-                
               </div>
             </div>
 
@@ -205,23 +174,23 @@ const AdminDashboard = () => {
                   </span>
                 </div>
               </div>
-              
             </div>
+
             <DashboardCard
-                icon={Camera}
-                value={dashboardData.totalDevices}
-                label="Total Devices"
-                bgColor="bg-orange-50"
-                iconColor="text-orange-600"
-                subtitle="ANPR cameras"
-              />
+              icon={Camera}
+              value={dashboardData.totalDevices}
+              label="Total Devices"
+              bgColor="bg-orange-50"
+              iconColor="text-orange-600"
+              subtitle="ANPR cameras"
+            />
           </div>
         </div>
 
         {/* Today's Activity */}
         <div className="mb-8">
           <h2 className="text-xl font-bold text-gray-900 mb-4">Today's Activity</h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             <DashboardCard
               icon={ArrowUpRight}
               value={dashboardData.todayEntries}
@@ -250,7 +219,7 @@ const AdminDashboard = () => {
         </div>
 
         {/* Recent Activity & Quick Stats */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
           <div className="lg:col-span-2">
             <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
               <div className="flex items-center justify-between mb-6">
@@ -262,10 +231,10 @@ const AdminDashboard = () => {
                 <div className="space-y-3">
                   {dashboardData.recentActivity.map((activity, index) => (
                     <div key={index} className="flex items-start gap-3 py-3 border-b border-gray-100 last:border-0">
-                      <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                      <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
                         <Activity className="w-5 h-5 text-blue-600" />
                       </div>
-                      <div className="flex-1">
+                      <div className="flex-1 min-w-0">
                         <div className="font-semibold text-gray-900">{activity.title}</div>
                         <div className="text-sm text-gray-600">{activity.description}</div>
                         <div className="text-xs text-gray-500 mt-1">{activity.time}</div>

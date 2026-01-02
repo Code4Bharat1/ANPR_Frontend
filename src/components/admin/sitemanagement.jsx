@@ -2,10 +2,11 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { 
-  Bell, Menu, Search, Plus, MapPin, Edit, Trash2, Eye, X,
+  Search, Plus, MapPin, Edit, Trash2, Eye, X,
   Building, User, AlertCircle, Loader
 } from 'lucide-react';
 import Sidebar from './sidebar';
+import Header from './header';  // ✅ Import Header
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
@@ -552,8 +553,6 @@ const SiteManagement = () => {
         return;
       }
 
-      // console.log('🔄 Fetching sites from:', `${API_URL}/api/client-admin/sites`);
-
       const response = await axios.get(`${API_URL}/api/client-admin/sites`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -701,133 +700,110 @@ const SiteManagement = () => {
     <div className="min-h-screen bg-gray-50">
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-      <div className="lg:ml-72">
-        {/* Header */}
-        <header className="bg-white border-b-2 border-gray-200 sticky top-0 z-30 shadow-sm">
-          <div className="flex items-center justify-between px-6 py-4">
-            <div className="flex items-center gap-4">
+      {/* ✅ Header Component with Dropdown Options */}
+      <Header title="Site Management" onMenuClick={() => setSidebarOpen(true)} />
+
+      {/* Main Content */}
+      <main className="lg:ml-72 max-w-7xl mx-auto px-6 py-8">
+        {/* Stats */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-5 border-2 border-blue-200 shadow-sm">
+            <div className="text-3xl font-black text-blue-700">{sites.length}</div>
+            <div className="text-sm text-blue-700 font-semibold mt-1">Total Sites</div>
+          </div>
+          <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-5 border-2 border-green-200 shadow-sm">
+            <div className="text-3xl font-black text-green-700">
+              {sites.filter(s => s.status === 'Active').length}
+            </div>
+            <div className="text-sm text-green-700 font-semibold mt-1">Active</div>
+          </div>
+          <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl p-5 border-2 border-yellow-200 shadow-sm">
+            <div className="text-3xl font-black text-yellow-700">
+              {sites.filter(s => s.status === 'Complelted').length}
+            </div>
+            <div className="text-sm text-yellow-700 font-semibold mt-1">Complelted</div>
+          </div>
+          <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-5 border-2 border-gray-200 shadow-sm">
+            <div className="text-3xl font-black text-gray-700">
+              {sites.filter(s => s.status === 'Inactive').length}
+            </div>
+            <div className="text-sm text-gray-700 font-semibold mt-1">Inactive</div>
+          </div>
+        </div>
+
+        {/* Search and Filters */}
+        <div className="flex flex-col md:flex-row gap-4 mb-6">
+          <div className="flex-1 relative">
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <input
+              type="text"
+              placeholder="Search sites by name, location, or contact..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-12 pr-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none font-medium"
+            />
+          </div>
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            className="px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none font-medium"
+          >
+            <option value="All">All Status</option>
+            <option value="Active">Active</option>
+            <option value="Complelted">Complelted</option>
+            <option value="Inactive">Inactive</option>
+          </select>
+          <button 
+            onClick={() => setShowAddModal(true)}
+            className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition font-bold flex items-center gap-2 shadow-lg whitespace-nowrap"
+          >
+            <Plus className="w-5 h-5" />
+            Add Site
+          </button>
+        </div>
+
+        {/* Sites Grid */}
+        {filteredSites.length === 0 ? (
+          <div className="text-center py-16 bg-white rounded-2xl border-2 border-gray-200">
+            <MapPin className="w-20 h-20 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-xl font-bold text-gray-900 mb-2">
+              {sites.length === 0 ? 'No sites yet' : 'No sites found'}
+            </h3>
+            <p className="text-gray-500 mb-6">
+              {searchTerm || filterStatus !== 'All' 
+                ? 'Try adjusting your search or filters' 
+                : 'Get started by adding your first site'}
+            </p>
+            {sites.length === 0 && (
               <button 
-                onClick={() => setSidebarOpen(true)}
-                className="lg:hidden p-2 hover:bg-gray-100 rounded-lg transition"
+                onClick={() => setShowAddModal(true)}
+                className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition font-bold inline-flex items-center gap-2"
               >
-                <Menu className="w-6 h-6 text-gray-700" />
+                <Plus className="w-5 h-5" />
+                Add Your First Site
               </button>
-              <h1 className="text-2xl font-black text-gray-900">Site Management</h1>
-            </div>
-            <div className="flex items-center gap-4">
-              <button className="p-2 hover:bg-gray-100 rounded-lg transition relative">
-                <Bell className="w-6 h-6 text-gray-600" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-              </button>
-              <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-blue-700 rounded-full flex items-center justify-center text-white font-bold shadow-lg">
-                AD
-              </div>
-            </div>
+            )}
           </div>
-        </header>
-
-        {/* Main Content */}
-        <main className="max-w-7xl mx-auto px-6 py-8">
-          {/* Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-5 border-2 border-blue-200 shadow-sm">
-              <div className="text-3xl font-black text-blue-700">{sites.length}</div>
-              <div className="text-sm text-blue-700 font-semibold mt-1">Total Sites</div>
-            </div>
-            <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-5 border-2 border-green-200 shadow-sm">
-              <div className="text-3xl font-black text-green-700">
-                {sites.filter(s => s.status === 'Active').length}
-              </div>
-              <div className="text-sm text-green-700 font-semibold mt-1">Active</div>
-            </div>
-            <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl p-5 border-2 border-yellow-200 shadow-sm">
-              <div className="text-3xl font-black text-yellow-700">
-                {sites.filter(s => s.status === 'Complelted').length}
-              </div>
-              <div className="text-sm text-yellow-700 font-semibold mt-1">Complelted</div>
-            </div>
-            <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-5 border-2 border-gray-200 shadow-sm">
-              <div className="text-3xl font-black text-gray-700">
-                {sites.filter(s => s.status === 'Inactive').length}
-              </div>
-              <div className="text-sm text-gray-700 font-semibold mt-1">Inactive</div>
-            </div>
-          </div>
-
-          {/* Search and Filters */}
-          <div className="flex flex-col md:flex-row gap-4 mb-6">
-            <div className="flex-1 relative">
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <input
-                type="text"
-                placeholder="Search sites by name, location, or contact..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none font-medium"
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredSites.map((site) => (
+              <SiteCard
+                key={site._id}
+                site={site}
+                onEdit={(site) => {
+                  setSelectedSite(site);
+                  setShowEditModal(true);
+                }}
+                onView={handleViewSite}
+                onDelete={(site) => {
+                  setSelectedSite(site);
+                  setShowDeleteModal(true);
+                }}
               />
-            </div>
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none font-medium"
-            >
-              <option value="All">All Status</option>
-              <option value="Active">Active</option>
-              <option value="Complelted">Complelted</option>
-              <option value="Inactive">Inactive</option>
-            </select>
-            <button 
-              onClick={() => setShowAddModal(true)}
-              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition font-bold flex items-center gap-2 shadow-lg whitespace-nowrap"
-            >
-              <Plus className="w-5 h-5" />
-              Add Site
-            </button>
+            ))}
           </div>
-
-          {/* Sites Grid */}
-          {filteredSites.length === 0 ? (
-            <div className="text-center py-16 bg-white rounded-2xl border-2 border-gray-200">
-              <MapPin className="w-20 h-20 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-xl font-bold text-gray-900 mb-2">
-                {sites.length === 0 ? 'No sites yet' : 'No sites found'}
-              </h3>
-              <p className="text-gray-500 mb-6">
-                {searchTerm || filterStatus !== 'All' 
-                  ? 'Try adjusting your search or filters' 
-                  : 'Get started by adding your first site'}
-              </p>
-              {sites.length === 0 && (
-                <button 
-                  onClick={() => setShowAddModal(true)}
-                  className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition font-bold inline-flex items-center gap-2"
-                >
-                  <Plus className="w-5 h-5" />
-                  Add Your First Site
-                </button>
-              )}
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredSites.map((site) => (
-                <SiteCard
-                  key={site._id}
-                  site={site}
-                  onEdit={(site) => {
-                    setSelectedSite(site);
-                    setShowEditModal(true);
-                  }}
-                  onView={handleViewSite}
-                  onDelete={(site) => {
-                    setSelectedSite(site);
-                    setShowDeleteModal(true);
-                  }}
-                />
-              ))}
-            </div>
-          )}
-        </main>
-      </div>
+        )}
+      </main>
 
       {/* Modals */}
       <SiteModal 
