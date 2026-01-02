@@ -1,10 +1,10 @@
 "use client";
 import { useState, useEffect } from 'react';
+import axios from 'axios';
 import { 
   Bell, Menu, Search, Plus, User, Eye, Edit, MapPin, X, AlertCircle, CheckCircle
 } from 'lucide-react';
 import Sidebar from './sidebar';
-
 
 const SupervisorManagement = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -24,6 +24,31 @@ const SupervisorManagement = () => {
   const [formErrors, setFormErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
 
+  // Create axios instance with base configuration
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+  
+  const axiosInstance = axios.create({
+    baseURL: API_URL,
+    timeout: 10000,
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  });
+
+  // Add request interceptor to include token automatically
+  axiosInstance.interceptors.request.use(
+    (config) => {
+      const token = localStorage.getItem('accessToken');
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+      return config;
+    },
+    (error) => {
+      return Promise.reject(error);
+    }
+  );
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -31,28 +56,17 @@ const SupervisorManagement = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('accessToken');
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
-      const supervisorsRes = await fetch(`${API_URL}/api/project/supervisors`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
-      if (supervisorsRes.ok) {
-        const data = await supervisorsRes.json();
-        setSupervisors(data);
-      }
+      // Fetch supervisors
+      const supervisorsRes = await axiosInstance.get('/api/project/supervisors');
+      setSupervisors(supervisorsRes.data);
 
-      const sitesRes = await fetch(`${API_URL}/api/project/sites`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
-      if (sitesRes.ok) {
-        const sitesData = await sitesRes.json();
-        setSites(sitesData);
-      }
+
+      // Fetch sites
+      const sitesRes = await axiosInstance.get('/api/project/sites');
+      setSites(sitesRes.data);
     } catch (err) {
-      showAlert('error', 'Failed to load data');
+      showAlert('error', err.response?.data?.message || 'Failed to load data');
     } finally {
       setLoading(false);
     }
@@ -83,30 +97,15 @@ const SupervisorManagement = () => {
     
     try {
       setSubmitting(true);
-      const token = localStorage.getItem('accessToken');
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
-      const response = await fetch(`${API_URL}/api/project/supervisors`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify(formData)
-      });
-
-      if (response.ok) {
-        const newSupervisor = await response.json();
-        setSupervisors([...supervisors, newSupervisor]);
-        showAlert('success', 'Supervisor added successfully!');
-        setShowAddModal(false);
-        resetForm();
-      } else {
-        const error = await response.json();
-        showAlert('error', error.message || 'Failed to add supervisor');
-      }
+      const response = await axiosInstance.post('/api/project/supervisors', formData);
+      
+      setSupervisors([...supervisors, response.data]);
+      showAlert('success', 'Supervisor added successfully!');
+      setShowAddModal(false);
+      resetForm();
     } catch (err) {
-      showAlert('error', 'Network error. Please try again.');
+      showAlert('error', err.response?.data?.message || 'Failed to add supervisor');
     } finally {
       setSubmitting(false);
     }
@@ -123,22 +122,14 @@ const SupervisorManagement = () => {
 
   const handleToggleStatus = async (id, currentStatus) => {
     try {
-      const token = localStorage.getItem('accessToken');
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-
-      const response = await fetch(`${API_URL}/api/project/supervisors/${id}/enable-disable`, {
-        method: 'PATCH',
-        headers: { Authorization: `Bearer ${token}` }
-      });
-
-      if (response.ok) {
-        setSupervisors(supervisors.map(sup => 
-          sup._id === id ? { ...sup, isActive: !currentStatus } : sup
-        ));
-        showAlert('success', 'Status updated successfully!');
-      }
+      await axiosInstance.patch(`/api/project/supervisors/${id}/enable-disable`);
+      
+      setSupervisors(supervisors.map(sup => 
+        sup._id === id ? { ...sup, isActive: !currentStatus } : sup
+      ));
+      showAlert('success', 'Status updated successfully!');
     } catch (err) {
-      showAlert('error', 'Failed to update status');
+      showAlert('error', err.response?.data?.message || 'Failed to update status');
     }
   };
 
