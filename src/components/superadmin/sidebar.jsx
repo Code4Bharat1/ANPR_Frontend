@@ -105,9 +105,9 @@ const Sidebar = ({ isOpen, onClose }) => {
             <LogOut className="w-5 h-5" />
             Logout
           </button>
-          <div className="mt-4 text-center text-xs text-gray-400">
+          {/* <div className="mt-4 text-center text-xs text-gray-400">
             v2.4.1 Super Admin Panel
-          </div>
+          </div> */}
         </div>
       </aside>
     </>
