@@ -2,9 +2,10 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { 
-  Bell, Menu, Search, MapPin, Users, Activity, Eye
+  Search, MapPin, Eye
 } from 'lucide-react';
 import Sidebar from './sidebar';
+import Header from './header';  // ✅ Import Header
 
 const SiteCard = ({ site }) => (
   <div className="bg-white rounded-lg p-5 border border-gray-200 hover:shadow-md transition">
@@ -74,9 +75,8 @@ const PMSites = () => {
 
       setSites(response.data);
       console.log(response.data);
-      
     } catch (err) {
-     
+      console.error('Error fetching sites:', err);
     } finally {
       setLoading(false);
     }
@@ -90,7 +90,10 @@ const PMSites = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="w-16 h-16 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600 font-medium">Loading sites...</p>
+        </div>
       </div>
     );
   }
@@ -99,56 +102,44 @@ const PMSites = () => {
     <div className="min-h-screen bg-gray-50">
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-      <div className="lg:ml-72">
-        <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
-          <div className="flex items-center justify-between px-6 py-4">
-            <div className="flex items-center gap-4">
-              <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-2 hover:bg-gray-100 rounded-lg">
-                <Menu className="w-6 h-6" />
-              </button>
-              <h1 className="text-2xl font-bold text-gray-900">My Sites</h1>
-            </div>
-            <div className="flex items-center gap-4">
-              <button className="p-2 hover:bg-gray-100 rounded-lg relative">
-                <Bell className="w-6 h-6 text-gray-600" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-              </button>
-              <div className="w-10 h-10 bg-indigo-600 rounded-full flex items-center justify-center text-white font-semibold">
-                AM
-              </div>
-            </div>
-          </div>
-        </header>
+      {/* ✅ Header Component with Dropdown */}
+      <Header title="My Sites" onMenuClick={() => setSidebarOpen(true)} />
 
-        <main className="max-w-7xl mx-auto px-6 py-8">
-          
-          <div className="mb-6">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <input
-                type="text"
-                placeholder="Search sites by name or location..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 outline-none"
-              />
-            </div>
+      {/* ✅ Main Content with proper spacing */}
+      <main className="lg:ml-72 max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+        
+        {/* Search Bar */}
+        <div className="mb-6">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <input
+              type="text"
+              placeholder="Search sites by name or location..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent outline-none"
+            />
           </div>
+        </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredSites.map((site) => (
-              <SiteCard key={site.id} site={site} />
-            ))}
+        {/* Sites Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredSites.map((site) => (
+            <SiteCard key={site.id} site={site} />
+          ))}
+        </div>
+
+        {/* Empty State */}
+        {filteredSites.length === 0 && (
+          <div className="bg-white rounded-xl p-12 text-center">
+            <MapPin className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <p className="text-gray-500 font-medium">No sites found</p>
+            <p className="text-sm text-gray-400 mt-1">
+              {searchTerm ? 'Try adjusting your search terms' : 'Sites will appear here when assigned'}
+            </p>
           </div>
-
-          {filteredSites.length === 0 && (
-            <div className="text-center py-12">
-              <MapPin className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-500">No sites found</p>
-            </div>
-          )}
-        </main>
-      </div>
+        )}
+      </main>
     </div>
   );
 };
