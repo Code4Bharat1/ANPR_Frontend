@@ -60,7 +60,7 @@ const TripTrendChart = ({ data }) => {
   
   return (
     <div className="bg-white rounded-xl p-4 md:p-6 shadow-sm border border-gray-100">
-      <h3 className="text-base md:text-lg font-bold text-gray-900 mb-4 md:mb-6">Trip Trends (Last 7 Days)</h3>
+      <h3 className="text-base md:text-lg font-bold text-gray-900 mb-4 md:mb-6">Trip Trends </h3>
       <div className="flex items-end justify-between gap-1 md:gap-2 h-40 md:h-48">
         {data.map((item, index) => (
           <div key={index} className="flex-1 flex flex-col items-center">
