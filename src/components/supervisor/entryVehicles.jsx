@@ -1,20 +1,72 @@
 // components/supervisor/entryVehicles.jsx
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import SupervisorLayout from './SupervisorLayout';
 import axios from 'axios';
 import {
   Camera, Upload, X, CheckCircle, AlertCircle, Loader2,
-  Car, Package, FileText, Video, ArrowRight, ArrowLeft
+  Car, Package, FileText, Video, ArrowRight, ArrowLeft, Truck, RotateCw
 } from 'lucide-react';
 
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+
+
+// Vehicle Types
+const VEHICLE_TYPES = [
+  // Heavy Commercial Vehicles
+  { value: "TRUCK_12_WHEEL", label: "Truck 12 Wheel" },
+  { value: "TRUCK_10_WHEEL", label: "Truck 10 Wheel" },
+  { value: "TRUCK_6_WHEEL", label: "Truck 6 Wheel" },
+  { value: "TRAILER", label: "Trailer" },
+  { value: "DUMPER", label: "Dumper" },
+  { value: "TIPPER", label: "Tipper" },
+  
+  // Medium / Light Commercial
+  { value: "PICKUP", label: "Pickup" },
+  { value: "LCV", label: "LCV" },
+  { value: "VAN", label: "Van" },
+  
+  // Special Purpose
+  { value: "TANKER", label: "Tanker" },
+  { value: "CRANE", label: "Crane" },
+  { value: "BULKER", label: "Bulker" },
+  { value: "CONCRETE_MIXER", label: "Concrete Mixer" },
+  
+  // Construction / Site Vehicles
+  { value: "EXCAVATOR", label: "Excavator" },
+  { value: "JCB", label: "JCB" },
+  { value: "BULLDOZER", label: "Bulldozer" },
+  { value: "ROLLER", label: "Roller" },
+  { value: "FORKLIFT", label: "Forklift" },
+  
+  // Passenger / Staff
+  { value: "CAR", label: "Car" },
+  { value: "BIKE", label: "Bike" },
+  { value: "BUS", label: "Bus" },
+  { value: "VISITOR", label: "Visitor" },
+  
+  // Others
+  { value: "OTHER", label: "Other" }
+];
+
 
 const EntryVehicles = () => {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [vendors, setVendors] = useState([]);
+  const [cameraView, setCameraView] = useState(null); // 'challan' or null
+  const [stream, setStream] = useState(null);
+  const [facingMode, setFacingMode] = useState('environment');
   
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
+  
+  // Vehicle Type Autocomplete
+  const [vehicleTypeInput, setVehicleTypeInput] = useState('');
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [filteredVehicleTypes, setFilteredVehicleTypes] = useState([]);
+ 
   // Step 1 - ANPR Data
   const [anprData, setAnprData] = useState({
     vehicleNumber: '',
@@ -24,14 +76,18 @@ const EntryVehicles = () => {
     cameraId: 'Main Gate (In)'
   });
 
+
   // Step 2 - Vehicle Details
   const [vehicleDetails, setVehicleDetails] = useState({
+    vehicleType: '',
     vendorId: '',
     materialType: '',
+    materialCount: '',
     loadStatus: 'full',
     challanImage: null,
     notes: ''
   });
+
 
   // Step 3 - Media Capture
   const [mediaCapture, setMediaCapture] = useState({
@@ -42,10 +98,32 @@ const EntryVehicles = () => {
     videoClip: null
   });
 
+
   useEffect(() => {
     fetchVendors();
     simulateANPRCapture();
+    
+    return () => {
+      stopCamera();
+    };
   }, []);
+
+
+  // Vehicle Type Autocomplete Logic
+  useEffect(() => {
+    if (vehicleTypeInput.trim()) {
+      const filtered = VEHICLE_TYPES.filter(type =>
+        type.label.toLowerCase().includes(vehicleTypeInput.toLowerCase()) ||
+        type.value.toLowerCase().includes(vehicleTypeInput.toLowerCase())
+      );
+      setFilteredVehicleTypes(filtered);
+      setShowSuggestions(true);
+    } else {
+      setFilteredVehicleTypes(VEHICLE_TYPES);
+      setShowSuggestions(false);
+    }
+  }, [vehicleTypeInput]);
+
 
   const fetchVendors = async () => {
     try {
@@ -67,8 +145,8 @@ const EntryVehicles = () => {
     }
   };
 
+
   const simulateANPRCapture = () => {
-    // Simulate ANPR camera capture
     setAnprData({
       vehicleNumber: 'MH12-DE-1992',
       capturedImage: '/placeholder-vehicle.jpg',
@@ -77,6 +155,122 @@ const EntryVehicles = () => {
       cameraId: 'Main Gate (In)'
     });
   };
+
+
+  // Camera Functions
+  const startCamera = async (type) => {
+    setCameraView(type);
+    
+    try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('Camera not supported');
+      }
+
+      const constraints = {
+        video: {
+          facingMode: facingMode,
+          width: { ideal: 1920, max: 1920 },
+          height: { ideal: 1080, max: 1080 }
+        },
+        audio: false
+      };
+
+      const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+      setStream(mediaStream);
+      
+      if (videoRef.current) {
+        videoRef.current.srcObject = mediaStream;
+        videoRef.current.onloadedmetadata = () => {
+          videoRef.current.play().catch(err => console.error('Error playing video:', err));
+        };
+      }
+    } catch (error) {
+      console.error('Camera error:', error);
+      alert('Could not access camera. Please check permissions.');
+      setCameraView(null);
+    }
+  };
+
+
+  const stopCamera = () => {
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+      setStream(null);
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+  };
+
+
+  const switchCamera = async () => {
+    stopCamera();
+    const newFacingMode = facingMode === 'user' ? 'environment' : 'user';
+    setFacingMode(newFacingMode);
+    
+    try {
+      const constraints = {
+        video: {
+          facingMode: newFacingMode,
+          width: { ideal: 1920, max: 1920 },
+          height: { ideal: 1080, max: 1080 }
+        },
+        audio: false
+      };
+
+      const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+      setStream(mediaStream);
+      
+      if (videoRef.current) {
+        videoRef.current.srcObject = mediaStream;
+        videoRef.current.onloadedmetadata = () => {
+          videoRef.current.play().catch(err => console.error('Error playing video:', err));
+        };
+      }
+    } catch (error) {
+      console.error('Error switching camera:', error);
+      alert('Could not switch camera');
+      setFacingMode(facingMode === 'user' ? 'environment' : 'user');
+    }
+  };
+
+
+  const capturePhoto = () => {
+    if (!videoRef.current || !canvasRef.current) {
+      alert('Camera not ready');
+      return;
+    }
+
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    
+    if (canvas.width === 0 || canvas.height === 0) {
+      alert('Camera not ready. Please wait.');
+      return;
+    }
+    
+    const context = canvas.getContext('2d');
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    
+    const imageData = canvas.toDataURL('image/jpeg', 0.85);
+    
+    if (cameraView === 'challan') {
+      setVehicleDetails(prev => ({ ...prev, challanImage: imageData }));
+    }
+
+    stopCamera();
+    setCameraView(null);
+  };
+
+
+  const cancelCamera = () => {
+    stopCamera();
+    setCameraView(null);
+  };
+
 
   const handleFileUpload = (field, file) => {
     if (file) {
@@ -92,11 +286,19 @@ const EntryVehicles = () => {
     }
   };
 
+
   const handleCaptureImage = (field) => {
-    // Simulate camera capture
     const dummyImage = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
     setMediaCapture(prev => ({ ...prev, [field]: dummyImage }));
   };
+
+
+  const handleVehicleTypeSelect = (type) => {
+    setVehicleTypeInput(type.label);
+    setVehicleDetails({ ...vehicleDetails, vehicleType: type.value });
+    setShowSuggestions(false);
+  };
+
 
   const handleNext = () => {
     if (step === 1) {
@@ -106,27 +308,36 @@ const EntryVehicles = () => {
       }
       setStep(2);
     } else if (step === 2) {
-      if (!vehicleDetails.vendorId || !vehicleDetails.challanImage) {
-        alert('Please select vendor and upload challan/bill');
+      if (!vehicleDetails.vehicleType) {
+        alert('Please select vehicle type');
+        return;
+      }
+      if (!vehicleDetails.challanImage) {
+        alert('Please capture challan/bill');
         return;
       }
       setStep(3);
     }
   };
 
+
   const handleBack = () => {
     if (step > 1) setStep(step - 1);
   };
+
 
   const handleAllowEntry = async () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('accessToken');
 
+
       const entryData = {
         vehicleNumber: anprData.vehicleNumber,
+        vehicleType: vehicleDetails.vehicleType,
         vendorId: vehicleDetails.vendorId,
         materialType: vehicleDetails.materialType,
+        materialCount: vehicleDetails.materialCount,
         loadStatus: vehicleDetails.loadStatus,
         notes: vehicleDetails.notes,
         entryTime: new Date().toISOString(),
@@ -142,9 +353,11 @@ const EntryVehicles = () => {
         }
       };
 
+
       await axios.post(`${API_URL}/api/supervisor/vehicles/entry`, entryData, {
         headers: { Authorization: `Bearer ${token}` }
       });
+
 
       alert('✅ Vehicle entry allowed successfully!');
       resetForm();
@@ -156,11 +369,15 @@ const EntryVehicles = () => {
     }
   };
 
+
   const resetForm = () => {
     setStep(1);
+    setVehicleTypeInput('');
     setVehicleDetails({
+      vehicleType: '',
       vendorId: '',
       materialType: '',
+      materialCount: '',
       loadStatus: 'full',
       challanImage: null,
       notes: ''
@@ -175,14 +392,70 @@ const EntryVehicles = () => {
     simulateANPRCapture();
   };
 
+
   return (
     <SupervisorLayout>
       <div className="max-w-6xl mx-auto">
+        {/* Hidden canvas for photo capture */}
+        <canvas ref={canvasRef} className="hidden" />
+
+        {/* Camera View */}
+        {cameraView && (
+          <div className="fixed inset-0 bg-black z-50 flex flex-col">
+            <div className="bg-black/80 backdrop-blur-sm p-4 flex items-center justify-between">
+              <button
+                onClick={cancelCamera}
+                className="p-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+              >
+                <X className="w-6 h-6" />
+              </button>
+              
+              <div className="text-white font-semibold text-center">
+                <div>Capture {cameraView === 'challan' ? 'Challan/Bill' : ''}</div>
+                <div className="text-xs text-gray-300 mt-1">Position document in frame</div>
+              </div>
+
+              <button
+                onClick={switchCamera}
+                className="p-3 bg-white/20 text-white rounded-lg hover:bg-white/30 transition"
+              >
+                <RotateCw className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="flex-1 flex items-center justify-center bg-black relative overflow-hidden">
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                className="w-full h-full object-cover"
+                style={{ transform: facingMode === 'user' ? 'scaleX(-1)' : 'none' }}
+              />
+              
+              <div className="absolute inset-0 pointer-events-none">
+                <div className="absolute inset-4 border-2 border-white/50 rounded-lg"></div>
+              </div>
+            </div>
+
+            <div className="bg-black/80 backdrop-blur-sm p-6 flex justify-center items-center">
+              <button
+                onClick={capturePhoto}
+                className="w-20 h-20 bg-white rounded-full flex items-center justify-center hover:bg-gray-200 transition shadow-xl relative"
+              >
+                <div className="w-16 h-16 bg-white border-4 border-gray-800 rounded-full"></div>
+                <Camera className="absolute w-8 h-8 text-gray-600" />
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Header */}
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900 mb-2">New Vehicle Entry</h1>
           <p className="text-gray-600">Step {step}: {step === 1 ? 'Vehicle Identification' : step === 2 ? 'Vehicle & Driver Details' : 'Media Capture & Validation'}</p>
         </div>
+
 
         {/* Progress Steps */}
         <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm mb-6">
@@ -216,6 +489,7 @@ const EntryVehicles = () => {
           </div>
         </div>
 
+
         {/* Step 1: ANPR Capture */}
         {step === 1 && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -242,10 +516,12 @@ const EntryVehicles = () => {
               </div>
             </div>
 
+
             {/* ANPR Result */}
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
               <h3 className="text-lg font-bold text-gray-900 mb-4">ANPR Capture Result</h3>
               <p className="text-sm text-gray-600 mb-4">Confirm vehicle number before proceeding.</p>
+
 
               <div className="space-y-4">
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -262,6 +538,7 @@ const EntryVehicles = () => {
                   </div>
                 </div>
 
+
                 <div className="space-y-3">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-gray-600">Capture Time</span>
@@ -277,12 +554,14 @@ const EntryVehicles = () => {
                   </div>
                 </div>
 
+
                 <button
                   onClick={() => simulateANPRCapture()}
                   className="w-full py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-semibold text-sm"
                 >
                   Capture Again
                 </button>
+
 
                 <button
                   onClick={handleNext}
@@ -296,11 +575,13 @@ const EntryVehicles = () => {
           </div>
         )}
 
+
         {/* Step 2: Vehicle Details */}
         {step === 2 && (
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
             <h3 className="text-lg font-bold text-gray-900 mb-1">Entry Details</h3>
-            <p className="text-sm text-gray-600 mb-6">Please fill in the consignment and vendor information below.</p>
+            <p className="text-sm text-gray-600 mb-6">Please fill in the consignment and vehicle information below.</p>
+
 
             <div className="space-y-5">
               {/* Vehicle Number (Read-only) */}
@@ -314,10 +595,47 @@ const EntryVehicles = () => {
                 />
               </div>
 
+
+              {/* Vehicle Type with Autocomplete */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Vehicle Type <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <Truck className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+                  <input
+                    type="text"
+                    value={vehicleTypeInput}
+                    onChange={(e) => setVehicleTypeInput(e.target.value)}
+                    onFocus={() => setShowSuggestions(true)}
+                    placeholder="Type or select vehicle type..."
+                    className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  />
+                  
+                  {/* Suggestions Dropdown */}
+                  {showSuggestions && filteredVehicleTypes.length > 0 && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                      {filteredVehicleTypes.map((type) => (
+                        <div
+                          key={type.value}
+                          onClick={() => handleVehicleTypeSelect(type)}
+                          className="px-4 py-3 hover:bg-blue-50 cursor-pointer transition border-b border-gray-100 last:border-b-0"
+                        >
+                          <div className="font-semibold text-gray-900">{type.label}</div>
+                          <div className="text-xs text-gray-500">{type.value}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <p className="text-xs text-gray-500 mt-1">Start typing to see suggestions or select from dropdown</p>
+              </div>
+
+
               {/* Vendor Selection */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Vendor / Transporter <span className="text-red-500">*</span>
+                  Vendor / Transporter <span className="text-gray-400">(Optional)</span>
                 </label>
                 <select
                   value={vehicleDetails.vendorId}
@@ -330,6 +648,7 @@ const EntryVehicles = () => {
                   ))}
                 </select>
               </div>
+
 
               {/* Load Status */}
               <div>
@@ -351,6 +670,7 @@ const EntryVehicles = () => {
                 </div>
               </div>
 
+
               {/* Material Type */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -365,43 +685,62 @@ const EntryVehicles = () => {
                 />
               </div>
 
-              {/* Challan / Bill Upload */}
+
+              {/* Count of Material */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Challan / Bill Upload <span className="text-red-500">*</span>
+                  Count of Material <span className="text-gray-400">(Optional)</span>
+                </label>
+                <input
+                  type="text"
+                  value={vehicleDetails.materialCount}
+                  onChange={(e) => setVehicleDetails({ ...vehicleDetails, materialCount: e.target.value })}
+                  placeholder="e.g. 50 bags, 10 boxes, 500 kg..."
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                />
+              </div>
+
+
+              {/* Challan / Bill - Camera Capture */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Challan / Bill Capture <span className="text-red-500">*</span>
                 </label>
                 <div className={`border-2 border-dashed rounded-lg p-6 text-center ${
                   vehicleDetails.challanImage ? 'border-green-300 bg-green-50' : 'border-gray-300 bg-gray-50'
                 }`}>
                   {vehicleDetails.challanImage ? (
                     <div className="space-y-3">
+                      <img 
+                        src={vehicleDetails.challanImage} 
+                        alt="Challan"
+                        className="w-full h-48 object-cover rounded-lg mb-2"
+                      />
                       <CheckCircle className="w-12 h-12 text-green-600 mx-auto" />
-                      <p className="text-sm font-semibold text-green-700">Challan uploaded successfully!</p>
+                      <p className="text-sm font-semibold text-green-700">Challan captured successfully!</p>
                       <button
                         onClick={() => setVehicleDetails({ ...vehicleDetails, challanImage: null })}
                         className="text-sm text-red-600 hover:text-red-700 font-semibold"
                       >
-                        Remove & Upload Again
+                        Remove & Capture Again
                       </button>
                     </div>
                   ) : (
                     <div>
-                      <Upload className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                      <p className="text-sm text-gray-600 mb-3">Click to upload or drag and drop</p>
-                      <p className="text-xs text-gray-500 mb-4">PDF, JPG or PNG (max. 5MB)</p>
-                      <label className="inline-block px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold cursor-pointer">
-                        Choose File
-                        <input
-                          type="file"
-                          accept="image/*,application/pdf"
-                          onChange={(e) => handleFileUpload('challanImage', e.target.files[0])}
-                          className="hidden"
-                        />
-                      </label>
+                      <Camera className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                      <p className="text-sm text-gray-600 mb-3">Capture challan/bill using camera</p>
+                      <button
+                        type="button"
+                        onClick={() => startCamera('challan')}
+                        className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold"
+                      >
+                        Open Camera
+                      </button>
                     </div>
                   )}
                 </div>
               </div>
+
 
               {/* Notes */}
               <div>
@@ -416,6 +755,7 @@ const EntryVehicles = () => {
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none"
                 />
               </div>
+
 
               {/* Action Buttons */}
               <div className="flex gap-3 pt-4">
@@ -438,7 +778,8 @@ const EntryVehicles = () => {
           </div>
         )}
 
-        {/* Step 3: Media Capture */}
+
+        {/* Step 3: Media Capture - UNCHANGED */}
         {step === 3 && (
           <div className="space-y-6">
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
@@ -452,6 +793,7 @@ const EntryVehicles = () => {
                   <div className="text-lg font-bold text-blue-600">{anprData.vehicleNumber}</div>
                 </div>
               </div>
+
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {[
@@ -476,6 +818,7 @@ const EntryVehicles = () => {
                         Required
                       </span>
                     </div>
+
 
                     {mediaCapture[item.key] ? (
                       <div className="text-center">
@@ -504,10 +847,12 @@ const EntryVehicles = () => {
               </div>
             </div>
 
+
             {/* Optional Video */}
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
               <h3 className="text-lg font-bold text-gray-900 mb-1">Video Evidence <span className="text-gray-400 font-normal text-sm">(Optional)</span></h3>
               <p className="text-sm text-gray-600 mb-4">Record a 360° walkaround of the vehicle</p>
+
 
               <div className={`border-2 border-dashed rounded-lg p-8 text-center ${
                 mediaCapture.videoClip ? 'border-green-300 bg-green-50' : 'border-gray-300 bg-gray-50'
@@ -539,6 +884,7 @@ const EntryVehicles = () => {
                 )}
               </div>
             </div>
+
 
             {/* Action Buttons */}
             <div className="grid grid-cols-3 gap-4">
@@ -575,5 +921,6 @@ const EntryVehicles = () => {
     </SupervisorLayout>
   );
 };
+
 
 export default EntryVehicles;
