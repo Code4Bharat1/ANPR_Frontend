@@ -34,6 +34,7 @@ const UserManagement = () => {
     projectManagerId: '',
   });
 
+
   useEffect(() => {
     fetchUsers();
   }, [activeTab]);
@@ -48,93 +49,143 @@ const UserManagement = () => {
       projectManagerId: '',
     }));
   }, [activeTab]);
+// ========================================
+// 2. FETCH USERS FUNCTION (Replace entire function)
+// ========================================
+const fetchUsers = async () => {
+  try {
+    setLoading(true);
+    const token = localStorage.getItem('accessToken');
 
-  const fetchUsers = async () => {
-    try {
-      setLoading(true);
-      const token = localStorage.getItem('accessToken');
+    const endpoint = activeTab === 'Project Managers' 
+      ? '/api/client-admin/project-managers'
+      : '/api/client-admin/supervisors';
 
-      const endpoint = activeTab === 'Project Managers' 
-        ? '/api/client-admin/project-managers'
-        : '/api/client-admin/supervisors';
+    const response = await fetch(`${API_URL}${endpoint}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
 
-      const response = await fetch(`${API_URL}${endpoint}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-
-      const data = await response.json();
-      
-      if (activeTab === 'Project Managers') {
-        setUsers(data.projectManagers || data || []);
-      } else {
-        setUsers(data.supervisors || data || []);
-      }
-    } catch (err) {
-      console.error('Error fetching users:', err);
-      setUsers([]);
-    } finally {
-      setLoading(false);
+    if (!response.ok) {
+      throw new Error('Failed to fetch users');
     }
-  };
 
-  const fetchSites = async () => {
-    try {
-      setLoadingSites(true);
-      const token = localStorage.getItem('accessToken');
-
-      if (!token) {
-        alert('Please login first');
-        return;
-      }
-
-      const response = await fetch(`${API_URL}/api/client-admin/sites`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-
-      const data = await response.json();
-      setSites(data.data || data.sites || []);
-    } catch (err) {
-      console.error('Error fetching sites:', err);
-    } finally {
-      setLoadingSites(false);
+    const data = await response.json();
+    
+    // ✅ FIXED: Always ensure users is an array
+    if (activeTab === 'Project Managers') {
+      const fetchedUsers = data.projectManagers || data.data || data || [];
+      setUsers(Array.isArray(fetchedUsers) ? fetchedUsers : []);
+    } else {
+      const fetchedUsers = data.supervisors || data.data || data || [];
+      setUsers(Array.isArray(fetchedUsers) ? fetchedUsers : []);
     }
-  };
+  } catch (err) {
+    console.error('Error fetching users:', err);
+    setUsers([]); // ✅ Always set to empty array on error
+  } finally {
+    setLoading(false);
+  }
+};
 
-  const fetchSupervisors = async () => {
-    try {
-      setLoadingSupervisors(true);
-      const token = localStorage.getItem('accessToken');
+// ========================================
+// 3. FILTERED USERS (Replace this section)
+// ========================================
+const filteredUsers = Array.isArray(users) ? users.filter(user => {
+  const matchesSearch = user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                       user.email?.toLowerCase().includes(searchTerm.toLowerCase());
+  const matchesStatus = filterStatus === 'All' || user.status === filterStatus;
+  return matchesSearch && matchesStatus;
+}) : [];
 
-      const response = await fetch(`${API_URL}/api/client-admin/supervisors`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+// ========================================
+// 4. STATS CALCULATIONS (Replace these lines)
+// ========================================
+const totalPMs = Array.isArray(users) 
+  ? users.filter(u => u.role === 'project_manager').length 
+  : 0;
 
-      const data = await response.json();
-      setSupervisors(data.supervisors || data || []);
-    } catch (err) {
-      console.error('Error fetching supervisors:', err);
-    } finally {
-      setLoadingSupervisors(false);
+const totalSupervisors = Array.isArray(users) 
+  ? users.filter(u => u.role === 'supervisor').length 
+  : 0;
+
+const activeUsers = Array.isArray(users) 
+  ? users.filter(u => u.status === 'Active').length 
+  : 0;
+
+
+  // ========================================
+// 5. FETCH SITES FUNCTION (Add safety check)
+// ========================================
+const fetchSites = async () => {
+  try {
+    setLoadingSites(true);
+    const token = localStorage.getItem('accessToken');
+
+    if (!token) {
+      alert('Please login first');
+      return;
     }
-  };
 
-  const fetchProjectManagers = async () => {
-    try {
-      setLoadingPMs(true);
-      const token = localStorage.getItem('accessToken');
+    const response = await fetch(`${API_URL}/api/client-admin/sites`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
 
-      const response = await fetch(`${API_URL}/api/client-admin/project-managers`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+    const data = await response.json();
+    const fetchedSites = data.data || data.sites || data || [];
+    setSites(Array.isArray(fetchedSites) ? fetchedSites : []); // ✅ Safety check
+  } catch (err) {
+    console.error('Error fetching sites:', err);
+    setSites([]); // ✅ Set empty array on error
+  } finally {
+    setLoadingSites(false);
+  }
+};
+// ========================================
+// 6. FETCH SUPERVISORS FUNCTION (Add safety check)
+// ========================================
+const fetchSupervisors = async () => {
+  try {
+    setLoadingSupervisors(true);
+    const token = localStorage.getItem('accessToken');
 
-      const data = await response.json();
-      setProjectManagers(data.projectManagers || data || []);
-    } catch (err) {
-      console.error('Error fetching project managers:', err);
-    } finally {
-      setLoadingPMs(false);
-    }
-  };
+    const response = await fetch(`${API_URL}/api/client-admin/supervisors`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    const data = await response.json();
+    const fetchedSupervisors = data.supervisors || data.data || data || [];
+    setSupervisors(Array.isArray(fetchedSupervisors) ? fetchedSupervisors : []); // ✅ Safety check
+  } catch (err) {
+    console.error('Error fetching supervisors:', err);
+    setSupervisors([]); // ✅ Set empty array on error
+  } finally {
+    setLoadingSupervisors(false);
+  }
+};
+
+
+  // ========================================
+// 7. FETCH PROJECT MANAGERS FUNCTION (Add safety check)
+// ========================================
+const fetchProjectManagers = async () => {
+  try {
+    setLoadingPMs(true);
+    const token = localStorage.getItem('accessToken');
+
+    const response = await fetch(`${API_URL}/api/client-admin/project-managers`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    const data = await response.json();
+    const fetchedPMs = data.projectManagers || data.data || data || [];
+    setProjectManagers(Array.isArray(fetchedPMs) ? fetchedPMs : []); // ✅ Safety check
+  } catch (err) {
+    console.error('Error fetching project managers:', err);
+    setProjectManagers([]); // ✅ Set empty array on error
+  } finally {
+    setLoadingPMs(false);
+  }
+};
 
   const handleOpenAddModal = () => {
     setShowAdd(true);
@@ -259,28 +310,7 @@ const UserManagement = () => {
     }
   };
 
-  const filteredUsers = users.filter(user => {
-    const matchesSearch = user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.email?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = filterStatus === 'All' || user.status === filterStatus;
-    return matchesSearch && matchesStatus;
-  });
-
-  const totalPMs = users.filter(u => u.role === 'project_manager').length;
-  const totalSupervisors = users.filter(u => u.role === 'supervisor').length;
-  const activeUsers = users.filter(u => u.status === 'Active').length;
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading users...</p>
-        </div>
-      </div>
-    );
-  }
-
+  
   return (
     <div className="min-h-screen bg-gray-50">
        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
