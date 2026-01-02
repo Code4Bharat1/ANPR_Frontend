@@ -552,7 +552,7 @@ const SiteManagement = () => {
         return;
       }
 
-      console.log('🔄 Fetching sites from:', `${API_URL}/api/client-admin/sites`);
+      // console.log('🔄 Fetching sites from:', `${API_URL}/api/client-admin/sites`);
 
       const response = await axios.get(`${API_URL}/api/client-admin/sites`, {
         headers: { Authorization: `Bearer ${token}` }

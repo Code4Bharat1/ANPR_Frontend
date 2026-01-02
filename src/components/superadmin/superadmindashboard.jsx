@@ -1,15 +1,12 @@
-
 "use client";
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import {
-  Users, UserCheck, UserX, MapPin, Camera, IndianRupeeIcon,
-  Activity,  TrendingUp, AlertTriangle, CheckCircle
+  Users, UserCheck, UserX, MapPin, Camera, IndianRupee,
+  Activity, TrendingUp, AlertTriangle, CheckCircle, Shield
 } from 'lucide-react';
-import SuperAdminLayout from './layout'; // ← Import Layout
+import SuperAdminLayout from './layout';
 import api from '@/lib/axios';
-
-
 
 // Dashboard Card Component
 const DashboardCard = ({ icon: Icon, value, label, bgColor, iconColor, trend }) => (
@@ -19,8 +16,7 @@ const DashboardCard = ({ icon: Icon, value, label, bgColor, iconColor, trend }) 
         <Icon className={`w-5 h-5 md:w-6 md:h-6 ${iconColor}`} />
       </div>
       {trend !== undefined && trend !== null && (
-        <div className={`flex items-center gap-1 text-xs md:text-sm font-semibold ${trend > 0 ? 'text-green-600' : 'text-red-600'
-          }`}>
+        <div className={`flex items-center gap-1 text-xs md:text-sm font-semibold ${trend > 0 ? 'text-green-600' : 'text-red-600'}`}>
           <TrendingUp className="w-3 h-3 md:w-4 md:h-4" />
           {Math.abs(trend)}%
         </div>
@@ -31,13 +27,7 @@ const DashboardCard = ({ icon: Icon, value, label, bgColor, iconColor, trend }) 
   </div>
 );
 
-const SystemHealthCard = ({
-  title,
-  subtitle,
-  count,
-  icon: Icon,
-  statusColor,
-}) => (
+const SystemHealthCard = ({ title, subtitle, count, icon: Icon, statusColor }) => (
   <div className="p-4 border border-gray-200 rounded-lg bg-gray-50">
     <div className="flex items-center justify-between mb-2">
       <div className="flex items-center gap-2">
@@ -45,37 +35,8 @@ const SystemHealthCard = ({
         <div className="font-semibold text-gray-900">{title}</div>
       </div>
     </div>
-
     <div className="text-sm text-gray-600 mb-1">{subtitle}</div>
-
-    <div className={`text-2xl font-bold ${statusColor}`}>
-      {count}
-    </div>
-  </div>
-);
-
-
-// Recent Activity Item
-const ActivityItem = ({ client, action, time, status }) => (
-  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between py-3 border-b border-gray-100 last:border-0 gap-2">
-    <div className="flex items-center gap-3">
-      <div className="w-8 h-8 md:w-10 md:h-10 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
-        <Users className="w-4 h-4 md:w-5 md:h-5 text-purple-600" />
-      </div>
-      <div className="min-w-0">
-        <div className="font-semibold text-gray-900 text-sm md:text-base truncate">{client}</div>
-        <div className="text-xs md:text-sm text-gray-600 truncate">{action}</div>
-      </div>
-    </div>
-    <div className="flex items-center justify-between sm:flex-col sm:items-end gap-2 ml-11 sm:ml-0">
-      <div className="text-xs md:text-sm text-gray-500">{time}</div>
-      <span className={`text-xs px-2 py-1 rounded-full whitespace-nowrap ${status === 'success' ? 'bg-green-100 text-green-700' :
-        status === 'warning' ? 'bg-yellow-100 text-yellow-700' :
-          'bg-gray-100 text-gray-700'
-        }`}>
-        {status}
-      </span>
-    </div>
+    <div className={`text-2xl font-bold ${statusColor}`}>{count}</div>
   </div>
 );
 
@@ -87,37 +48,33 @@ const SuperAdminDashboard = () => {
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-  // console.log(API_URL)
-
   useEffect(() => {
     fetchDashboardData();
   }, []);
-const fetchDashboardData = async () => {
-  try {
-    setLoading(true);
-    const token = localStorage.getItem('accessToken');
 
-    if (!token) {
-      throw new Error('No authentication token found');
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('accessToken');
+
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      const res = await api.get(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/superadmin/dashboard`
+      );
+
+      setDashboardData(res.data);
+      console.log(res.data);
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching dashboard data:', err);
+      setError(err.response?.data?.message || err.message);
+    } finally {
+      setLoading(false);
     }
-
-    const res = await api.get(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/superadmin/dashboard`
-    );
-
-    setDashboardData(res.data);
-    // console.log(res.data);
-
-    setError(null);
-  } catch (err) {
-    console.error('Error fetching dashboard data:', err);
-    setError(err.response?.data?.message || err.message);
-
-    
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   if (loading) {
     return (
@@ -146,28 +103,34 @@ const fetchDashboardData = async () => {
       {/* Client Analytics */}
       <div className="mb-6 md:mb-8">
         <h2 className="text-lg md:text-xl font-bold text-gray-900 mb-3 md:mb-4">Client Overview</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
           <DashboardCard
             icon={Users}
-            value={dashboardData?.totalClients || 0}
+            value={dashboardData?.overview?.totalClients || 0}
             label="Total Clients"
             bgColor="bg-purple-50"
             iconColor="text-purple-600"
-            // trend={12}
           />
           <DashboardCard
             icon={UserCheck}
-            value={dashboardData?.activeClients || 0}
+            value={dashboardData?.overview?.activeClients || 0}
             label="Active Clients"
             bgColor="bg-green-50"
             iconColor="text-green-600"
           />
           <DashboardCard
             icon={UserX}
-            value={dashboardData?.expiredClients || 0}
+            value={dashboardData?.overview?.expiredClients || 0}
             label="Expired Clients"
             bgColor="bg-red-50"
             iconColor="text-red-600"
+          />
+          <DashboardCard
+            icon={IndianRupee}
+            value={dashboardData?.overview?.totalRevenue ? `₹${dashboardData.overview.totalRevenue.toLocaleString()}` : '₹0'}
+            label="Total Revenue"
+            bgColor="bg-green-50"
+            iconColor="text-green-600"
           />
         </div>
       </div>
@@ -178,104 +141,166 @@ const fetchDashboardData = async () => {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
           <DashboardCard
             icon={MapPin}
-            value={dashboardData?.totalSites || 0}
+            value={dashboardData?.operations?.totalSites || 0}
             label="Total Sites"
             bgColor="bg-blue-50"
             iconColor="text-blue-600"
           />
           <DashboardCard
             icon={Camera}
-            value={dashboardData?.totalDevices || 0}
+            value={dashboardData?.operations?.totalDevices || 0}
             label="Total Devices"
             bgColor="bg-indigo-50"
             iconColor="text-indigo-600"
           />
           <DashboardCard
-            icon={Activity}
-            value={dashboardData?.totalTrips?.toLocaleString() || 0}
-            label="Total Trips"
-            bgColor="bg-orange-50"
-            iconColor="text-orange-600"
-            // trend={8}
+            icon={Shield}
+            value={dashboardData?.operations?.totalBarriers || 0}
+            label="Total Barriers"
+            bgColor="bg-cyan-50"
+            iconColor="text-cyan-600"
           />
           <DashboardCard
-            icon={IndianRupeeIcon}
-            value={`${(dashboardData?.totalRevenue || 0).toLocaleString()}`}
-            label="Total Revenue"
+            icon={Activity}
+            value={dashboardData?.operations?.todayTrips?.toLocaleString() || 0}
+            label="Today's Trips"
+            bgColor="bg-orange-50"
+            iconColor="text-orange-600"
+          />
+          
+        </div>
+      </div>
+
+      {/* Device Health Stats */}
+      <div className="mb-6 md:mb-8">
+        <h2 className="text-lg md:text-xl font-bold text-gray-900 mb-3 md:mb-4">Device Health</h2>
+        <div className="grid grid-cols-2 sm:grid-cols-2 gap-4 md:gap-6">
+          <DashboardCard
+            icon={CheckCircle}
+            value={dashboardData?.deviceHealth?.online || 0}
+            label="Online Devices"
             bgColor="bg-green-50"
             iconColor="text-green-600"
-            // trend={15}
+          />
+          <DashboardCard
+            icon={AlertTriangle}
+            value={dashboardData?.deviceHealth?.offline || 0}
+            label="Offline Devices"
+            bgColor="bg-red-50"
+            iconColor="text-red-600"
+          />
+        </div>
+      </div>
+
+      {/* Barrier Health Stats */}
+      <div className="mb-6 md:mb-8">
+        <h2 className="text-lg md:text-xl font-bold text-gray-900 mb-3 md:mb-4">Barrier Health</h2>
+        <div className="grid grid-cols-2 sm:grid-cols-2 gap-4 md:gap-6">
+          <DashboardCard
+            icon={CheckCircle}
+            value={dashboardData?.barrierHealth?.online || 0}
+            label="Online Barriers"
+            bgColor="bg-green-50"
+            iconColor="text-green-600"
+          />
+          <DashboardCard
+            icon={AlertTriangle}
+            value={dashboardData?.barrierHealth?.offline || 0}
+            label="Offline Barriers"
+            bgColor="bg-red-50"
+            iconColor="text-red-600"
           />
         </div>
       </div>
 
       {/* System Health */}
-<div className="mb-6 md:mb-8">
-  <h2 className="text-lg md:text-xl font-bold text-gray-900 mb-3 md:mb-4">
-    System Health
-  </h2>
+      <div className="mb-6 md:mb-8">
+        <h2 className="text-sm font-bold text-gray-900 mb-3 md:mb-4">
+          System Health
+        </h2>
 
-  <div className="bg-white rounded-xl p-4 md:p-6 shadow-sm border border-gray-100">
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-4 md:mb-6">
+        <div className="bg-white rounded-xl p-4 md:p-6 shadow-sm border border-gray-100">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6">
+            <SystemHealthCard
+              title="Server"
+              subtitle="Status"
+              count={dashboardData?.systemHealth?.server || "Unknown"}
+              icon={Activity}
+              statusColor="text-green-700"
+            />
 
-      {/* ANPR Active */}
-      <SystemHealthCard
-        title="ANPR Cameras"
-        subtitle="Active"
-        count={dashboardData?.systemHealth?.anprCameras?.online || 0}
-        icon={Camera}
-        statusColor="text-green-700"
-      />
+            <SystemHealthCard
+              title="Database"
+              subtitle="Status"
+              count={dashboardData?.systemHealth?.database || "Unknown"}
+              icon={CheckCircle}
+              statusColor="text-green-700"
+            />
 
-      {/* ANPR Inactive */}
-      <SystemHealthCard
-        title="ANPR Cameras"
-        subtitle="Inactive"
-        count={dashboardData?.systemHealth?.anprCameras?.offline || 0}
-        icon={Camera}
-        statusColor="text-red-600"
-      />
-
-      {/* Barrier Active */}
-      <SystemHealthCard
-        title="Barriers"
-        subtitle="Active"
-        count={dashboardData?.systemHealth?.barriers?.online || 0}
-        icon={Activity}
-        statusColor="text-green-700"
-      />
-
-      {/* Barrier Inactive */}
-      <SystemHealthCard
-        title="Barriers"
-        subtitle="Inactive"
-        count={dashboardData?.systemHealth?.barriers?.offline || 0}
-        icon={Activity}
-        statusColor="text-red-600"
-      />
-    </div>
-
-    {/* Offline Devices Alert */}
-    {(dashboardData?.offlineDevices || 0) > 0 && (
-      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 md:p-4 flex flex-col sm:flex-row sm:items-center gap-3">
-        <AlertTriangle className="w-5 h-5 text-yellow-600 flex-shrink-0" />
-        <div className="flex-1 min-w-0">
-          <div className="font-semibold text-yellow-900 text-sm md:text-base">
-            {dashboardData?.offlineDevices} Devices Inactive
+            <SystemHealthCard
+              title="Connectivity"
+              subtitle="Status"
+              count={dashboardData?.systemHealth?.connectivity || "Unknown"}
+              icon={AlertTriangle}
+              statusColor={dashboardData?.systemHealth?.connectivity === "Operational" ? "text-green-700" : "text-yellow-700"}
+            />
           </div>
-          <div className="text-xs md:text-sm text-yellow-700">
-            Immediate attention required for optimal system performance
-          </div>
+
+          {/* Offline Devices Alert */}
+          {/* {(dashboardData?.deviceHealth?.offline || 0) > 0 && (
+            <div className="mt-6 bg-red-50 border border-red-200 rounded-lg p-3 md:p-4">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <div className="font-semibold text-red-800 mb-2">
+                    {dashboardData?.deviceHealth?.offline} Device(s) Offline
+                  </div>
+                  {dashboardData?.deviceHealth?.offlineDevices?.map(device => (
+                    <div key={device._id} className="text-sm text-red-700 mb-1">
+                      • {device.name} ({device.deviceId}) — {device.siteId?.name || 'Unknown Site'}
+                      {device.lastSeen && (
+                        <span className="text-red-600 ml-2">
+                          Last seen: {new Date(device.lastSeen).toLocaleString()}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                  <div className="text-sm text-red-700 mt-2 font-medium">
+                    ⚠️ Immediate attention required
+                  </div>
+                </div>
+              </div>
+            </div>
+          )} */}
+
+          {/* Offline Barriers Alert */}
+          {/* {(dashboardData?.barrierHealth?.offline || 0) > 0 && (
+            <div className="mt-6 bg-orange-50 border border-orange-200 rounded-lg p-3 md:p-4">
+              <div className="flex items-start gap-3">
+                <Shield className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <div className="font-semibold text-orange-800 mb-2">
+                    {dashboardData?.barrierHealth?.offline} Barrier(s) Offline
+                  </div>
+                  {dashboardData?.barrierHealth?.offlineBarriers?.map(barrier => (
+                    <div key={barrier._id} className="text-sm text-orange-700 mb-1">
+                      • {barrier.name} ({barrier.barrierId}) — {barrier.siteId?.name || 'Unknown Site'}
+                      {barrier.lastSeen && (
+                        <span className="text-orange-600 ml-2">
+                          Last seen: {new Date(barrier.lastSeen).toLocaleString()}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                  <div className="text-sm text-orange-700 mt-2 font-medium">
+                    ⚠️ Check barrier connectivity
+                  </div>
+                </div>
+              </div>
+            </div>
+          )} */}
         </div>
-        <button className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition text-xs md:text-sm font-semibold whitespace-nowrap">
-          View Details
-        </button>
       </div>
-    )}
-  </div>
-</div>
-
-    
     </SuperAdminLayout>
   );
 };

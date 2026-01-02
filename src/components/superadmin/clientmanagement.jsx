@@ -15,7 +15,10 @@ const ClientCard = ({ client, onEdit, onActivate, onDeactivate }) => (
     <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-4 gap-3">
       <div className="flex-1 min-w-0">
         <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-2 truncate">
-          {client.companyName || client.name}
+          {client.className}
+        </h3>
+        <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-2 truncate">
+          {client.companyName }
         </h3>
         <div className="flex items-center gap-2 text-gray-600">
           <Users className="w-4 h-4 flex-shrink-0" />
@@ -95,6 +98,7 @@ const ClientCard = ({ client, onEdit, onActivate, onDeactivate }) => (
 // Edit Client Modal
 const EditClientModal = ({ isOpen, onClose, onSubmit, loading, client }) => {
   const [formData, setFormData] = useState({
+    clientname:'',
     companyName: '',
     email: '',
     phone: '',
@@ -107,7 +111,8 @@ const EditClientModal = ({ isOpen, onClose, onSubmit, loading, client }) => {
   useEffect(() => {
     if (client) {
       setFormData({
-        companyName: client.companyName || client.name || '',
+        clientname: client. client.name ||'',
+        companyName: client.companyName || '',
         email: client.email || '',
         phone: client.phone || '',
         packageType: client.packageType || 'basic',
@@ -141,6 +146,19 @@ const EditClientModal = ({ isOpen, onClose, onSubmit, loading, client }) => {
 
         <form onSubmit={handleSubmit} className="p-4 md:p-6">
           <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Client Name *
+              </label>
+              <input
+                type="text"
+                name="clientname"
+                value={formData.clientname}
+                onChange={handleChange}
+                required
+                className="w-full px-3 md:px-4 py-2 md:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base"
+              />
+            </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Company Name *
@@ -275,6 +293,7 @@ const EditClientModal = ({ isOpen, onClose, onSubmit, loading, client }) => {
 // Add Client Modal
 const AddClientModal = ({ isOpen, onClose, onSubmit, loading }) => {
   const [formData, setFormData] = useState({
+    clientname:'',
     companyName: '',
     email: '',
     phone: '',
@@ -296,6 +315,7 @@ const AddClientModal = ({ isOpen, onClose, onSubmit, loading }) => {
 
   const handleReset = () => {
     setFormData({
+      clientname: '',
       companyName: '',
       email: '',
       phone: '',
@@ -321,6 +341,20 @@ const AddClientModal = ({ isOpen, onClose, onSubmit, loading }) => {
 
         <form onSubmit={handleSubmit} className="p-4 md:p-6">
           <div className="space-y-4">
+             <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Client Name *
+              </label>
+              <input
+                type="text"
+                name="clientname"
+                value={formData.clientname}
+                onChange={handleChange}
+                required
+                placeholder="e.g., John Doe"
+                className="w-full px-3 md:px-4 py-2 md:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base"
+              />
+            </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Company Name *
@@ -528,6 +562,7 @@ const ClientManagement = () => {
       }
 
       const payload = {
+        clientname: formData.clientname,
         companyName: formData.companyName,
         email: formData.email,
         password: formData.password,

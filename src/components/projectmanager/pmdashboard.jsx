@@ -1,9 +1,10 @@
 "use client";
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { 
+import Link from "next/link";
+import {
   Bell, Menu, MapPin, Users, TrendingUp, Activity,
-  ArrowRight, CheckCircle, AlertTriangle, Clock
+  ArrowRight, CheckCircle, AlertTriangle, Clock, 
 } from 'lucide-react';
 import Sidebar from './sidebar';
 
@@ -27,11 +28,10 @@ const SiteCard = ({ site }) => (
         <h3 className="font-bold text-gray-900">{site.name}</h3>
         <div className="text-sm text-gray-500">{site.id}</div>
       </div>
-      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-        site.status === 'Operational' 
-          ? 'bg-green-100 text-green-700' 
+      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${site.status === 'Operational'
+          ? 'bg-green-100 text-green-700'
           : 'bg-yellow-100 text-yellow-700'
-      }`}>
+        }`}>
         {site.status}
       </span>
     </div>
@@ -76,12 +76,12 @@ const PMDashboard = () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('accessToken');
-      
+
       const response = await axios.get(
         `${process.env.NEXT_PUBLIC_API_URL}/api/project/dashboard/stats`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      
+
       setDashboardData(response.data);
     } catch (err) {
       // setDashboardData({
@@ -162,7 +162,7 @@ const PMDashboard = () => {
         </header>
 
         <main className="max-w-7xl mx-auto px-6 py-8">
-          
+
           {/* Project Overview */}
           <div className="mb-8">
             <h2 className="text-xl font-bold text-gray-900 mb-4">Project Overview</h2>
@@ -229,15 +229,17 @@ const PMDashboard = () => {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            
+
             {/* My Assigned Sites */}
             <div className="lg:col-span-2">
               <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-xl font-bold text-gray-900">My Assigned Sites</h2>
-                  <button className="text-sm text-indigo-600 font-semibold hover:text-indigo-700 flex items-center gap-1">
-                    View All <ArrowRight className="w-4 h-4" />
-                  </button>
+                  <Link href="/projectmanager/sites">
+                    <button className="text-sm text-indigo-600 font-semibold hover:text-indigo-700 flex items-center gap-1">
+                      View All <ArrowRight className="w-4 h-4" />
+                    </button>
+                  </Link>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {dashboardData?.sites?.slice(0, 4).map((site) => (
