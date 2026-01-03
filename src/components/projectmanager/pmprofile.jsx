@@ -1,12 +1,11 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { 
-  Bell, Menu, User, Mail, Phone, MapPin, Edit2, Save, Camera, X, 
-  Building2, Users, TrendingUp, Package, Loader2, AlertCircle, CheckCircle,
-  LayoutDashboard, FileText, UserCircle, LogOut, Settings
+  User, Mail, Phone, MapPin, Edit2, Save, Camera, X, 
+  Building2, Users, TrendingUp, Package, Loader2, AlertCircle, CheckCircle
 } from 'lucide-react';
-
 import Sidebar from './sidebar';
+import Header from './header';  // ✅ Import Header
 
 const PMProfile = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -225,30 +224,30 @@ const PMProfile = () => {
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
+      {/* ✅ Header Component - Custom styling for profile page */}
       <div className="lg:ml-72">
         <header className="bg-white/80 backdrop-blur-md border-b border-gray-200 sticky top-0 z-30 shadow-sm">
           <div className="flex items-center justify-between px-4 sm:px-6 py-4">
+            {/* Left Section - Title */}
             <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
               <button 
                 onClick={() => setSidebarOpen(true)} 
                 className="lg:hidden p-2 hover:bg-gray-100 rounded-lg transition flex-shrink-0"
               >
-                <Menu className="w-6 h-6" />
+                <User className="w-6 h-6" />
               </button>
               <div className="min-w-0">
                 <h1 className="text-xl sm:text-2xl font-bold text-gray-900 truncate">My Profile</h1>
                 <p className="text-xs sm:text-sm text-gray-500 truncate">Manage your account settings</p>
               </div>
             </div>
-            <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
-              <button className="p-2 hover:bg-gray-100 rounded-lg relative transition">
-                <Bell className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
-              </button>
-              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold shadow-lg text-sm sm:text-base">
-                {getInitials(profileData.fullName || 'User')}
-              </div>
-            </div>
+
+            {/* Right Section - Use Header component's dropdown */}
+            <Header 
+              title="" 
+              onMenuClick={() => setSidebarOpen(true)}
+              hideTitle={true}
+            />
           </div>
         </header>
 
@@ -256,7 +255,7 @@ const PMProfile = () => {
           
           {/* Success Message */}
           {successMessage && (
-            <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-green-50 border border-green-200 rounded-xl flex items-start gap-3">
+            <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-green-50 border border-green-200 rounded-xl flex items-start gap-3 animate-slide-in">
               <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
               <p className="text-sm sm:text-base text-green-800 font-medium">{successMessage}</p>
             </div>
@@ -264,7 +263,7 @@ const PMProfile = () => {
 
           {/* Error Message */}
           {error && (
-            <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3">
+            <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3 animate-slide-in">
               <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
               <p className="text-sm sm:text-base text-red-800 font-medium">{error}</p>
             </div>
@@ -295,7 +294,7 @@ const PMProfile = () => {
               </div>
 
               {/* Profile Info */}
-              <div className=" text-center w-full">
+              <div className="text-center w-full">
                 <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-2 break-words">{profileData.fullName || 'Loading...'}</h2>
                 <div className="inline-block px-3 sm:px-4 py-1 bg-white/20 backdrop-blur-sm rounded-full text-xs sm:text-sm font-semibold mb-3 sm:mb-4">
                   {profileData.role === 'project_manager' ? 'Project Manager' : 'Admin'}
@@ -445,61 +444,25 @@ const PMProfile = () => {
                 )}
               </div>
             </div>
-
-            {/* Stats */}
-            {/* <div>
-              <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-lg border border-gray-100 hover:shadow-xl transition">
-                <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-4 sm:mb-6 flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5 text-indigo-600" />
-                  Quick Stats
-                </h2>
-                
-                <div className="space-y-3 sm:space-y-4">
-                  {[
-                    { 
-                      label: 'Assigned Sites', 
-                      value: stats.assignedSites, 
-                      icon: Building2,
-                      gradient: 'from-indigo-500 to-indigo-600'
-                    },
-                    { 
-                      label: 'Total Supervisors', 
-                      value: stats.totalSupervisors, 
-                      icon: Users,
-                      gradient: 'from-green-500 to-green-600'
-                    },
-                    { 
-                      label: 'Total Trips', 
-                      value: stats.totalTrips, 
-                      icon: TrendingUp,
-                      gradient: 'from-purple-500 to-purple-600'
-                    },
-                    { 
-                      label: 'Active Vendors', 
-                      value: stats.activeVendors, 
-                      icon: Package,
-                      gradient: 'from-orange-500 to-orange-600'
-                    }
-                  ].map((stat, index) => (
-                    <div 
-                      key={index} 
-                      className={`p-4 sm:p-5 bg-gradient-to-br ${stat.gradient} rounded-lg sm:rounded-xl shadow-md hover:shadow-lg transition transform hover:scale-105 group`}
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="text-xs sm:text-sm text-white/90 font-medium">{stat.label}</div>
-                        <stat.icon className="w-4 h-4 sm:w-5 sm:h-5 text-white/80 group-hover:scale-110 transition flex-shrink-0" />
-                      </div>
-                      <div className="text-2xl sm:text-3xl font-bold text-white">
-                        {stat.value.toLocaleString()}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div> */}
           </div>
         </main>
       </div>
+
+      <style jsx>{`
+        @keyframes slide-in {
+          from {
+            transform: translateY(-20px);
+            opacity: 0;
+          }
+          to {
+            transform: translateY(0);
+            opacity: 1;
+          }
+        }
+        .animate-slide-in {
+          animation: slide-in 0.3s ease-out;
+        }
+      `}</style>
     </div>
   );
 };
