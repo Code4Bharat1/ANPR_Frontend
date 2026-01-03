@@ -57,7 +57,7 @@ const PMProfile = () => {
       }
 
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/project/profile`,
+        `${process.env.NEXT_PUBLIC_API_URL }/api/project/profile`,
         { 
           headers: { 
             Authorization: `Bearer ${token}`,

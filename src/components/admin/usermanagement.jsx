@@ -9,7 +9,7 @@ import {
 import Sidebar from './sidebar';
 import Header from './header';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+const API_URL = process.env.NEXT_PUBLIC_API_URL ;
 
 // Axios instance with default config
 const api = axios.create({

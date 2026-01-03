@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import axios from "@/lib/axios";
+import  { api } from "@/lib/axios";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -18,7 +18,7 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const res = await axios.post("/api/auth/login", {
+      const res = await api.post("/api/auth/login", {
         identifier, // ✅ FIX
         password,
       });
