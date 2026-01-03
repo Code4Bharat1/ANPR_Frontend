@@ -6,6 +6,7 @@ import {
   LayoutDashboard, LogIn, LogOut as ExitIcon, Car, FileText,
   BarChart3, Settings, LogOut, Menu, X, Bell, Shield
 } from 'lucide-react';
+import Image from 'next/image'; // ✅ Import Image
 
 const SupervisorLayout = ({ children }) => {
   const router = useRouter();
@@ -42,12 +43,23 @@ const SupervisorLayout = ({ children }) => {
     <div className="min-h-screen bg-gray-50 flex">
       {/* Sidebar - Desktop */}
       <aside className="hidden lg:flex lg:flex-col lg:w-64 bg-white border-r border-gray-200 fixed h-full z-50">
+        {/* ✅ Logo Header - Desktop */}
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
-              <Shield className="w-6 h-6 text-white" />
+            <div className="relative w-10 h-10 flex-shrink-0">
+              <Image 
+                src="/logo.png" 
+                alt="SecureGate Logo" 
+                width={40}
+                height={40}
+                className="object-contain"
+                priority
+              />
             </div>
-            <span className="text-xl font-bold text-gray-900">SecureGate</span>
+            <div>
+              <span className="text-xl font-bold text-gray-900">SecureGate</span>
+              <p className="text-xs text-gray-500">Supervisor Portal</p>
+            </div>
           </div>
         </div>
 
@@ -61,7 +73,7 @@ const SupervisorLayout = ({ children }) => {
                 onClick={() => router.push(item.path)}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${
                   isActive
-                    ? 'bg-blue-600 text-white'
+                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-200'
                     : 'text-gray-700 hover:bg-gray-100'
                 }`}
               >
@@ -89,7 +101,7 @@ const SupervisorLayout = ({ children }) => {
           <div className="flex items-center justify-between px-4 lg:px-6 py-4">
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="lg:hidden p-2 hover:bg-gray-100 rounded-lg"
+              className="lg:hidden p-2 hover:bg-gray-100 rounded-lg transition"
             >
               <Menu className="w-6 h-6 text-gray-700" />
             </button>
@@ -97,9 +109,9 @@ const SupervisorLayout = ({ children }) => {
             <div className="flex-1" />
 
             <div className="flex items-center gap-4">
-              <button className="relative p-2 hover:bg-gray-100 rounded-lg">
+              <button className="relative p-2 hover:bg-gray-100 rounded-lg transition">
                 <Bell className="w-5 h-5 text-gray-700" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
               </button>
               
               <div className="flex items-center gap-3">
@@ -129,14 +141,25 @@ const SupervisorLayout = ({ children }) => {
         <div className="fixed inset-0 z-50 lg:hidden">
           <div className="absolute inset-0 bg-black/50" onClick={() => setSidebarOpen(false)} />
           <aside className="absolute left-0 top-0 bottom-0 w-64 bg-white shadow-xl">
+            {/* ✅ Logo Header - Mobile */}
             <div className="p-4 border-b border-gray-200 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
-                  <Shield className="w-6 h-6 text-white" />
+                <div className="relative w-10 h-10 flex-shrink-0">
+                  <Image 
+                    src="/logo.png" 
+                    alt="SecureGate Logo" 
+                    width={40}
+                    height={40}
+                    className="object-contain"
+                    priority
+                  />
                 </div>
-                <span className="text-xl font-bold text-gray-900">SecureGate</span>
+                <div>
+                  <span className="text-xl font-bold text-gray-900">SecureGate</span>
+                  <p className="text-xs text-gray-500">Supervisor</p>
+                </div>
               </div>
-              <button onClick={() => setSidebarOpen(false)}>
+              <button onClick={() => setSidebarOpen(false)} className="p-2 hover:bg-gray-100 rounded-lg transition">
                 <X className="w-6 h-6 text-gray-700" />
               </button>
             </div>
@@ -154,7 +177,7 @@ const SupervisorLayout = ({ children }) => {
                     }}
                     className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${
                       isActive
-                        ? 'bg-blue-600 text-white'
+                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-200'
                         : 'text-gray-700 hover:bg-gray-100'
                     }`}
                   >

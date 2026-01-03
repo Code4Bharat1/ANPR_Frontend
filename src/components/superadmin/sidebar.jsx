@@ -3,10 +3,11 @@
 import React from "react";
 import {
   Shield, LayoutDashboard, Users, Camera, BarChart3, 
-  FileText, Settings, User, LogOut, X , Bell
+  FileText, Settings, User, LogOut, X, Bell
 } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
-import { Server } from 'lucide-react'; // Add this
+import { Server } from 'lucide-react';
+import Image from 'next/image'; // ✅ Import Image
 
 const Sidebar = ({ isOpen, onClose }) => {
   const router = useRouter();
@@ -55,20 +56,44 @@ const Sidebar = ({ isOpen, onClose }) => {
           ${isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
         `}
       >
-        {/* Header */}
-        <div className="p-6 border-b">
-        
+        {/* ✅ Logo + Header Section */}
+        <div className="p-6 border-b border-gray-200">
+          {/* Logo and Company Name */}
+          <div className="flex items-center gap-5 mb-1">
+            <div className="relative w-10 h-10 flex-shrink-0">
+              <Image 
+                src="/logo.png" 
+                alt="Company Logo" 
+                width={50}
+                height={50}
+                className="object-cover "
+                priority
+              />
+            </div>
+            <div>
+              <h1 className="text-lg font-bold text-gray-900">ANPR System</h1>
+              <p className="text-xs text-gray-500">Admin Portal</p>
+            </div>
+          </div>
 
           {/* Super Admin Profile */}
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
+          {/* <div className="flex items-center gap-3 pt-4 border-t border-gray-100">
+            <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg">
               SA
             </div>
             <div>
               <div className="font-semibold text-gray-900">Super Admin</div>
               <div className="text-sm text-gray-500">System Administrator</div>
             </div>
-          </div>
+          </div> */}
+
+          {/* Mobile Close Button */}
+          <button 
+            onClick={onClose}
+            className="lg:hidden absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-lg transition"
+          >
+            <X className="w-5 h-5 text-gray-600" />
+          </button>
         </div>
 
         {/* Menu */}
@@ -85,7 +110,7 @@ const Sidebar = ({ isOpen, onClose }) => {
                   w-full flex items-center gap-3 px-4 py-3 rounded-lg
                   transition-all duration-200
                   ${isActive
-                    ? "bg-purple-50 text-purple-700 font-semibold"
+                    ? "bg-purple-50 text-purple-700 font-semibold shadow-sm"
                     : "hover:bg-gray-50 text-gray-700"}
                 `}
               >
@@ -97,17 +122,14 @@ const Sidebar = ({ isOpen, onClose }) => {
         </nav>
 
         {/* Footer */}
-        <div className="p-4 border-t">
+        <div className="p-4 border-t border-gray-200">
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg"
+            className="w-full flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg transition-all font-medium"
           >
             <LogOut className="w-5 h-5" />
             Logout
           </button>
-          {/* <div className="mt-4 text-center text-xs text-gray-400">
-            v2.4.1 Super Admin Panel
-          </div> */}
         </div>
       </aside>
     </>

@@ -5,6 +5,7 @@ import {
   LayoutDashboard, MapPin, Users, Camera, FileText, 
   Settings, User, LogOut, X
 } from 'lucide-react';
+import Image from 'next/image'; // ✅ Import Image
 
 const Sidebar = ({ isOpen, onClose }) => {
   const router = useRouter();
@@ -42,21 +43,29 @@ const Sidebar = ({ isOpen, onClose }) => {
           isOpen ? 'translate-x-0' : '-translate-x-full'
         } lg:translate-x-0`}
       >
+        {/* ✅ Logo Header Section */}
         <div className="h-16 flex items-center justify-between px-6 border-b border-gray-200">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-xl">A</span>
+            {/* ✅ Logo Image */}
+            <div className="relative w-10 h-10 flex-shrink-0">
+              <Image 
+                src="/logo.png" 
+                alt="ANPR Logo" 
+                width={50}
+                height={50}
+                className="object-cover"
+                priority
+              />
             </div>
             <div>
               <h1 className="font-bold text-gray-900">ANPR Admin</h1>
               <p className="text-xs text-gray-500">Client Portal</p>
             </div>
           </div>
-          <button onClick={onClose} className="lg:hidden p-2 hover:bg-gray-100 rounded-lg">
+          <button onClick={onClose} className="lg:hidden p-2 hover:bg-gray-100 rounded-lg transition">
             <X className="w-5 h-5" />
           </button>
         </div>
-
 
         <nav className="flex-1 overflow-y-auto p-4">
           <div className="space-y-1">
@@ -71,7 +80,7 @@ const Sidebar = ({ isOpen, onClose }) => {
                     onClose();
                   }}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${
-                    active ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-100'
+                    active ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' : 'text-gray-700 hover:bg-gray-100'
                   }`}
                 >
                   <Icon className="w-5 h-5" />
@@ -82,10 +91,10 @@ const Sidebar = ({ isOpen, onClose }) => {
           </div>
         </nav>
 
-        <div className="p-6 border-t border-gray-200">
+        <div className="p-4 border-t border-gray-200">
           <button
             onClick={() => setShowLogoutModal(true)}
-            className="w-full flex items-center gap-3 px-4 py-70 text-red-600 hover:bg-red-50 rounded-lg transition font-medium"
+            className="w-full flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg transition font-medium"
           >
             <LogOut className="w-5 h-5" />
             <span>Logout</span>
@@ -93,21 +102,22 @@ const Sidebar = ({ isOpen, onClose }) => {
         </div>
       </aside>
 
+      {/* Logout Confirmation Modal */}
       {showLogoutModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl p-6 max-w-sm w-full">
+          <div className="bg-white rounded-xl p-6 max-w-sm w-full shadow-2xl">
             <h3 className="text-xl font-bold text-gray-900 mb-2">Confirm Logout</h3>
             <p className="text-gray-600 mb-6">Are you sure you want to logout?</p>
             <div className="flex gap-3">
               <button
                 onClick={() => setShowLogoutModal(false)}
-                className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-semibold"
+                className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-semibold transition"
               >
                 Cancel
               </button>
               <button
                 onClick={handleLogout}
-                className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 font-semibold"
+                className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 font-semibold transition"
               >
                 Logout
               </button>
