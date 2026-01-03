@@ -1,14 +1,32 @@
 "use client";
 import { useState, useEffect } from 'react';
+import axios from 'axios';
 import { 
   Search, Plus, User, Mail, 
   Phone, Power, X, Building2, Lock,
   UserCheck, UserX, Check, Users
 } from 'lucide-react';
 import Sidebar from './sidebar';
-import Header from './header';  // ✅ Import Header
+import Header from './header';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+
+// Axios instance with default config
+const api = axios.create({
+  baseURL: API_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Add auth token to every request
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('accessToken');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
 
 const UserManagement = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -54,25 +72,33 @@ const UserManagement = () => {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('accessToken');
-
       const endpoint = activeTab === 'Project Managers' 
         ? '/api/client-admin/project-managers'
         : '/api/client-admin/supervisors';
 
-      const response = await fetch(`${API_URL}${endpoint}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-
-      const data = await response.json();
+      const response = await api.get(endpoint);
       
+      console.log('API Response:', response.data);
+      
+      // Handle different response structures
+      let usersData = [];
       if (activeTab === 'Project Managers') {
-        setUsers(data.projectManagers || data || []);
+        usersData = response.data.projectManagers || response.data.data || response.data || [];
       } else {
-        setUsers(data.supervisors || data || []);
+        usersData = response.data.supervisors || response.data.data || response.data || [];
       }
+      
+      // Ensure it's an array
+      if (!Array.isArray(usersData)) {
+        console.warn('Users data is not an array:', usersData);
+        usersData = [];
+      }
+      
+      console.log('Setting users:', usersData);
+      setUsers(usersData);
     } catch (err) {
       console.error('Error fetching users:', err);
+      alert(err.response?.data?.message || 'Failed to fetch users');
       setUsers([]);
     } finally {
       setLoading(false);
@@ -82,21 +108,14 @@ const UserManagement = () => {
   const fetchSites = async () => {
     try {
       setLoadingSites(true);
-      const token = localStorage.getItem('accessToken');
-
-      if (!token) {
-        alert('Please login first');
-        return;
-      }
-
-      const response = await fetch(`${API_URL}/api/client-admin/sites`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-
-      const data = await response.json();
-      setSites(data.data || data.sites || []);
+      const response = await api.get('/api/client-admin/sites');
+      
+      const sitesData = response.data.data || response.data.sites || response.data || [];
+      setSites(Array.isArray(sitesData) ? sitesData : []);
     } catch (err) {
       console.error('Error fetching sites:', err);
+      alert(err.response?.data?.message || 'Failed to fetch sites');
+      setSites([]);
     } finally {
       setLoadingSites(false);
     }
@@ -105,16 +124,13 @@ const UserManagement = () => {
   const fetchSupervisors = async () => {
     try {
       setLoadingSupervisors(true);
-      const token = localStorage.getItem('accessToken');
-
-      const response = await fetch(`${API_URL}/api/client-admin/supervisors`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-
-      const data = await response.json();
-      setSupervisors(data.supervisors || data || []);
+      const response = await api.get('/api/client-admin/supervisors');
+      
+      const supervisorsData = response.data.supervisors || response.data.data || response.data || [];
+      setSupervisors(Array.isArray(supervisorsData) ? supervisorsData : []);
     } catch (err) {
       console.error('Error fetching supervisors:', err);
+      setSupervisors([]);
     } finally {
       setLoadingSupervisors(false);
     }
@@ -123,16 +139,13 @@ const UserManagement = () => {
   const fetchProjectManagers = async () => {
     try {
       setLoadingPMs(true);
-      const token = localStorage.getItem('accessToken');
-
-      const response = await fetch(`${API_URL}/api/client-admin/project-managers`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-
-      const data = await response.json();
-      setProjectManagers(data.projectManagers || data || []);
+      const response = await api.get('/api/client-admin/project-managers');
+      
+      const pmsData = response.data.projectManagers || response.data.data || response.data || [];
+      setProjectManagers(Array.isArray(pmsData) ? pmsData : []);
     } catch (err) {
       console.error('Error fetching project managers:', err);
+      setProjectManagers([]);
     } finally {
       setLoadingPMs(false);
     }
@@ -176,8 +189,6 @@ const UserManagement = () => {
 
   const handleCreateUser = async () => {
     try {
-      const token = localStorage.getItem('accessToken');
-
       const payload = {
         name: formData.name,
         email: formData.email,
@@ -199,23 +210,15 @@ const UserManagement = () => {
         ? '/api/client-admin/project-managers'
         : '/api/client-admin/supervisors';
 
-      const response = await fetch(`${API_URL}${endpoint}`, {
-        method: 'POST',
-        headers: { 
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
-      });
+      console.log('Creating user with payload:', payload);
 
-      const data = await response.json();
+      const response = await api.post(endpoint, payload);
 
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to create user');
-      }
+      console.log('User created:', response.data);
 
       alert('User created successfully!');
-      setShowAdd(false);
+      
+      // Reset form
       setFormData({
         name: '',
         email: '',
@@ -227,50 +230,48 @@ const UserManagement = () => {
         assignedSupervisors: [],
         projectManagerId: '',
       });
+      
+      // Close modal
+      setShowAdd(false);
 
-      fetchUsers();
+      // Refresh user list
+      await fetchUsers();
+      
     } catch (err) {
-      alert(err.message || 'Failed to create user');
+      console.error('Error creating user:', err);
+      alert(err.response?.data?.message || err.message || 'Failed to create user');
     }
   };
 
   const handleToggleStatus = async (userId, currentStatus) => {
     try {
-      const token = localStorage.getItem('accessToken');
-      
       const endpoint = activeTab === 'Project Managers'
-        ? `/api/client-admin/project-managers/${userId}/status`
-        : `/api/client-admin/supervisors/${userId}/status`;
+        ? `/api/client-admin/pm/${userId}/status`
+        : `/api/client-admin/supervisor/${userId}/status`;
 
-      const response = await fetch(`${API_URL}${endpoint}`, {
-        method: 'PATCH',
-        headers: { 
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ 
-          status: currentStatus === 'Active' ? 'Inactive' : 'Active' 
-        })
+      await api.patch(endpoint, { 
+        status: currentStatus === 'Active' ? 'Inactive' : 'Active' 
       });
 
-      if (!response.ok) throw new Error('Failed to update status');
+      alert('Status updated successfully!');
+      await fetchUsers();
       
-      fetchUsers();
     } catch (err) {
-      alert('Failed to update status');
+      console.error('Error updating status:', err);
+      alert(err.response?.data?.message || 'Failed to update status');
     }
   };
 
-  const filteredUsers = users.filter(user => {
+  const filteredUsers = Array.isArray(users) ? users.filter(user => {
     const matchesSearch = user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          user.email?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = filterStatus === 'All' || user.status === filterStatus;
     return matchesSearch && matchesStatus;
-  });
+  }) : [];
 
-  const totalPMs = users.filter(u => u.role === 'project_manager').length;
-  const totalSupervisors = users.filter(u => u.role === 'supervisor').length;
-  const activeUsers = users.filter(u => u.status === 'Active').length;
+  const totalPMs = Array.isArray(users) ? users.filter(u => u.role === 'project_manager' || u.role === 'Project Manager').length : 0;
+  const totalSupervisors = Array.isArray(users) ? users.filter(u => u.role === 'supervisor' || u.role === 'Supervisor').length : 0;
+  const activeUsers = Array.isArray(users) ? users.filter(u => u.status === 'Active').length : 0;
 
   if (loading) {
     return (
@@ -286,11 +287,8 @@ const UserManagement = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      
-      {/* ✅ Header Component with Dropdown */}
       <Header title="User Management" onMenuClick={() => setSidebarOpen(true)} />
 
-      {/* Main Content */}
       <main className="lg:ml-72 max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
           <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100">
@@ -361,6 +359,7 @@ const UserManagement = () => {
           </button>
         </div>
 
+        {/* Desktop Table */}
         <div className="hidden md:block bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -413,7 +412,7 @@ const UserManagement = () => {
                     </td>
                     <td className="px-6 py-4">
                       <button 
-                        onClick={() => handleToggleStatus(user._id || user.id, user.status || 'Active')}
+                        onClick={() => handleToggleStatus(user._id, user.status || 'Active')}
                         className={`p-2 hover:bg-gray-100 rounded-lg transition ${
                           user.status === 'Active' ? 'text-red-600' : 'text-green-600'
                         }`}
@@ -436,6 +435,7 @@ const UserManagement = () => {
           )}
         </div>
 
+        {/* Mobile Cards */}
         <div className="md:hidden space-y-4">
           {filteredUsers.map((user) => (
             <div key={user._id || user.id} className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
@@ -501,6 +501,7 @@ const UserManagement = () => {
         </div>
       </main>
 
+      {/* Add User Modal */}
       {showAdd && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
@@ -526,9 +527,7 @@ const UserManagement = () => {
                   placeholder="John Doe"
                   type="text"
                   value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
-                  }
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   className="w-full border border-gray-300 px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
@@ -542,9 +541,7 @@ const UserManagement = () => {
                   placeholder="john@example.com"
                   type="email"
                   value={formData.email}
-                  onChange={(e) =>
-                    setFormData({ ...formData, email: e.target.value })
-                  }
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   className="w-full border border-gray-300 px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
@@ -558,9 +555,7 @@ const UserManagement = () => {
                   placeholder="+91 98765 43210"
                   type="tel"
                   value={formData.mobile}
-                  onChange={(e) =>
-                    setFormData({ ...formData, mobile: e.target.value })
-                  }
+                  onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
                   className="w-full border border-gray-300 px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
@@ -574,9 +569,7 @@ const UserManagement = () => {
                   placeholder="Enter password"
                   type="password"
                   value={formData.password}
-                  onChange={(e) =>
-                    setFormData({ ...formData, password: e.target.value })
-                  }
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   className="w-full border border-gray-300 px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
@@ -642,9 +635,7 @@ const UserManagement = () => {
                           }`}
                         >
                           <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition ${
-                            isSelected 
-                              ? 'bg-blue-600 border-blue-600' 
-                              : 'border-gray-300'
+                            isSelected ? 'bg-blue-600 border-blue-600' : 'border-gray-300'
                           }`}>
                             {isSelected && <Check className="w-3 h-3 text-white" />}
                           </div>
@@ -694,9 +685,7 @@ const UserManagement = () => {
                             }`}
                           >
                             <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition ${
-                              isSelected 
-                                ? 'bg-blue-600 border-blue-600' 
-                                : 'border-gray-300'
+                              isSelected ? 'bg-blue-600 border-blue-600' : 'border-gray-300'
                             }`}>
                               {isSelected && <Check className="w-3 h-3 text-white" />}
                             </div>
@@ -737,7 +726,7 @@ const UserManagement = () => {
                   (activeTab === 'Project Managers' && formData.assignedSites.length === 0) ||
                   (activeTab === 'Supervisors' && (!formData.siteId || !formData.projectManagerId))
                 }
-                className="w-full sm:w-auto px-6 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                className="w-full sm:w-auto px-6 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200 disabled:bg-gray-300 disabled:cursor-not-allowed disabled:shadow-none"
               >
                 Create User
               </button>

@@ -31,6 +31,8 @@ const DeviceMonitoring = () => {
           },
         }
       );
+      console.log(response.data);
+      
 
       setDevices(response.data);
     } catch (err) {
