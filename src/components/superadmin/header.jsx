@@ -203,7 +203,7 @@ const Header = ({ title = "Dashboard", onMenuClick }) => {
         <div className="flex items-center gap-2 md:gap-4">
           
           {/* Notifications Dropdown */}
-          <div className="relative" ref={notificationRef}>
+          {/* <div className="relative" ref={notificationRef}>
             <button 
               onClick={() => setShowNotifications(!showNotifications)}
               className="p-2 hover:bg-gray-100 rounded-lg transition relative"
@@ -216,7 +216,7 @@ const Header = ({ title = "Dashboard", onMenuClick }) => {
               )}
             </button>
 
-            {/* Notifications Dropdown Menu */}
+            Notifications Dropdown Menu
             {showNotifications && (
               <div className="absolute right-0 mt-2 w-80 max-w-[calc(100vw-2rem)] bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
                 <div className="px-4 py-2 border-b border-gray-200">
@@ -287,7 +287,7 @@ const Header = ({ title = "Dashboard", onMenuClick }) => {
                 )}
               </div>
             )}
-          </div>
+          </div> */}
 
           {/* Profile Dropdown */}
           <div className="relative" ref={profileRef}>

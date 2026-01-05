@@ -2,12 +2,13 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import  { api } from "@/lib/axios";
+import { api } from "@/lib/axios";
+import Image from "next/image";
 
 export default function LoginPage() {
   const router = useRouter();
 
-  const [identifier, setIdentifier] = useState(""); // ✅ FIX
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -19,7 +20,7 @@ export default function LoginPage() {
 
     try {
       const res = await api.post("/api/auth/login", {
-        identifier, // ✅ FIX
+        identifier,
         password,
       });
 
@@ -52,6 +53,12 @@ export default function LoginPage() {
     }
   };
 
+  const handleKeyPress = (e) => {
+    if (e.key === "Enter" && !loading) {
+      handleLogin();
+    }
+  };
+
   return (
     <div
       className="min-h-screen flex items-center justify-center"
@@ -62,30 +69,23 @@ export default function LoginPage() {
       <div className="bg-white rounded-2xl shadow-2xl p-10 w-full max-w-md">
         {/* Logo */}
         <div className="flex justify-center mb-6">
-          <div className="bg-blue-600 rounded-2xl p-4 w-14 h-14 flex items-center justify-center">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="white"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="w-7 h-7"
-            >
-              <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-              <path d="M9 3v18" />
-              <path d="M15 3v18" />
-              <path d="M3 9h18" />
-              <path d="M3 15h18" />
-            </svg>
+          <div className="relative w-14 h-14">
+            <Image 
+              src="/logo.png" 
+              alt="Company Logo" 
+              width={56}
+              height={56}
+              className="object-cover"
+              priority
+            />
           </div>
         </div>
 
         <h1 className="text-2xl font-bold text-center text-gray-800 mb-1">
-          ANPR Sentinel
+          ANPR SecureGate
         </h1>
         <p className="text-center text-gray-500 mb-8 text-sm">
-          Secure Enterprise Access
+          Smart India Enterprise
         </p>
 
         {error && (
@@ -114,9 +114,10 @@ export default function LoginPage() {
                 </svg>
               </div>
               <input
-                type="text" // ✅ FIX
+                type="text"
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value)}
+                onKeyPress={handleKeyPress}
                 placeholder="Enter email or phone"
                 className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition text-sm bg-gray-50 text-gray-900 placeholder-gray-500"
               />
@@ -145,6 +146,7 @@ export default function LoginPage() {
                 type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                onKeyPress={handleKeyPress}
                 placeholder="Enter your password"
                 className="w-full pl-10 pr-12 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition text-sm bg-gray-50 text-gray-900 placeholder-gray-500"
               />
@@ -168,7 +170,7 @@ export default function LoginPage() {
         </div>
 
         <div className="mt-8 text-center text-xs text-gray-500">
-          © 2025 ANPR Systems Corp. All rights reserved.
+          © 2026 ANPR Systems Corp. All rights reserved.
         </div>
       </div>
     </div>

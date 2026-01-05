@@ -41,10 +41,10 @@ const Header = ({ title, onMenuClick }) => {
           
           <div className="flex items-center gap-4">
             {/* Notifications */}
-            <button className="p-2 hover:bg-gray-100 rounded-lg transition relative">
+            {/* <button className="p-2 hover:bg-gray-100 rounded-lg transition relative">
               <Bell className="w-6 h-6 text-gray-600" />
               <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-            </button>
+            </button> */}
 
             {/* User Profile Dropdown */}
             <div className="relative">
