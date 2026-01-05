@@ -465,7 +465,7 @@ const VendorManagement = () => {
                 )}
               </div>
 
-              <div className="flex gap-3 pt-4">
+              {/* <div className="flex gap-3 pt-4">
                 <button
                   onClick={() => { setShowAddModal(false); resetForm(); }}
                   className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium"
@@ -479,7 +479,7 @@ const VendorManagement = () => {
                 >
                   {submitting ? 'Adding...' : 'Add Vendor'}
                 </button>
-              </div>
+              </div> */}
             </div>
           </div>
         </div>

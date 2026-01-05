@@ -22,36 +22,32 @@ const DashboardCard = ({ icon: Icon, value, label, subLabel, bgColor, iconColor 
   </div>
 );
 
-const SiteCard = ({ site }) => (
-  <div className="bg-white rounded-lg p-5 border border-gray-200 hover:shadow-md transition">
-    <div className="flex items-start justify-between mb-3">
-      <div>
-        <h3 className="font-bold text-gray-900">{site.name}</h3>
-        <div className="text-sm text-gray-500">{site.id}</div>
+const SiteCard = ({ site }) => {
+  return (
+    <div className="border border-gray-200 rounded-xl p-4 hover:shadow-md transition">
+      <div className="flex items-center justify-between mb-2">
+        <h3 className="font-semibold text-gray-900">{site.name}</h3>
+        <span className="px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-700">
+          {site.status}
+        </span>
       </div>
-      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-        site.status === 'Operational'
-          ? 'bg-green-100 text-green-700'
-          : 'bg-yellow-100 text-yellow-700'
-      }`}>
-        {site.status}
-      </span>
+
+      <div className="grid grid-cols-2 gap-4 text-sm mt-3">
+        <div>
+          <p className="text-gray-500">Barriers</p>
+          <p className="font-semibold">{site.barriersActive} active</p>
+        </div>
+        <div>
+          <p className="text-gray-500">Active Trips</p>
+          <p className="font-semibold">{site.activeTrips}</p>
+        </div>
+      </div>
+
+    
     </div>
-    <div className="grid grid-cols-2 gap-3 mb-3">
-      <div>
-        <div className="text-xs text-gray-500">Barriers</div>
-        <div className="font-semibold text-gray-900">{site.barriers} active</div>
-      </div>
-      <div>
-        <div className="text-xs text-gray-500">Active Trips</div>
-        <div className="font-semibold text-gray-900">{site.activeTrips}</div>
-      </div>
-    </div>
-    <button className="w-full px-3 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition text-sm font-semibold">
-      View Details
-    </button>
-  </div>
-);
+  );
+};
+
 
 const PMDashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);

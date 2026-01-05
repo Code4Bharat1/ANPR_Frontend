@@ -2,10 +2,10 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { 
-  Search, Plus, User, Eye, Edit, MapPin, X, AlertCircle, CheckCircle
+  Search, Plus, User, Eye, Edit, MapPin, X, AlertCircle, CheckCircle, Mail, Calendar, Activity
 } from 'lucide-react';
 import Sidebar from './sidebar';
-import Header from './header';  // ✅ Import Header
+import Header from './header';
 
 const SupervisorManagement = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -15,6 +15,9 @@ const SupervisorManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('All Status');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [selectedSupervisor, setSelectedSupervisor] = useState(null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [alert, setAlert] = useState(null);
   
   const [formData, setFormData] = useState({
@@ -22,10 +25,15 @@ const SupervisorManagement = () => {
     email: '',
     siteId: ''
   });
+  const [editFormData, setEditFormData] = useState({
+    name: '',
+    email: '',
+    siteId: '',
+    contactNumber: ''
+  });
   const [formErrors, setFormErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
 
-  // Create axios instance with base configuration
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
   
   const axiosInstance = axios.create({
@@ -36,7 +44,6 @@ const SupervisorManagement = () => {
     }
   });
 
-  // Add request interceptor to include token automatically
   axiosInstance.interceptors.request.use(
     (config) => {
       const token = localStorage.getItem('accessToken');
@@ -58,13 +65,10 @@ const SupervisorManagement = () => {
     try {
       setLoading(true);
 
-      // Fetch supervisors
       const supervisorsRes = await axiosInstance.get('/api/project/supervisors');
       setSupervisors(supervisorsRes.data);
       console.log(supervisorsRes.data);
-      
 
-      // Fetch sites
       const sitesRes = await axiosInstance.get('/api/project/sites');
       setSites(sitesRes.data);
     } catch (err) {
@@ -77,6 +81,73 @@ const SupervisorManagement = () => {
   const showAlert = (type, message) => {
     setAlert({ type, message });
     setTimeout(() => setAlert(null), 4000);
+  };
+
+  const handleViewDetails = (supervisor) => {
+    setSelectedSupervisor(supervisor);
+    setShowDetailsModal(true);
+  };
+
+  const closeDetailsModal = () => {
+    setShowDetailsModal(false);
+    setSelectedSupervisor(null);
+  };
+
+  const handleEdit = (supervisor) => {
+    setSelectedSupervisor(supervisor);
+    setEditFormData({
+      name: supervisor.name || '',
+      email: supervisor.email || '',
+      siteId: supervisor.siteId?._id || '',
+      contactNumber: supervisor.contactNumber || ''
+    });
+    setShowEditModal(true);
+  };
+
+  const closeEditModal = () => {
+    setShowEditModal(false);
+    setSelectedSupervisor(null);
+    setFormErrors({});
+  };
+
+  const validateEditForm = () => {
+    const errors = {};
+    
+    if (!editFormData.name.trim()) errors.name = 'Name is required';
+    if (!editFormData.email.trim()) {
+      errors.email = 'Email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editFormData.email)) {
+      errors.email = 'Invalid email format';
+    }
+    if (!editFormData.siteId) errors.siteId = 'Please select a site';
+    
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleUpdateSubmit = async () => {
+    if (!validateEditForm()) return;
+    
+    try {
+      setSubmitting(true);
+
+      const response = await axiosInstance.put(
+        `/api/project/supervisors/${selectedSupervisor._id}`, 
+        editFormData
+      );
+      
+      setSupervisors(supervisors.map(sup => 
+        sup._id === selectedSupervisor._id ? response.data : sup
+      ));
+      
+      showAlert('success', 'Supervisor updated successfully!');
+      closeEditModal();
+      fetchData(); // Refresh data
+    } catch (err) {
+      showAlert('error', err.response?.data?.message || 'Failed to update supervisor');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const validateForm = () => {
@@ -164,7 +235,6 @@ const SupervisorManagement = () => {
     <div className="min-h-screen bg-gray-50">
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-      {/* Alert Notification */}
       {alert && (
         <div className={`fixed top-4 right-4 z-50 flex items-center gap-3 px-6 py-4 rounded-lg shadow-lg ${
           alert.type === 'success' ? 'bg-green-500' : 'bg-red-500'
@@ -174,10 +244,8 @@ const SupervisorManagement = () => {
         </div>
       )}
 
-      {/* ✅ Header Component with Dropdown */}
       <Header title="Supervisors" onMenuClick={() => setSidebarOpen(true)} />
 
-      {/* ✅ Main Content with proper spacing */}
       <main className="lg:ml-72 max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         
         {/* Stats Cards */}
@@ -217,13 +285,6 @@ const SupervisorManagement = () => {
             <option value="Active">Active</option>
             <option value="Inactive">Inactive</option>
           </select>
-          {/* <button 
-            onClick={() => setShowAddModal(true)}
-            className="px-4 sm:px-6 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-semibold flex items-center justify-center gap-2 whitespace-nowrap"
-          >
-            <Plus className="w-5 h-5" />
-            Add Supervisor
-          </button> */}
         </div>
 
         {/* Table - Desktop */}
@@ -279,10 +340,18 @@ const SupervisorManagement = () => {
                       <td className="px-6 py-4 font-semibold text-gray-900">{sup.todayTrips || 0}</td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
-                          <button className="p-2 hover:bg-gray-100 rounded-lg text-indigo-600 transition" title="View Details">
+                          <button 
+                            onClick={() => handleViewDetails(sup)}
+                            className="p-2 hover:bg-gray-100 rounded-lg text-indigo-600 transition" 
+                            title="View Details"
+                          >
                             <Eye className="w-4 h-4" />
                           </button>
-                          <button className="p-2 hover:bg-gray-100 rounded-lg text-gray-600 transition" title="Edit">
+                          <button 
+                            onClick={() => handleEdit(sup)}
+                            className="p-2 hover:bg-gray-100 rounded-lg text-gray-600 transition" 
+                            title="Edit"
+                          >
                             <Edit className="w-4 h-4" />
                           </button>
                         </div>
@@ -337,11 +406,17 @@ const SupervisorManagement = () => {
                 </div>
 
                 <div className="flex gap-2">
-                  <button className="flex-1 px-3 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition text-sm font-semibold flex items-center justify-center gap-2">
+                  <button 
+                    onClick={() => handleViewDetails(sup)}
+                    className="flex-1 px-3 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition text-sm font-semibold flex items-center justify-center gap-2"
+                  >
                     <Eye className="w-4 h-4" />
                     View
                   </button>
-                  <button className="flex-1 px-3 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition text-sm font-semibold flex items-center justify-center gap-2">
+                  <button 
+                    onClick={() => handleEdit(sup)}
+                    className="flex-1 px-3 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition text-sm font-semibold flex items-center justify-center gap-2"
+                  >
                     <Edit className="w-4 h-4" />
                     Edit
                   </button>
@@ -352,78 +427,272 @@ const SupervisorManagement = () => {
         </div>
       </main>
 
-      {/* Add Supervisor Modal */}
-      {showAddModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl max-w-md w-full shadow-2xl max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-6 border-b border-gray-200 sticky top-0 bg-white">
-              <h2 className="text-xl font-bold text-gray-900">Add New Supervisor</h2>
-              <button onClick={() => { setShowAddModal(false); resetForm(); }} className="p-2 hover:bg-gray-100 rounded-lg transition">
-                <X className="w-5 h-5" />
+      {/* Supervisor Details Modal */}
+      {showDetailsModal && selectedSupervisor && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            {/* Modal Header */}
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-gray-900">Supervisor Details</h2>
+              <button 
+                onClick={closeDetailsModal}
+                className="text-gray-400 hover:text-gray-600 transition"
+              >
+                <X className="w-6 h-6" />
               </button>
             </div>
-            
+
+            {/* Modal Body */}
+            <div className="p-6 space-y-6">
+              {/* Name & Status */}
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center">
+                    <User className="w-8 h-8 text-indigo-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-bold text-gray-900 mb-1">{selectedSupervisor.name}</h3>
+                    {/* <p className="text-sm text-gray-500">{selectedSupervisor._id}</p> */}
+                  </div>
+                </div>
+                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                  selectedSupervisor.isActive 
+                    ? 'bg-green-100 text-green-700' 
+                    : 'bg-gray-100 text-gray-700'
+                }`}>
+                  {selectedSupervisor.isActive ? 'Active' : 'Inactive'}
+                </span>
+              </div>
+
+              {/* Email */}
+              <div className="bg-gray-50 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <Mail className="w-5 h-5 text-gray-400 mt-0.5" />
+                  <div>
+                    <div className="text-xs text-gray-500 mb-1">Email Address</div>
+                    <div className="text-gray-900 font-medium">{selectedSupervisor.email}</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Site & Contact */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <MapPin className="w-5 h-5 text-gray-400 mt-0.5" />
+                    <div>
+                      <div className="text-xs text-gray-500 mb-1">Assigned Site</div>
+                      <div className="text-gray-900 font-medium">
+                        {selectedSupervisor.siteId?.name || 'Not Assigned'}
+                      </div>
+                      {selectedSupervisor.siteId?.location && (
+                        <div className="text-xs text-gray-500 mt-1">
+                          {selectedSupervisor.siteId.location}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <Activity className="w-5 h-5 text-gray-400 mt-0.5" />
+                    <div>
+                      <div className="text-xs text-gray-500 mb-1">Contact Number</div>
+                      <div className="text-gray-900 font-medium">
+                        {selectedSupervisor.mobile || 'N/A'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Stats */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="text-xs text-gray-500 mb-1">Today's Trips</div>
+                  <div className="text-2xl font-bold text-gray-900">{selectedSupervisor.todayTrips || 0}</div>
+                </div>
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="text-xs text-gray-500 mb-1">Total Trips</div>
+                  <div className="text-2xl font-bold text-gray-900">{selectedSupervisor.totalTrips || 0}</div>
+                </div>
+                <div className="bg-gray-50 rounded-lg p-4 sm:col-span-1 col-span-2">
+                  <div className="text-xs text-gray-500 mb-1">Completed Trips</div>
+                  <div className="text-2xl font-bold text-gray-900">{selectedSupervisor.completedTrips || 0}</div>
+                </div>
+              </div>
+
+              {/* Created Date */}
+              {selectedSupervisor.createdAt && (
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <Calendar className="w-5 h-5 text-gray-400 mt-0.5" />
+                    <div>
+                      <div className="text-xs text-gray-500 mb-1">Joined Date</div>
+                      <div className="text-gray-900 font-medium">
+                        {new Date(selectedSupervisor.createdAt).toLocaleDateString('en-IN', {
+                          day: 'numeric',
+                          month: 'long',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Additional Info */}
+              {selectedSupervisor.notes && (
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="text-xs text-gray-500 mb-2">Notes</div>
+                  <div className="text-gray-900">{selectedSupervisor.notes}</div>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 px-6 py-4 flex gap-3">
+              <button 
+                onClick={closeDetailsModal}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition font-semibold"
+              >
+                Close
+              </button>
+              <button 
+                onClick={() => handleToggleStatus(selectedSupervisor._id, selectedSupervisor.isActive)}
+                className={`flex-1 px-4 py-2 rounded-lg transition font-semibold ${
+                  selectedSupervisor.isActive 
+                    ? 'bg-gray-600 text-white hover:bg-gray-700' 
+                    : 'bg-green-600 text-white hover:bg-green-700'
+                }`}
+              >
+                {selectedSupervisor.isActive ? 'Deactivate' : 'Activate'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Supervisor Modal */}
+      {showEditModal && selectedSupervisor && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            {/* Modal Header */}
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-gray-900">Edit Supervisor</h2>
+              <button 
+                onClick={closeEditModal}
+                className="text-gray-400 hover:text-gray-600 transition"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
             <div className="p-6 space-y-4">
+              {/* Name Field */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Name <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-600 outline-none ${
+                  value={editFormData.name}
+                  onChange={(e) => setEditFormData({...editFormData, name: e.target.value})}
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent outline-none ${
                     formErrors.name ? 'border-red-500' : 'border-gray-300'
                   }`}
-                  placeholder="Enter full name"
+                  placeholder="Enter supervisor name"
                 />
-                {formErrors.name && <p className="text-red-500 text-xs mt-1">{formErrors.name}</p>}
+                {formErrors.name && (
+                  <p className="text-red-500 text-sm mt-1">{formErrors.name}</p>
+                )}
               </div>
 
+              {/* Email Field */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Email *</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Email <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-600 outline-none ${
+                  value={editFormData.email}
+                  onChange={(e) => setEditFormData({...editFormData, email: e.target.value})}
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent outline-none ${
                     formErrors.email ? 'border-red-500' : 'border-gray-300'
                   }`}
-                  placeholder="supervisor@example.com"
+                  placeholder="Enter email address"
                 />
-                {formErrors.email && <p className="text-red-500 text-xs mt-1">{formErrors.email}</p>}
+                {formErrors.email && (
+                  <p className="text-red-500 text-sm mt-1">{formErrors.email}</p>
+                )}
               </div>
 
+              {/* Site Selection */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Assign Site *</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Assigned Site <span className="text-red-500">*</span>
+                </label>
                 <select
-                  value={formData.siteId}
-                  onChange={(e) => setFormData({ ...formData, siteId: e.target.value })}
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-600 outline-none ${
+                  value={editFormData.siteId}
+                  onChange={(e) => setEditFormData({...editFormData, siteId: e.target.value})}
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent outline-none ${
                     formErrors.siteId ? 'border-red-500' : 'border-gray-300'
                   }`}
                 >
                   <option value="">Select a site</option>
                   {sites.map((site) => (
-                    <option key={site._id} value={site._id}>{site.name}</option>
+                    <option key={site._id} value={site._id}>
+                      {site.name} - {site.location}
+                    </option>
                   ))}
                 </select>
-                {formErrors.siteId && <p className="text-red-500 text-xs mt-1">{formErrors.siteId}</p>}
+                {formErrors.siteId && (
+                  <p className="text-red-500 text-sm mt-1">{formErrors.siteId}</p>
+                )}
               </div>
 
-              <div className="flex gap-3 pt-4">
-                <button
-                  onClick={() => { setShowAddModal(false); resetForm(); }}
-                  className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleSubmit}
-                  disabled={submitting}
-                  className="flex-1 px-4 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-semibold disabled:opacity-50"
-                >
-                  {submitting ? 'Adding...' : 'Add Supervisor'}
-                </button>
+              {/* Contact Number Field */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Contact Number
+                </label>
+                <input
+                  type="text"
+                  value={editFormData.mobile}
+                  onChange={(e) => setEditFormData({...editFormData, mobile: e.target.value})}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent outline-none"
+                  placeholder="Enter contact number"
+                />
               </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 px-6 py-4 flex gap-3">
+              <button 
+                onClick={closeEditModal}
+                disabled={submitting}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition font-semibold disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleUpdateSubmit}
+                disabled={submitting}
+                className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-semibold disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {submitting ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Updating...
+                  </>
+                ) : (
+                  'Update Supervisor'
+                )}
+              </button>
             </div>
           </div>
         </div>
