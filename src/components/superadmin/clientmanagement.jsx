@@ -18,15 +18,14 @@ const ClientCard = ({ client, onEdit, onActivate, onDeactivate }) => (
           {client.className}
         </h3>
         <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-2 truncate">
-          {client.companyName }
+          {client.companyName}
         </h3>
         <div className="flex items-center gap-2 text-gray-600">
           <Users className="w-4 h-4 flex-shrink-0" />
           <span className="text-sm truncate">{client.email}</span>
         </div>
       </div>
-      <span className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap self-start ${
-        client.isActive 
+      <span className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap self-start ${client.isActive
           ? 'bg-green-100 text-green-700'
           : 'bg-red-100 text-red-700'
         }`}>
@@ -42,10 +41,13 @@ const ClientCard = ({ client, onEdit, onActivate, onDeactivate }) => (
         </div>
       </div>
       <div>
-        <div className="text-xs text-gray-500 uppercase mb-1">Sites</div>
-        <div className="font-semibold text-gray-900 text-sm md:text-base">
-          {client.sitesCount || 0} Sites
+        <div>
+          <div className="text-xs text-gray-500 uppercase mb-1">Sites</div>
+          <div className="font-semibold text-gray-900 text-sm md:text-base">
+            {client.siteCount || 0} Sites
+          </div>
         </div>
+
       </div>
       <div>
         <div className="text-xs text-gray-500 uppercase mb-1">Package Start</div>
@@ -98,7 +100,7 @@ const ClientCard = ({ client, onEdit, onActivate, onDeactivate }) => (
 // Edit Client Modal
 const EditClientModal = ({ isOpen, onClose, onSubmit, loading, client }) => {
   const [formData, setFormData] = useState({
-    clientname:'',
+    clientname: '',
     companyName: '',
     email: '',
     phone: '',
@@ -111,7 +113,7 @@ const EditClientModal = ({ isOpen, onClose, onSubmit, loading, client }) => {
   useEffect(() => {
     if (client) {
       setFormData({
-        clientname: client. clientname ||'',
+        clientname: client.clientname || '',
         companyName: client.companyName || '',
         email: client.email || '',
         phone: client.phone || '',
@@ -293,7 +295,7 @@ const EditClientModal = ({ isOpen, onClose, onSubmit, loading, client }) => {
 // Add Client Modal
 const AddClientModal = ({ isOpen, onClose, onSubmit, loading }) => {
   const [formData, setFormData] = useState({
-    clientname:'',
+    clientname: '',
     companyName: '',
     email: '',
     phone: '',
@@ -341,7 +343,7 @@ const AddClientModal = ({ isOpen, onClose, onSubmit, loading }) => {
 
         <form onSubmit={handleSubmit} className="p-4 md:p-6">
           <div className="space-y-4">
-             <div>
+            <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Client Name *
               </label>
@@ -638,18 +640,18 @@ const ClientManagement = () => {
     if (confirm(`Activate client ${client.companyName || client.name}?`)) {
       try {
         const token = localStorage.getItem('accessToken');
-        
+
         await axios.put(
           `${process.env.NEXT_PUBLIC_API_URL}/api/superadmin/clients/${client._id}`,
           { isActive: true },
-          { 
-            headers: { 
+          {
+            headers: {
               'Authorization': `Bearer ${token}`,
               'Content-Type': 'application/json'
-            } 
+            }
           }
         );
-        
+
         alert('Client activated successfully!');
         fetchClients();
       } catch (err) {
@@ -663,18 +665,18 @@ const ClientManagement = () => {
     if (confirm(`Deactivate client ${client.companyName || client.name}?`)) {
       try {
         const token = localStorage.getItem('accessToken');
-        
+
         await axios.patch(
           `${process.env.NEXT_PUBLIC_API_URL}/api/superadmin/clients/${client._id}/deactivate`,
           {},
-          { 
-            headers: { 
+          {
+            headers: {
               'Authorization': `Bearer ${token}`,
               'Content-Type': 'application/json'
-            } 
+            }
           }
         );
-        
+
         alert('Client deactivated successfully!');
         fetchClients();
       } catch (err) {
@@ -686,16 +688,16 @@ const ClientManagement = () => {
 
   const filteredClients = clients.filter(client => {
     const searchTerm = searchQuery.toLowerCase();
-    const matchesSearch = 
+    const matchesSearch =
       client.companyName?.toLowerCase().includes(searchTerm) ||
       client.name?.toLowerCase().includes(searchTerm) ||
       client.email?.toLowerCase().includes(searchTerm);
-    
-    const matchesFilter = 
-      filterStatus === 'all' || 
+
+    const matchesFilter =
+      filterStatus === 'all' ||
       (filterStatus === 'active' && client.isActive) ||
       (filterStatus === 'inactive' && !client.isActive);
-    
+
     return matchesSearch && matchesFilter;
   });
 

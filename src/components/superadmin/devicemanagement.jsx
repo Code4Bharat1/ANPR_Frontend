@@ -41,11 +41,14 @@ const DeviceCard = ({ device, onEdit, onToggleStatus }) => (
       </div>
       <div>
         <div className="text-xs text-gray-500 uppercase mb-1">Client</div>
-        <div className="font-semibold text-gray-900 text-sm md:text-base truncate">{device.clientName || 'Not Assigned'}</div>
+        <div className="font-semibold text-gray-900 text-sm md:text-base truncate">{device.clientName ?? 'Not Assigned'}
+</div>
       </div>
       <div className="col-span-2 sm:col-span-1">
         <div className="text-xs text-gray-500 uppercase mb-1">Site</div>
-        <div className="font-semibold text-gray-900 text-sm md:text-base truncate">{device.siteName || 'Not Assigned'}</div>
+        <div className="font-semibold text-gray-900 text-sm md:text-base truncate">{device.siteName ?? 'Not Assigned'}
+
+        </div>
       </div>
       <div className="col-span-2 sm:col-span-1">
         <div className="text-xs text-gray-500 uppercase mb-1">Last Active</div>
@@ -83,18 +86,19 @@ const EditDeviceModal = ({ isOpen, onClose, onSubmit, loading, device, clients, 
     notes: ''
   });
 
-  useEffect(() => {
-    if (device) {
-      setFormData({
-        serialNumber: device.deviceId || '',
-        deviceType: device.type || 'ANPR',
-        clientId: device.clientId || '',
-        siteId: device.siteId || '',
-        ipAddress: device.ipAddress || '',
-        notes: device.notes || ''
-      });
-    }
-  }, [device]);
+ useEffect(() => {
+  if (!device) return;
+
+  setFormData({
+    serialNumber: device.deviceId ?? '',
+    deviceType: device.type ?? 'ANPR',
+    clientId: device.clientId ?? '',
+    siteId: device.siteId ?? '',
+    ipAddress: device.ipAddress ?? '',
+    notes: device.notes ?? ''
+  });
+}, [device]);
+
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -464,7 +468,8 @@ const DeviceManagement = () => {
         }
       );
 
-      setDevices(response.data.data || response.data || []);
+    setDevices(Array.isArray(response.data) ? response.data : []);
+
       setError(null);
     } catch (err) {
       console.error('Error fetching devices:', err);

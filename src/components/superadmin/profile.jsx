@@ -186,26 +186,31 @@ const Profile = () => {
     }
   };
 
-  const handleSaveProfile = async () => {
-    setLoading(true);
-    try {
-      const token = localStorage.getItem('accessToken');
-      await axios.put(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/superadmin/profile/change-password`,
-        profileData,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+const handleSaveProfile = async () => {
+  setLoading(true);
+  try {
+    const token = localStorage.getItem("accessToken");
 
-      alert('Profile updated successfully!');
-      setIsEditing(false);
-      fetchProfile(); // Refresh
-    } catch (error) {
-      console.error('Error updating profile:', error);
-      alert(error.response?.data?.message || 'Failed to update profile');
-    } finally {
-      setLoading(false);
-    }
-  };
+    await axios.put(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/superadmin/profile`,
+      {
+        fullName: profileData.fullName,
+        phone: profileData.phone,
+        location: profileData.location,
+      },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    alert("Profile updated successfully!");
+    setIsEditing(false);
+    fetchProfile();
+  } catch (err) {
+    alert(err.response?.data?.message || "Failed to update profile");
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const handleRevokeSession = async (sessionId) => {
     if (confirm('Are you sure you want to revoke this session?')) {

@@ -1,13 +1,15 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import {
-  TrendingUp, TrendingDown, Users, MapPin, Camera, Activity, 
-  DollarSign, Download, Calendar, Menu, X, LayoutDashboard, 
+  TrendingUp, TrendingDown, Users, MapPin, Camera, Activity,
+  DollarSign, Download, Calendar, Menu, X, LayoutDashboard,
   BarChart3, Settings, LogOut, FileText, Server, User,
   IndianRupeeIcon
 } from 'lucide-react';
 import Sidebar from './sidebar';
 import SuperAdminLayout from './layout';
+import axios from 'axios';
+import api from '@/lib/axios';
 
 
 
@@ -22,9 +24,8 @@ const StatCard = ({ icon: Icon, title, value, trend, trendValue, bgColor, iconCo
         <Icon className={`w-5 h-5 md:w-6 md:h-6 ${iconColor}`} />
       </div>
       {trend && (
-        <div className={`flex items-center gap-1 text-xs md:text-sm font-semibold ${
-          trend === 'up' ? 'text-green-600' : 'text-red-600'
-        }`}>
+        <div className={`flex items-center gap-1 text-xs md:text-sm font-semibold ${trend === 'up' ? 'text-green-600' : 'text-red-600'
+          }`}>
           {trend === 'up' ? <TrendingUp className="w-3 h-3 md:w-4 md:h-4" /> : <TrendingDown className="w-3 h-3 md:w-4 md:h-4" />}
           {trendValue}%
         </div>
@@ -56,23 +57,27 @@ const TopClientCard = ({ client, rank }) => (
 
 // Trip Trend Chart
 const TripTrendChart = ({ data }) => {
+  if (!data || data.length === 0) {
+    return (
+      <div className="bg-white rounded-xl p-6 border text-center text-gray-500">
+        No trip data available
+      </div>
+    );
+  }
+
   const maxValue = Math.max(...data.map(d => d.value), 1);
-  
+
   return (
-    <div className="bg-white rounded-xl p-4 md:p-6 shadow-sm border border-gray-100">
-      <h3 className="text-base md:text-lg font-bold text-gray-900 mb-4 md:mb-6">Trip Trends </h3>
-      <div className="flex items-end justify-between gap-1 md:gap-2 h-40 md:h-48">
+    <div className="bg-white rounded-xl p-6 border">
+      <h3 className="font-bold mb-4">Trip Trends</h3>
+      <div className="flex items-end h-40 gap-2">
         {data.map((item, index) => (
-          <div key={index} className="flex-1 flex flex-col items-center">
-            <div className="w-full bg-purple-500 rounded-t-lg relative transition-all duration-300 hover:bg-purple-600" style={{ 
-              height: `${(item.value / maxValue) * 100}%`,
-              minHeight: '20px'
-            }}>
-              <div className="absolute -top-5 md:-top-6 left-0 right-0 text-center text-xs md:text-sm font-semibold text-gray-900">
-                {item.value}
-              </div>
-            </div>
-            <div className="text-xs text-gray-600 mt-2">{item.day}</div>
+          <div key={index} className="flex-1 text-center">
+            <div
+              className="bg-purple-500 rounded-t"
+              style={{ height: `${(item.value / maxValue) * 100}%` }}
+            />
+            <div className="text-xs mt-2">{item.day}</div>
           </div>
         ))}
       </div>
@@ -83,7 +88,7 @@ const TripTrendChart = ({ data }) => {
 // Revenue Chart
 const RevenueChart = ({ data }) => {
   const maxValue = Math.max(...data.map(d => d.value), 1);
-  
+
   return (
     <div className="bg-white rounded-xl p-4 md:p-6 shadow-sm border border-gray-100">
       <div className="flex items-center justify-between mb-4 md:mb-6">
@@ -93,7 +98,7 @@ const RevenueChart = ({ data }) => {
       <div className="flex items-end justify-between gap-1 md:gap-2 h-40 md:h-48">
         {data.map((item, index) => (
           <div key={index} className="flex-1 flex flex-col items-center">
-            <div className="w-full bg-gradient-to-t from-green-400 to-green-600 rounded-t-lg relative transition-all duration-300 hover:from-green-500 hover:to-green-700" style={{ 
+            <div className="w-full bg-gradient-to-t from-green-400 to-green-600 rounded-t-lg relative transition-all duration-300 hover:from-green-500 hover:to-green-700" style={{
               height: `${(item.value / maxValue) * 100}%`,
               minHeight: '30px'
             }}>
@@ -115,25 +120,57 @@ const SuperAdminAnalytics = () => {
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
   const [dateRange, setDateRange] = useState('7days');
+  const periodMap = {
+  today: "today",
+  "7days": "7d",
+  "30days": "30d",
+  "90days": "90d"
+};
+
 
   useEffect(() => {
     fetchAnalytics();
   }, [dateRange]);
 
-  const fetchAnalytics = async () => {
+const fetchAnalytics = async () => {
+  try {
+    setLoading(true);
+
+    const period = periodMap[dateRange] || "7d";
+
+    const [summaryRes, tripsRes, clientsRes] = await Promise.all([
+      api.get(`/api/superadmin/analytics/summary?period=${period}`),
+      api.get(`/api/superadmin/analytics/trips?period=${period}`),
+      api.get(`/api/superadmin/analytics/clients?period=${period}`),
+    ]);
+
+    setAnalyticsData({
+      ...summaryRes.data,
+      tripTrends: tripsRes.data.map(t => ({
+        day: t.date,
+        value: t.trips
+      })),
+      clientDistribution: clientsRes.data,
+      revenueData: summaryRes.data.revenueData || [],
+      topClients: summaryRes.data.topClients || []
+    });
+
+  } finally {
     setLoading(false);
-    
-    
-  };
+  }
+};
+
+
+
 
   const exportToCSV = () => {
     if (!analyticsData) return;
-    
+
     setExporting(true);
-    
+
     try {
       let csvContent = "data:text/csv;charset=utf-8,";
-      
+
       csvContent += "Analytics Summary Report\n";
       csvContent += `Generated on:,${new Date().toLocaleString()}\n`;
       csvContent += `Date Range:,${dateRange}\n\n`;
@@ -143,27 +180,27 @@ const SuperAdminAnalytics = () => {
       csvContent += `Total Devices,${analyticsData.totalDevices}\n`;
       csvContent += `Total Trips,${analyticsData.totalTrips}\n`;
       csvContent += `Total Revenue (₹),${analyticsData.totalRevenue.toLocaleString()}\n\n`;
-      
+
       csvContent += "Trip Trends - Last 7 Days\n";
       csvContent += "Day,Trips\n";
       analyticsData.tripTrends.forEach(item => {
         csvContent += `${item.day},${item.value}\n`;
       });
       csvContent += "\n";
-      
+
       csvContent += "Revenue Analytics - Last 6 Months\n";
       csvContent += "Month,Revenue (₹ thousands)\n";
       analyticsData.revenueData.forEach(item => {
         csvContent += `${item.month},${item.value}\n`;
       });
       csvContent += "\n";
-      
+
       csvContent += "Top Performing Clients\n";
       csvContent += "Rank,Client Name,Sites,Devices,Total Trips\n";
       analyticsData.topClients.forEach((client, index) => {
         csvContent += `${index + 1},${client.name},${client.sites},${client.devices},${client.trips}\n`;
       });
-      
+
       const encodedUri = encodeURI(csvContent);
       const link = document.createElement("a");
       link.setAttribute("href", encodedUri);
@@ -172,7 +209,7 @@ const SuperAdminAnalytics = () => {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
+
       setExporting(false);
     } catch (err) {
       console.error('Error exporting to CSV:', err);
@@ -235,10 +272,10 @@ const SuperAdminAnalytics = () => {
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 md:gap-6 mb-6 md:mb-8">
         <StatCard
           icon={Users}
-          title="Total Clients"
-          value={analyticsData?.totalClients || 0}
-          bgColor="bg-purple-50"
-          iconColor="text-purple-600"
+          title="Active Clients"
+          value={analyticsData?.totalClients}
+          trend="up"
+          trendValue={analyticsData?.growth?.clients}
         />
         <StatCard
           icon={MapPin}
@@ -257,16 +294,16 @@ const SuperAdminAnalytics = () => {
         <StatCard
           icon={Activity}
           title="Total Trips"
-          value={(analyticsData?.totalTrips || 0).toLocaleString()}
-          bgColor="bg-orange-50"
-          iconColor="text-orange-600"
+          value={analyticsData?.totalTrips}
+          trend="up"
+          trendValue={analyticsData?.growth?.trips}
         />
         <StatCard
           icon={IndianRupeeIcon}
           title="Total Revenue"
-          value={`₹${(analyticsData?.totalRevenue || 0).toLocaleString()}`}
-          bgColor="bg-green-50"
-          iconColor="text-green-600"
+          value={`₹${analyticsData?.totalRevenue}`}
+          trend="up"
+          trendValue={analyticsData?.growth?.revenue}
         />
       </div>
 
@@ -275,6 +312,16 @@ const SuperAdminAnalytics = () => {
         <TripTrendChart data={analyticsData?.tripTrends || []} />
         <RevenueChart data={analyticsData?.revenueData || []} />
       </div>
+      {analyticsData?.clientDistribution?.length ? (
+        analyticsData.clientDistribution.map((c, i) => (
+          <div key={i} className="flex justify-between text-sm py-1">
+            <span>{c.label}</span>
+            <span>{c.percent}%</span>
+          </div>
+        ))
+      ) : (
+        <p className="text-sm text-gray-500">No client distribution data</p>
+      )}
 
       {/* Top Clients */}
       <div className="bg-white rounded-xl p-4 md:p-6 shadow-sm border border-gray-100">

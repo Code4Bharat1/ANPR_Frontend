@@ -290,7 +290,7 @@ const Settings = () => {
         </div>
 
         {/* Logo Upload */}
-        <div className="mb-4">
+        {/* <div className="mb-4">
           <label className="block text-xs md:text-sm font-semibold text-gray-700 mb-2">
             Company Logo
           </label>
@@ -327,11 +327,11 @@ const Settings = () => {
               <p className="text-xs text-gray-500 mt-2">PNG, JPG up to 2MB</p>
             </div>
           </div>
-        </div>
+        </div> */}
       </SettingsSection>
 
       {/* Preferences */}
-      <SettingsSection
+      {/* <SettingsSection
         title="Preferences"
         description="Customize your system preferences"
       >
@@ -396,125 +396,13 @@ const Settings = () => {
             </select>
           </div>
         </div>
-      </SettingsSection>
+      </SettingsSection> */}
 
       {/* Security Settings */}
-      <SettingsSection
-        title="Security"
-        description="Manage your account security and password"
-      >
-        <div className="mb-6">
-          <h3 className="font-semibold text-gray-900 mb-4 text-sm md:text-base">Change Password</h3>
-          
-          <InputField
-            label="Current Password"
-            type={showPassword ? "text" : "password"}
-            value={security.currentPassword}
-            onChange={(e) => setSecurity({...security, currentPassword: e.target.value})}
-            placeholder="Enter current password"
-          />
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-            <InputField
-              label="New Password"
-              type={showPassword ? "text" : "password"}
-              value={security.newPassword}
-              onChange={(e) => setSecurity({...security, newPassword: e.target.value})}
-              placeholder="Enter new password"
-            />
-            <InputField
-              label="Confirm Password"
-              type={showPassword ? "text" : "password"}
-              value={security.confirmPassword}
-              onChange={(e) => setSecurity({...security, confirmPassword: e.target.value})}
-              placeholder="Confirm new password"
-            />
-          </div>
-
-          <button
-            onClick={() => setShowPassword(!showPassword)}
-            className="text-xs md:text-sm text-purple-600 hover:text-purple-700 font-semibold mb-4 flex items-center gap-2"
-          >
-            {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            {showPassword ? 'Hide' : 'Show'} Passwords
-          </button>
-
-          <button
-            onClick={handlePasswordChange}
-            disabled={loading}
-            className="px-4 md:px-6 py-2 md:py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition disabled:opacity-50 disabled:cursor-not-allowed font-semibold text-sm md:text-base"
-          >
-            {loading ? 'Updating...' : 'Update Password'}
-          </button>
-        </div>
-
-        {/* Two-Factor Authentication */}
-        <div className="pt-6 border-t border-gray-200">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <h3 className="font-semibold text-gray-900 mb-1 text-sm md:text-base">Two-Factor Authentication</h3>
-              <p className="text-xs md:text-sm text-gray-600">Add an extra layer of security to your account</p>
-            </div>
-            <button
-              onClick={() => setSecurity({...security, twoFactorEnabled: !security.twoFactorEnabled})}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition flex-shrink-0 ${
-                security.twoFactorEnabled ? 'bg-purple-600' : 'bg-gray-300'
-              }`}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${
-                  security.twoFactorEnabled ? 'translate-x-6' : 'translate-x-1'
-                }`}
-              />
-            </button>
-          </div>
-        </div>
-
-        {/* Active Sessions */}
-        <div className="pt-6 border-t border-gray-200 mt-6">
-          <h3 className="font-semibold text-gray-900 mb-4 text-sm md:text-base">Active Sessions</h3>
-          <ActiveSession
-            device="Chrome on Windows"
-            location="Mumbai, India"
-            ipAddress="192.168.1.1"
-            lastActive="Active now"
-            isCurrent={true}
-          />
-          <ActiveSession
-            device="Safari on MacOS"
-            location="Delhi, India"
-            ipAddress="192.168.1.45"
-            lastActive="2 hours ago"
-            isCurrent={false}
-            onRevoke={() => handleRevokeSession('session-2')}
-          />
-        </div>
-      </SettingsSection>
+      
 
       {/* System Information */}
-      <SettingsSection
-        title="About"
-        description="System version and license information"
-      >
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
-          <div className="p-3 md:p-4 bg-gray-50 rounded-lg">
-            <div className="text-xs md:text-sm text-gray-600 mb-1">System Version</div>
-            <div className="font-semibold text-gray-900 text-sm md:text-base">ANPR v2.5.1</div>
-          </div>
-          <div className="p-3 md:p-4 bg-gray-50 rounded-lg">
-            <div className="text-xs md:text-sm text-gray-600 mb-1">License Type</div>
-            <div className="font-semibold text-gray-900 text-sm md:text-base">Enterprise</div>
-          </div>
-          <div className="p-3 md:p-4 bg-gray-50 rounded-lg">
-            <div className="text-xs md:text-sm text-gray-600 mb-1">License Expires</div>
-            <div className="font-semibold text-gray-900 text-sm md:text-base">Dec 31, 2026</div>
-          </div>
-          <div className="p-3 md:p-4 bg-gray-50 rounded-lg">
-            <div className="text-xs md:text-sm text-gray-600 mb-1">Support</div>
-            <div className="font-semibold text-gray-900 text-sm md:text-base">24/7 Premium</div>
-          </div>
-        </div>
-      </SettingsSection>
+    
 
       {/* Save Button */}
       <div className="flex flex-col sm:flex-row justify-end gap-3 md:gap-4">
