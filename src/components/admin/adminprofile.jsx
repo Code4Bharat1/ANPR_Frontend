@@ -184,7 +184,7 @@ const AdminProfile = () => {
                   profileData.fullName.charAt(0) || 'A'
                 )}
               </div>
-              <label className="absolute bottom-0 right-0 w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center cursor-pointer hover:bg-blue-700 transition border-4 border-white">
+              {/* <label className="absolute bottom-0 right-0 w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center cursor-pointer hover:bg-blue-700 transition border-4 border-white">
                 <Camera className="w-5 h-5 text-white" />
                 <input
                   type="file"
@@ -192,7 +192,7 @@ const AdminProfile = () => {
                   onChange={handleImageUpload}
                   className="hidden"
                 />
-              </label>
+              </label> */}
             </div>
 
             <div className="flex-1 text-center md:text-left">
@@ -328,7 +328,7 @@ const AdminProfile = () => {
             </div>
 
             {/* Company Details - Only show for client roles */}
-            {(companyData.name || isEditing) && (
+            {/* {(companyData.name || isEditing) && (
               <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
                 <h2 className="text-xl font-bold text-gray-900 mb-6">Company Details</h2>
                 
@@ -377,7 +377,7 @@ const AdminProfile = () => {
                   </div>
                 </div>
               </div>
-            )}
+            )} */}
 
             {isEditing && (
               <div className="flex justify-end gap-4">

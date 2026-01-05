@@ -1,15 +1,15 @@
 "use client";
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { 
-  Search, Plus, User, Mail, 
+import {
+  Search, Plus, User, Mail,
   Phone, Power, X, Building2, Lock,
   UserCheck, UserX, Check, Users
 } from 'lucide-react';
 import Sidebar from './sidebar';
 import Header from './header';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ;
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 // Axios instance with default config
 const api = axios.create({
@@ -59,8 +59,8 @@ const UserManagement = () => {
   }, [activeTab]);
 
   useEffect(() => {
-    setFormData(prev => ({ 
-      ...prev, 
+    setFormData(prev => ({
+      ...prev,
       role: activeTab,
       assignedSites: [],
       siteId: '',
@@ -72,14 +72,14 @@ const UserManagement = () => {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const endpoint = activeTab === 'Project Managers' 
+      const endpoint = activeTab === 'Project Managers'
         ? '/api/client-admin/project-managers'
         : '/api/client-admin/supervisors';
 
       const response = await api.get(endpoint);
-      
+
       console.log('API Response:', response.data);
-      
+
       // Handle different response structures
       let usersData = [];
       if (activeTab === 'Project Managers') {
@@ -87,13 +87,13 @@ const UserManagement = () => {
       } else {
         usersData = response.data.supervisors || response.data.data || response.data || [];
       }
-      
+
       // Ensure it's an array
       if (!Array.isArray(usersData)) {
         console.warn('Users data is not an array:', usersData);
         usersData = [];
       }
-      
+
       console.log('Setting users:', usersData);
       setUsers(usersData);
     } catch (err) {
@@ -109,7 +109,7 @@ const UserManagement = () => {
     try {
       setLoadingSites(true);
       const response = await api.get('/api/client-admin/sites');
-      
+
       const sitesData = response.data.data || response.data.sites || response.data || [];
       setSites(Array.isArray(sitesData) ? sitesData : []);
     } catch (err) {
@@ -125,7 +125,7 @@ const UserManagement = () => {
     try {
       setLoadingSupervisors(true);
       const response = await api.get('/api/client-admin/supervisors');
-      
+
       const supervisorsData = response.data.supervisors || response.data.data || response.data || [];
       setSupervisors(Array.isArray(supervisorsData) ? supervisorsData : []);
     } catch (err) {
@@ -140,7 +140,7 @@ const UserManagement = () => {
     try {
       setLoadingPMs(true);
       const response = await api.get('/api/client-admin/project-managers');
-      
+
       const pmsData = response.data.projectManagers || response.data.data || response.data || [];
       setProjectManagers(Array.isArray(pmsData) ? pmsData : []);
     } catch (err) {
@@ -154,7 +154,7 @@ const UserManagement = () => {
   const handleOpenAddModal = () => {
     setShowAdd(true);
     fetchSites();
-    
+
     if (activeTab === 'Project Managers') {
       fetchSupervisors();
     } else {
@@ -194,6 +194,8 @@ const UserManagement = () => {
         email: formData.email,
         mobile: formData.mobile,
         password: formData.password,
+        siteId: formData.siteId,
+        projectManagerId: formData.projectManagerId,
       };
 
       if (activeTab === 'Project Managers') {
@@ -217,7 +219,7 @@ const UserManagement = () => {
       console.log('User created:', response.data);
 
       alert('User created successfully!');
-      
+
       // Reset form
       setFormData({
         name: '',
@@ -230,13 +232,13 @@ const UserManagement = () => {
         assignedSupervisors: [],
         projectManagerId: '',
       });
-      
+
       // Close modal
       setShowAdd(false);
 
       // Refresh user list
       await fetchUsers();
-      
+
     } catch (err) {
       console.error('Error creating user:', err);
       alert(err.response?.data?.message || err.message || 'Failed to create user');
@@ -249,13 +251,13 @@ const UserManagement = () => {
         ? `/api/client-admin/pm/${userId}/status`
         : `/api/client-admin/supervisor/${userId}/status`;
 
-      await api.patch(endpoint, { 
-        status: currentStatus === 'Active' ? 'Inactive' : 'Active' 
+      await api.patch(endpoint, {
+        status: currentStatus === 'Active' ? 'Inactive' : 'Active'
       });
 
       alert('Status updated successfully!');
       await fetchUsers();
-      
+
     } catch (err) {
       console.error('Error updating status:', err);
       alert(err.response?.data?.message || 'Failed to update status');
@@ -264,7 +266,7 @@ const UserManagement = () => {
 
   const filteredUsers = Array.isArray(users) ? users.filter(user => {
     const matchesSearch = user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.email?.toLowerCase().includes(searchTerm.toLowerCase());
+      user.email?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = filterStatus === 'All' || user.status === filterStatus;
     return matchesSearch && matchesStatus;
   }) : [];
@@ -309,21 +311,19 @@ const UserManagement = () => {
           <div className="flex gap-4 sm:gap-6 min-w-max">
             <button
               onClick={() => setActiveTab('Project Managers')}
-              className={`pb-3 px-1 font-semibold transition whitespace-nowrap ${
-                activeTab === 'Project Managers'
-                  ? 'text-blue-600 border-b-2 border-blue-600'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
+              className={`pb-3 px-1 font-semibold transition whitespace-nowrap ${activeTab === 'Project Managers'
+                ? 'text-blue-600 border-b-2 border-blue-600'
+                : 'text-gray-600 hover:text-gray-900'
+                }`}
             >
               Project Managers
             </button>
             <button
               onClick={() => setActiveTab('Supervisors')}
-              className={`pb-3 px-1 font-semibold transition whitespace-nowrap ${
-                activeTab === 'Supervisors'
-                  ? 'text-blue-600 border-b-2 border-blue-600'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
+              className={`pb-3 px-1 font-semibold transition whitespace-nowrap ${activeTab === 'Supervisors'
+                ? 'text-blue-600 border-b-2 border-blue-600'
+                : 'text-gray-600 hover:text-gray-900'
+                }`}
             >
               Supervisors
             </button>
@@ -350,7 +350,7 @@ const UserManagement = () => {
             <option value="Active">Active</option>
             <option value="Inactive">Inactive</option>
           </select>
-          <button 
+          <button
             onClick={handleOpenAddModal}
             className="px-4 sm:px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold flex items-center justify-center gap-2 text-sm sm:text-base whitespace-nowrap"
           >
@@ -397,25 +397,23 @@ const UserManagement = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-900">
-                      {user.assignedSites?.length > 0 
+                      {user.assignedSites?.length > 0
                         ? `${user.assignedSites.length} sites`
                         : user.siteId?.name || '-'}
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
-                        user.status === 'Active'
-                          ? 'bg-green-100 text-green-700'
-                          : 'bg-gray-100 text-gray-700'
-                      }`}>
+                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${user.status === 'Active'
+                        ? 'bg-green-100 text-green-700'
+                        : 'bg-gray-100 text-gray-700'
+                        }`}>
                         {user.status || 'Active'}
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <button 
+                      <button
                         onClick={() => handleToggleStatus(user._id, user.status || 'Active')}
-                        className={`p-2 hover:bg-gray-100 rounded-lg transition ${
-                          user.status === 'Active' ? 'text-red-600' : 'text-green-600'
-                        }`}
+                        className={`p-2 hover:bg-gray-100 rounded-lg transition ${user.status === 'Active' ? 'text-red-600' : 'text-green-600'
+                          }`}
                         title={user.status === 'Active' ? 'Disable' : 'Enable'}
                       >
                         <Power className="w-4 h-4" />
@@ -444,15 +442,14 @@ const UserManagement = () => {
                   <h3 className="font-semibold text-gray-900">{user.name}</h3>
                   <p className="text-sm text-gray-600">{user.email}</p>
                 </div>
-                <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${
-                  user.status === 'Active'
-                    ? 'bg-green-100 text-green-700'
-                    : 'bg-gray-100 text-gray-700'
-                }`}>
+                <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${user.status === 'Active'
+                  ? 'bg-green-100 text-green-700'
+                  : 'bg-gray-100 text-gray-700'
+                  }`}>
                   {user.status || 'Active'}
                 </span>
               </div>
-              
+
               <div className="space-y-2 mb-3">
                 <div className="flex items-center gap-2 text-sm">
                   <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">
@@ -461,20 +458,19 @@ const UserManagement = () => {
                 </div>
                 <div className="text-sm text-gray-600">
                   <Building2 className="w-4 h-4 inline mr-1" />
-                  {user.assignedSites?.length > 0 
+                  {user.assignedSites?.length > 0
                     ? `${user.assignedSites.length} sites`
                     : user.siteId?.name || '-'}
                 </div>
               </div>
 
               <div className="flex gap-2">
-                <button 
+                <button
                   onClick={() => handleToggleStatus(user._id || user.id, user.status || 'Active')}
-                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm transition ${
-                    user.status === 'Active'
-                      ? 'bg-red-50 text-red-600 hover:bg-red-100'
-                      : 'bg-green-50 text-green-600 hover:bg-green-100'
-                  }`}
+                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm transition ${user.status === 'Active'
+                    ? 'bg-red-50 text-red-600 hover:bg-red-100'
+                    : 'bg-green-50 text-green-600 hover:bg-green-100'
+                    }`}
                 >
                   {user.status === 'Active' ? (
                     <>
@@ -588,16 +584,18 @@ const UserManagement = () => {
                   ) : (
                     <select
                       value={formData.projectManagerId}
-                      onChange={(e) => setFormData({ ...formData, projectManagerId: e.target.value })}
-                      className="w-full border border-gray-300 px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      onChange={(e) =>
+                        setFormData({ ...formData, projectManagerId: e.target.value })
+                      }
                     >
                       <option value="">Select Project Manager</option>
                       {projectManagers.map((pm) => (
-                        <option key={pm._id || pm.id} value={pm._id || pm.id}>
+                        <option key={pm._id} value={pm._id}>
                           {pm.name}
                         </option>
                       ))}
                     </select>
+
                   )}
                 </div>
               )}
@@ -607,7 +605,7 @@ const UserManagement = () => {
                   <Building2 className="w-4 h-4" />
                   {activeTab === 'Project Managers' ? 'Assigned Sites (Multiple)' : 'Assigned Site'}
                 </label>
-                
+
                 {loadingSites ? (
                   <div className="w-full border border-gray-300 px-4 py-3 rounded-lg bg-gray-50 flex items-center justify-center">
                     <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mr-2"></div>
@@ -630,13 +628,11 @@ const UserManagement = () => {
                         <div
                           key={siteId}
                           onClick={() => handleToggleSite(siteId)}
-                          className={`flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-gray-50 transition border-b border-gray-100 last:border-b-0 ${
-                            isSelected ? 'bg-blue-50' : ''
-                          }`}
+                          className={`flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-gray-50 transition border-b border-gray-100 last:border-b-0 ${isSelected ? 'bg-blue-50' : ''
+                            }`}
                         >
-                          <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition ${
-                            isSelected ? 'bg-blue-600 border-blue-600' : 'border-gray-300'
-                          }`}>
+                          <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition ${isSelected ? 'bg-blue-600 border-blue-600' : 'border-gray-300'
+                            }`}>
                             {isSelected && <Check className="w-3 h-3 text-white" />}
                           </div>
                           <span className={`text-sm ${isSelected ? 'font-semibold text-blue-900' : 'text-gray-700'}`}>
@@ -680,13 +676,11 @@ const UserManagement = () => {
                           <div
                             key={supervisorId}
                             onClick={() => handleToggleSupervisor(supervisorId)}
-                            className={`flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-gray-50 transition border-b border-gray-100 last:border-b-0 ${
-                              isSelected ? 'bg-blue-50' : ''
-                            }`}
+                            className={`flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-gray-50 transition border-b border-gray-100 last:border-b-0 ${isSelected ? 'bg-blue-50' : ''
+                              }`}
                           >
-                            <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition ${
-                              isSelected ? 'bg-blue-600 border-blue-600' : 'border-gray-300'
-                            }`}>
+                            <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition ${isSelected ? 'bg-blue-600 border-blue-600' : 'border-gray-300'
+                              }`}>
                               {isSelected && <Check className="w-3 h-3 text-white" />}
                             </div>
                             <div className="flex-1">
@@ -720,8 +714,8 @@ const UserManagement = () => {
               <button
                 onClick={handleCreateUser}
                 disabled={
-                  !formData.name || 
-                  !formData.email || 
+                  !formData.name ||
+                  !formData.email ||
                   !formData.password ||
                   (activeTab === 'Project Managers' && formData.assignedSites.length === 0) ||
                   (activeTab === 'Supervisors' && (!formData.siteId || !formData.projectManagerId))

@@ -215,7 +215,7 @@ const AdminSettings = () => {
               />
             </div>
 
-            <div>
+            {/* <div>
               <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-2">Company Logo</label>
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
                 {logoPreview ? (
@@ -247,7 +247,7 @@ const AdminSettings = () => {
                   <p className="text-xs text-gray-500 mt-2">Recommended 200x200px (PNG, JPG, Max 5MB)</p>
                 </div>
               </div>
-            </div>
+            </div> */}
           </div>
         </div>
 

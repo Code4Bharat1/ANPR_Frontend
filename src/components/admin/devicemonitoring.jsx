@@ -51,15 +51,23 @@ const DeviceMonitoring = () => {
     const deviceType = device.devicetype || device.type || device.deviceType || 'Unknown';
     
     // Handle site - API returns siteId as ObjectId, not populated site
-    let siteName = 'Unknown';
-    if (typeof device.site === 'string') {
-      siteName = device.site;
-    } else if (device.site?.name) {
-      siteName = device.site.name;
-    } else if (device.siteId) {
-      siteName = typeof device.siteId === 'string' ? device.siteId : device.siteId.$oid || 'Unknown';
-    }
-    
+  let siteName = 'Unknown';
+
+// Case 1: backend ne `site` object bheja
+if (device.site?.name) {
+  siteName = device.site.name;
+}
+
+// Case 2: backend ne `siteId` populate kiya hai
+else if (device.siteId?.name) {
+  siteName = device.siteId.name;
+}
+
+// Case 3: backend ne direct site name string bheja
+else if (typeof device.site === 'string') {
+  siteName = device.site;
+}
+
     // Handle status - API uses 'isOnline' boolean
     const status = device.isOnline === true ? 'Online' : 'Offline';
     

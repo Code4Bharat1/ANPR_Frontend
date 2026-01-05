@@ -114,40 +114,40 @@ const LiveMonitoring = () => {
     }
   };
 
-  const fetchLiveData = async () => {
-    try {
-      const params = {};
-      if (selectedSite !== 'all') {
-        params.siteId = selectedSite;
-      }
-
-      // Fetch all data in parallel
-      const [vehiclesRes, barriersRes, activitiesRes] = await Promise.all([
-        axiosInstance.get('/api/projectmanager/live-monitoring/vehicles', { params }),
-        axiosInstance.get('/api/projectmanager/live-monitoring/barriers', { params }),
-        axiosInstance.get('/api/projectmanager/live-monitoring/activities', { params })
-      ]);
-
-      const vehicles = vehiclesRes.data;
-      const barriers = barriersRes.data;
-      const activities = activitiesRes.data;
-
-      setLiveData({
-        vehicles,
-        barriers,
-        activities,
-        stats: {
-          activeVehicles: vehicles.filter(v => v.status === 'inside').length,
-          totalBarriers: barriers.length,
-          activeBarriers: barriers.filter(b => b.isOnline).length,
-          pendingExits: vehicles.filter(v => v.status === 'pending_exit').length
-        }
-      });
-      setLastUpdate(new Date());
-    } catch (err) {
-      console.error('Error fetching live data:', err);
+const fetchLiveData = async () => {
+  try {
+    const params = {};
+    if (selectedSite !== 'all') {
+      params.siteId = selectedSite;
     }
-  };
+
+    const results = await Promise.allSettled([
+      axiosInstance.get('/api/project/live-monitoring/vehicles', { params }),
+      axiosInstance.get('/api/project/live-monitoring/barriers', { params }),
+      axiosInstance.get('/api/project/live-monitoring/activities', { params }),
+    ]);
+
+    const vehicles = results[0].status === 'fulfilled' ? results[0].value.data : [];
+    const barriers = results[1].status === 'fulfilled' ? results[1].value.data : [];
+    const activities = results[2].status === 'fulfilled' ? results[2].value.data : [];
+
+    setLiveData({
+      vehicles,
+      barriers,
+      activities,
+      stats: {
+        activeVehicles: vehicles.filter(v => v.status === 'inside').length,
+        totalBarriers: barriers.length,
+        activeBarriers: barriers.filter(b => b.isOnline).length,
+        pendingExits: vehicles.filter(v => v.status === 'pending_exit').length,
+      },
+    });
+
+    setLastUpdate(new Date());
+  } catch (err) {
+    console.error("Unexpected error:", err);
+  }
+};
 
   const handleLogout = () => {
     localStorage.removeItem('accessToken');
@@ -158,12 +158,12 @@ const LiveMonitoring = () => {
 
   const handleProfile = () => {
     setShowUserMenu(false);
-    router.push('/projectmanager/profile');
+    router.push('/projecT/profile');
   };
 
   const handleSettings = () => {
     setShowUserMenu(false);
-    router.push('/projectmanager/settings');
+    router.push('/projectsettings');
   };
 
   const getActivityIcon = (type) => {

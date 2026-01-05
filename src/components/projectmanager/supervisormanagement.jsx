@@ -61,6 +61,8 @@ const SupervisorManagement = () => {
       // Fetch supervisors
       const supervisorsRes = await axiosInstance.get('/api/project/supervisors');
       setSupervisors(supervisorsRes.data);
+      console.log(supervisorsRes.data);
+      
 
       // Fetch sites
       const sitesRes = await axiosInstance.get('/api/project/sites');

@@ -60,13 +60,15 @@ const VendorManagement = () => {
       setLoading(true);
 
       // Fetch vendors
-      const vendorsRes = await axiosInstance.get('/api/projectmanager/vendors');
+      const vendorsRes = await axiosInstance.get('/api/project/vendors');
       setVendors(vendorsRes.data);
       console.log(vendorsRes.data);
 
       // Fetch sites for dropdown
       const sitesRes = await axiosInstance.get('/api/project/sites');
       setSites(sitesRes.data);
+      console.log(sitesRes.data);
+      
     } catch (err) {
       console.error('Fetch error:', err);
       showAlert('error', err.response?.data?.message || 'Failed to load data');
@@ -107,7 +109,7 @@ const VendorManagement = () => {
     try {
       setSubmitting(true);
       
-      const response = await axiosInstance.post('/api/projectmanager/vendors', formData);
+      const response = await axiosInstance.post('/api/project/vendors', formData);
       
       setVendors([...vendors, response.data]);
       showAlert('success', 'Vendor added successfully!');
