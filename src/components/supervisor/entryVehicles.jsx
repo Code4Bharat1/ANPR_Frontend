@@ -8,9 +8,7 @@ import {
   Car, Package, FileText, Video, ArrowRight, ArrowLeft, Truck, RotateCw
 } from 'lucide-react';
 
-
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-
 
 // Vehicle Types
 const VEHICLE_TYPES = [
@@ -50,7 +48,6 @@ const VEHICLE_TYPES = [
   { value: "OTHER", label: "Other" }
 ];
 
-
 const EntryVehicles = () => {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -76,7 +73,6 @@ const EntryVehicles = () => {
     cameraId: 'Main Gate (In)'
   });
 
-
   // Step 2 - Vehicle Details
   const [vehicleDetails, setVehicleDetails] = useState({
     vehicleType: '',
@@ -88,7 +84,6 @@ const EntryVehicles = () => {
     notes: ''
   });
 
-
   // Step 3 - Media Capture
   const [mediaCapture, setMediaCapture] = useState({
     frontView: null,
@@ -98,7 +93,6 @@ const EntryVehicles = () => {
     videoClip: null
   });
 
-
   useEffect(() => {
     fetchVendors();
     simulateANPRCapture();
@@ -107,7 +101,6 @@ const EntryVehicles = () => {
       stopCamera();
     };
   }, []);
-
 
   // Vehicle Type Autocomplete Logic
   useEffect(() => {
@@ -123,7 +116,6 @@ const EntryVehicles = () => {
       setShowSuggestions(false);
     }
   }, [vehicleTypeInput]);
-
 
   const fetchVendors = async () => {
     try {
@@ -145,7 +137,6 @@ const EntryVehicles = () => {
     }
   };
 
-
   const simulateANPRCapture = () => {
     setAnprData({
       vehicleNumber: 'MH12-DE-1992',
@@ -155,7 +146,6 @@ const EntryVehicles = () => {
       cameraId: 'Main Gate (In)'
     });
   };
-
 
   // Camera Functions
   const startCamera = async (type) => {
@@ -191,7 +181,6 @@ const EntryVehicles = () => {
     }
   };
 
-
   const stopCamera = () => {
     if (stream) {
       stream.getTracks().forEach(track => track.stop());
@@ -201,7 +190,6 @@ const EntryVehicles = () => {
       videoRef.current.srcObject = null;
     }
   };
-
 
   const switchCamera = async () => {
     stopCamera();
@@ -234,7 +222,6 @@ const EntryVehicles = () => {
     }
   };
 
-
   const capturePhoto = () => {
     if (!videoRef.current || !canvasRef.current) {
       alert('Camera not ready');
@@ -265,12 +252,10 @@ const EntryVehicles = () => {
     setCameraView(null);
   };
 
-
   const cancelCamera = () => {
     stopCamera();
     setCameraView(null);
   };
-
 
   const handleFileUpload = (field, file) => {
     if (file) {
@@ -286,19 +271,16 @@ const EntryVehicles = () => {
     }
   };
 
-
   const handleCaptureImage = (field) => {
     const dummyImage = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
     setMediaCapture(prev => ({ ...prev, [field]: dummyImage }));
   };
-
 
   const handleVehicleTypeSelect = (type) => {
     setVehicleTypeInput(type.label);
     setVehicleDetails({ ...vehicleDetails, vehicleType: type.value });
     setShowSuggestions(false);
   };
-
 
   const handleNext = () => {
     if (step === 1) {
@@ -312,25 +294,19 @@ const EntryVehicles = () => {
         alert('Please select vehicle type');
         return;
       }
-      if (!vehicleDetails.challanImage) {
-        alert('Please capture challan/bill');
-        return;
-      }
+      // Removed challan validation - now optional
       setStep(3);
     }
   };
-
 
   const handleBack = () => {
     if (step > 1) setStep(step - 1);
   };
 
-
   const handleAllowEntry = async () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('accessToken');
-
 
       const entryData = {
         vehicleNumber: anprData.vehicleNumber,
@@ -353,11 +329,9 @@ const EntryVehicles = () => {
         }
       };
 
-
       await axios.post(`${API_URL}/api/supervisor/vehicles/entry`, entryData, {
         headers: { Authorization: `Bearer ${token}` }
       });
-
 
       alert('✅ Vehicle entry allowed successfully!');
       resetForm();
@@ -368,7 +342,6 @@ const EntryVehicles = () => {
       setLoading(false);
     }
   };
-
 
   const resetForm = () => {
     setStep(1);
@@ -391,7 +364,6 @@ const EntryVehicles = () => {
     });
     simulateANPRCapture();
   };
-
 
   return (
     <SupervisorLayout>
@@ -456,7 +428,6 @@ const EntryVehicles = () => {
           <p className="text-gray-600">Step {step}: {step === 1 ? 'Vehicle Identification' : step === 2 ? 'Vehicle & Driver Details' : 'Media Capture & Validation'}</p>
         </div>
 
-
         {/* Progress Steps */}
         <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm mb-6">
           <div className="flex items-center justify-between">
@@ -489,7 +460,6 @@ const EntryVehicles = () => {
           </div>
         </div>
 
-
         {/* Step 1: ANPR Capture */}
         {step === 1 && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -516,12 +486,10 @@ const EntryVehicles = () => {
               </div>
             </div>
 
-
             {/* ANPR Result */}
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
               <h3 className="text-lg font-bold text-gray-900 mb-4">ANPR Capture Result</h3>
               <p className="text-sm text-gray-600 mb-4">Confirm vehicle number before proceeding.</p>
-
 
               <div className="space-y-4">
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -538,7 +506,6 @@ const EntryVehicles = () => {
                   </div>
                 </div>
 
-
                 <div className="space-y-3">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-gray-600">Capture Time</span>
@@ -554,14 +521,12 @@ const EntryVehicles = () => {
                   </div>
                 </div>
 
-
                 <button
                   onClick={() => simulateANPRCapture()}
                   className="w-full py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-semibold text-sm"
                 >
                   Capture Again
                 </button>
-
 
                 <button
                   onClick={handleNext}
@@ -575,13 +540,11 @@ const EntryVehicles = () => {
           </div>
         )}
 
-
         {/* Step 2: Vehicle Details */}
         {step === 2 && (
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
             <h3 className="text-lg font-bold text-gray-900 mb-1">Entry Details</h3>
             <p className="text-sm text-gray-600 mb-6">Please fill in the consignment and vehicle information below.</p>
-
 
             <div className="space-y-5">
               {/* Vehicle Number (Read-only) */}
@@ -594,7 +557,6 @@ const EntryVehicles = () => {
                   className="w-full px-4 py-3 bg-blue-50 border-2 border-blue-200 rounded-lg text-lg font-bold text-blue-900"
                 />
               </div>
-
 
               {/* Vehicle Type with Autocomplete */}
               <div>
@@ -631,7 +593,6 @@ const EntryVehicles = () => {
                 <p className="text-xs text-gray-500 mt-1">Start typing to see suggestions or select from dropdown</p>
               </div>
 
-
               {/* Vendor Selection */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -648,7 +609,6 @@ const EntryVehicles = () => {
                   ))}
                 </select>
               </div>
-
 
               {/* Load Status */}
               <div>
@@ -670,7 +630,6 @@ const EntryVehicles = () => {
                 </div>
               </div>
 
-
               {/* Material Type */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -684,7 +643,6 @@ const EntryVehicles = () => {
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                 />
               </div>
-
 
               {/* Count of Material */}
               <div>
@@ -700,11 +658,10 @@ const EntryVehicles = () => {
                 />
               </div>
 
-
-              {/* Challan / Bill - Camera Capture */}
+              {/* Challan / Bill - Camera Capture - NOW OPTIONAL */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Challan / Bill Capture <span className="text-red-500">*</span>
+                  Challan / Bill Capture <span className="text-gray-400">(Optional)</span>
                 </label>
                 <div className={`border-2 border-dashed rounded-lg p-6 text-center ${
                   vehicleDetails.challanImage ? 'border-green-300 bg-green-50' : 'border-gray-300 bg-gray-50'
@@ -728,7 +685,7 @@ const EntryVehicles = () => {
                   ) : (
                     <div>
                       <Camera className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                      <p className="text-sm text-gray-600 mb-3">Capture challan/bill using camera</p>
+                      <p className="text-sm text-gray-600 mb-3">Capture challan/bill using camera (Optional)</p>
                       <button
                         type="button"
                         onClick={() => startCamera('challan')}
@@ -740,7 +697,6 @@ const EntryVehicles = () => {
                   )}
                 </div>
               </div>
-
 
               {/* Notes */}
               <div>
@@ -755,7 +711,6 @@ const EntryVehicles = () => {
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none"
                 />
               </div>
-
 
               {/* Action Buttons */}
               <div className="flex gap-3 pt-4">
@@ -778,7 +733,6 @@ const EntryVehicles = () => {
           </div>
         )}
 
-
         {/* Step 3: Media Capture - UNCHANGED */}
         {step === 3 && (
           <div className="space-y-6">
@@ -793,7 +747,6 @@ const EntryVehicles = () => {
                   <div className="text-lg font-bold text-blue-600">{anprData.vehicleNumber}</div>
                 </div>
               </div>
-
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {[
@@ -818,7 +771,6 @@ const EntryVehicles = () => {
                         Required
                       </span>
                     </div>
-
 
                     {mediaCapture[item.key] ? (
                       <div className="text-center">
@@ -847,12 +799,10 @@ const EntryVehicles = () => {
               </div>
             </div>
 
-
             {/* Optional Video */}
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
               <h3 className="text-lg font-bold text-gray-900 mb-1">Video Evidence <span className="text-gray-400 font-normal text-sm">(Optional)</span></h3>
               <p className="text-sm text-gray-600 mb-4">Record a 360° walkaround of the vehicle</p>
-
 
               <div className={`border-2 border-dashed rounded-lg p-8 text-center ${
                 mediaCapture.videoClip ? 'border-green-300 bg-green-50' : 'border-gray-300 bg-gray-50'
@@ -884,7 +834,6 @@ const EntryVehicles = () => {
                 )}
               </div>
             </div>
-
 
             {/* Action Buttons */}
             <div className="grid grid-cols-3 gap-4">
@@ -921,6 +870,5 @@ const EntryVehicles = () => {
     </SupervisorLayout>
   );
 };
-
 
 export default EntryVehicles;
