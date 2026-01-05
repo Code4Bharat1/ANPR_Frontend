@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import { Bell, Menu, User, Settings, LogOut, ChevronDown } from 'lucide-react';
+import Image from 'next/image';
 
 const Header = ({ title = "Dashboard", onMenuClick }) => {
   const router = useRouter();
@@ -295,7 +296,7 @@ const Header = ({ title = "Dashboard", onMenuClick }) => {
               onClick={() => setShowProfileMenu(!showProfileMenu)}
               className="flex items-center gap-2 p-1 hover:bg-gray-100 rounded-lg transition"
             >
-              <div className="w-8 h-8 md:w-10 md:h-10 bg-purple-500 rounded-full flex items-center justify-center text-white font-semibold text-sm md:text-base overflow-hidden">
+              <div className="w-8 h-8 md:w-10 md:h-10 bg-white-500 rounded-full flex items-center justify-center text-white font-semibold text-sm md:text-base overflow-hidden">
                 {userData.profileImage ? (
                   <img 
                     src={userData.profileImage} 
@@ -303,7 +304,13 @@ const Header = ({ title = "Dashboard", onMenuClick }) => {
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  userData.initials
+                  <Image 
+                    src="/logo.png" 
+                    alt="Company Logo" 
+                    width={40}
+                    height={40}
+                    className="object-cover"
+                  />
                 )}
               </div>
               <ChevronDown className="w-4 h-4 text-gray-600 hidden sm:block" />

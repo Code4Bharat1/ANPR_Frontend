@@ -8,7 +8,8 @@ import {
 import Sidebar from './sidebar';
 import SuperAdminLayout from './layout';
 
-const DeviceCard = ({ device, onEdit, onToggleStatus }) => (
+
+const DeviceCard = ({ device, onEdit, onToggleStatus, onDelete }) => (
   <div className="bg-white rounded-xl p-4 md:p-6 shadow-sm border border-gray-100 hover:shadow-md transition">
     <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-4 gap-3">
       <div className="flex items-center gap-3">
@@ -66,6 +67,13 @@ const DeviceCard = ({ device, onEdit, onToggleStatus }) => (
         Edit
       </button>
       <button
+        onClick={() => onDelete(device)}
+        className="flex-1 px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition font-medium text-sm flex items-center justify-center gap-2"
+      >
+        <Trash2 className="w-4 h-4" />
+        Delete
+      </button>
+      <button
         onClick={() => onToggleStatus(device)}
         className={`flex-1 px-4 py-2 rounded-lg transition font-medium text-sm ${device.status === 'online' ? 'bg-gray-100 hover:bg-gray-200 text-gray-700' : 'bg-green-50 hover:bg-green-100 text-green-600'}`}
       >
@@ -74,6 +82,7 @@ const DeviceCard = ({ device, onEdit, onToggleStatus }) => (
     </div>
   </div>
 );
+
 
 // Edit Device Modal
 const EditDeviceModal = ({ isOpen, onClose, onSubmit, loading, device, clients, sites }) => {
@@ -85,6 +94,7 @@ const EditDeviceModal = ({ isOpen, onClose, onSubmit, loading, device, clients, 
     ipAddress: '',
     notes: ''
   });
+
 
  useEffect(() => {
   if (!device) return;
@@ -100,16 +110,20 @@ const EditDeviceModal = ({ isOpen, onClose, onSubmit, loading, device, clients, 
 }, [device]);
 
 
+
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
+
 
   const handleSubmit = (e) => {
     e.preventDefault();
     onSubmit(formData);
   };
 
+
   if (!isOpen) return null;
+
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
@@ -252,6 +266,7 @@ const EditDeviceModal = ({ isOpen, onClose, onSubmit, loading, device, clients, 
   );
 };
 
+
 // Add Device Modal
 const AddDeviceModal = ({ isOpen, onClose, onSubmit, loading, clients, sites }) => {
   const [formData, setFormData] = useState({
@@ -263,14 +278,17 @@ const AddDeviceModal = ({ isOpen, onClose, onSubmit, loading, clients, sites }) 
     notes: ''
   });
 
+
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
+
 
   const handleSubmit = (e) => {
     e.preventDefault();
     onSubmit(formData);
   };
+
 
   const handleReset = () => {
     setFormData({
@@ -283,7 +301,9 @@ const AddDeviceModal = ({ isOpen, onClose, onSubmit, loading, clients, sites }) 
     });
   };
 
+
   if (!isOpen) return null;
+
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
@@ -426,6 +446,7 @@ const AddDeviceModal = ({ isOpen, onClose, onSubmit, loading, clients, sites }) 
   );
 };
 
+
 // Main Device Management Component
 const DeviceManagement = () => {
   const [devices, setDevices] = useState([]);
@@ -443,11 +464,13 @@ const DeviceManagement = () => {
   const [filterType, setFilterType] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
 
+
   useEffect(() => {
     fetchDevices();
     fetchClients();
     fetchSites();
   }, []);
+
 
   const fetchDevices = async () => {
     try {
@@ -479,6 +502,7 @@ const DeviceManagement = () => {
     }
   };
 
+
   const fetchClients = async () => {
     try {
       const token = localStorage.getItem('accessToken');
@@ -497,6 +521,7 @@ const DeviceManagement = () => {
       console.error('Error fetching clients:', err);
     }
   };
+
 
 
   const handleAddDevice = async (formData) => {
@@ -530,10 +555,12 @@ const DeviceManagement = () => {
     }
   };
 
+
   const handleEdit = (device) => {
     setSelectedDevice(device);
     setShowEditModal(true);
   };
+
 
   const handleUpdateDevice = async (formData) => {
     try {
@@ -567,6 +594,7 @@ const DeviceManagement = () => {
     }
   };
 
+
   const handleToggleStatus = async (device) => {
     const action = device.status === 'online' ? 'offline' : 'online';
     if (confirm(`Turn ${action} device ${device.name}?`)) {
@@ -593,6 +621,30 @@ const DeviceManagement = () => {
     }
   };
 
+  const handleDelete = async (device) => {
+    if (confirm(`Are you sure you want to delete device ${device.name}? This action cannot be undone.`)) {
+      try {
+        const token = localStorage.getItem('accessToken');
+        
+        await axios.delete(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/superadmin/devices/${device._id}`,
+          { 
+            headers: { 
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            } 
+          }
+        );
+        
+        alert('Device deleted successfully!');
+        fetchDevices();
+      } catch (err) {
+        console.error('Error deleting device:', err);
+        alert(`Error deleting device: ${err.response?.data?.message || err.message}`);
+      }
+    }
+  };
+
 
 const fetchSites = async () => {
   try {
@@ -614,6 +666,7 @@ const fetchSites = async () => {
     return matchesSearch && matchesType && matchesStatus;
   });
 
+
   const stats = {
     total: devices.length,
     online: devices.filter(d => d.status === 'online').length,
@@ -621,6 +674,7 @@ const fetchSites = async () => {
     anpr: devices.filter(d => d.type === 'ANPR').length,
     barriers: devices.filter(d => d.type === 'BARRIER' || d.type === 'Barrier').length
   };
+
 
   if (loading) {
     return (
@@ -632,6 +686,7 @@ const fetchSites = async () => {
       </div>
     );
   }
+
 
   return (
     <SuperAdminLayout title="Device Management">
@@ -721,6 +776,7 @@ const fetchSites = async () => {
               device={device}
               onEdit={handleEdit}
               onToggleStatus={handleToggleStatus}
+              onDelete={handleDelete}
             />
           ))
         )}
@@ -774,5 +830,6 @@ const fetchSites = async () => {
     </SuperAdminLayout>
   );
 };
+
 
 export default DeviceManagement;
