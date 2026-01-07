@@ -26,8 +26,8 @@ const ClientCard = ({ client, onEdit, onActivate, onDeactivate }) => (
         </div>
       </div>
       <span className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap self-start ${client.isActive
-          ? 'bg-green-100 text-green-700'
-          : 'bg-red-100 text-red-700'
+        ? 'bg-green-100 text-green-700'
+        : 'bg-red-100 text-red-700'
         }`}>
         {client.isActive ? 'ACTIVE' : 'INACTIVE'}
       </span>
@@ -300,7 +300,7 @@ const AddClientModal = ({ isOpen, onClose, onSubmit, loading }) => {
     email: '',
     phone: '',
     password: '',
-    packageType: 'basic',
+    packageType: 'LITE',
     packageStart: '',
     packageEnd: '',
     address: ''
@@ -432,11 +432,12 @@ const AddClientModal = ({ isOpen, onClose, onSubmit, loading }) => {
                     required
                     className="w-full px-3 md:px-4 py-2 md:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base"
                   >
-                    <option value="basic">Basic</option>
-                    <option value="standard">Standard</option>
-                    <option value="premium">Premium</option>
-                    <option value="enterprise">Enterprise Gold</option>
+                    <option value="LITE">Lite Access</option>
+                    <option value="CORE">Core Monitoring</option>
+                    <option value="PRO">Pro Automation</option>
+                    <option value="ENTERPRISE">Enterprise Local</option>
                   </select>
+
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

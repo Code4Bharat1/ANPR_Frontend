@@ -52,7 +52,7 @@ const UserManagement = () => {
     password: '',
     assignedSites: [],
     siteId: '',
-    assignedSupervisors: [],
+    Supervisors: [],
     projectManagerId: '',
   });
 
@@ -230,6 +230,7 @@ const UserManagement = () => {
         role: activeTab,
         password: '',
         assignedSites: [],
+        supervisor: '',
         siteId: '',
         assignedSupervisors: [],
         projectManagerId: '',
@@ -268,7 +269,7 @@ const UserManagement = () => {
       }
 
       const endpoint = activeTab === 'Project Managers'
-        ? `/api/client-admin/pm/${selectedUser._id}`
+        ? `/api/client-admin/project-managers/${selectedUser._id}`
         : `/api/client-admin/supervisor/${selectedUser._id}`;
 
       await api.put(endpoint, payload);
@@ -284,7 +285,7 @@ const UserManagement = () => {
         password: '',
         assignedSites: [],
         siteId: '',
-        assignedSupervisors: [],
+        Supervisors: [],
         projectManagerId: '',
       });
 
@@ -463,16 +464,19 @@ const UserManagement = () => {
                     </td>
                     {activeTab === 'Project Managers' && (
                       <td className="px-6 py-4 text-sm text-gray-900">
-                        {user.assignedSupervisors?.length > 0
-                          ? `${user.assignedSupervisors.length} supervisors`
+                        {user.supervisors?.length > 0
+                          ? `${user.supervisors.length} supervisors`
                           : '-'}
+
                       </td>
                     )}
                     {activeTab === 'Supervisors' && (
-                      <td className="px-6 py-4 text-sm text-gray-900">
-                        {user.projectManagerId?.name || '-'}
-                      </td>
-                    )}
+  <td className="px-6 py-4 text-sm text-gray-900">
+    {user.projectManagerId && typeof user.projectManagerId === 'object'
+      ? user.projectManagerId.name
+      : '-'}
+  </td>
+)}
                     <td className="px-6 py-4">
                       <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${user.status === 'Active'
                         ? 'bg-green-100 text-green-700'
@@ -506,6 +510,7 @@ const UserManagement = () => {
                               assignedSites: user.assignedSites?.map(s => s._id || s) || [],
                               siteId: user.siteId?._id || user.siteId || '',
                               assignedSupervisors: user.assignedSupervisors?.map(s => s._id || s) || [],
+                                supervisors: user.supervisors?.map(s => s._id || s) || [],
                               projectManagerId: user.projectManagerId?._id || user.projectManagerId || '',
                             });
                             setShowEdit(true);
@@ -572,8 +577,8 @@ const UserManagement = () => {
                 {activeTab === 'Project Managers' && (
                   <div className="text-sm text-gray-600">
                     <Users className="w-4 h-4 inline mr-1" />
-                    {user.assignedSupervisors?.length > 0
-                      ? `${user.assignedSupervisors.length} supervisors`
+                    {user.supervisors?.length > 0
+                      ? `${user.supervisors.length} supervisors`
                       : 'No supervisors'}
                   </div>
                 )}
@@ -608,7 +613,7 @@ const UserManagement = () => {
                       password: '',
                       assignedSites: user.assignedSites?.map(s => s._id || s) || [],
                       siteId: user.siteId?._id || user.siteId || '',
-                      assignedSupervisors: user.assignedSupervisors?.map(s => s._id || s) || [],
+                      supervisors: user.supervisors?.map(s => s._id || s) || [],
                       projectManagerId: user.projectManagerId?._id || user.projectManagerId || '',
                     });
                     setShowEdit(true);
@@ -987,6 +992,7 @@ const UserManagement = () => {
                   !formData.name ||
                   !formData.email ||
                   !formData.password ||
+                  !formData.address ||
                   (activeTab === 'Project Managers' && formData.assignedSites.length === 0) ||
                   (activeTab === 'Supervisors' && (!formData.siteId || !formData.projectManagerId))
                 }
