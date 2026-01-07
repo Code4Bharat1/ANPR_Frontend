@@ -104,7 +104,7 @@ const EditClientModal = ({ isOpen, onClose, onSubmit, loading, client }) => {
     companyName: '',
     email: '',
     phone: '',
-    packageType: 'basic',
+    packageType: 'LITE',
     packageStart: '',
     packageEnd: '',
     address: ''
@@ -218,10 +218,10 @@ const EditClientModal = ({ isOpen, onClose, onSubmit, loading, client }) => {
                     required
                     className="w-full px-3 md:px-4 py-2 md:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base"
                   >
-                    <option value="basic">Basic</option>
-                    <option value="standard">Standard</option>
-                    <option value="premium">Premium</option>
-                    <option value="enterprise">Enterprise Gold</option>
+                    <option value="LITE">Lite Access</option>
+                    <option value="CORE">Core Monitoring</option>
+                    <option value="PRO">Pro Automation</option>
+                    <option value="ENTERPRISE">Enterprise Local</option>
                   </select>
                 </div>
 

@@ -6,6 +6,7 @@ import {
   TrendingUp, Database, Wifi, WifiOff, Package,
   CheckCircle, Clock, Crown, Shield, Zap
 } from 'lucide-react';
+import axios from 'axios';
 import Sidebar from './sidebar';
 import Header from './header';
 
@@ -57,18 +58,17 @@ const PackageCard = ({
   features, 
   icon: Icon,
   bgGradient,
-  recommended 
 }) => (
   <div className={`relative bg-white rounded-xl p-6 shadow-sm border-2 transition-all hover:shadow-lg ${
     isCurrent ? 'border-blue-600 ring-2 ring-blue-100' : 'border-gray-200'
-  } ${recommended ? 'ring-2 ring-amber-400' : ''}`}>
-    {recommended && (
+  } `}>
+    {/* {recommended && (
       <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
         <span className="bg-gradient-to-r from-amber-400 to-orange-500 text-white px-4 py-1 rounded-full text-xs font-bold shadow-lg">
           RECOMMENDED
         </span>
       </div>
-    )}
+    )} */}
     {isCurrent && (
       <div className="absolute -top-3 right-4">
         <span className="bg-blue-600 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg flex items-center gap-1">
@@ -105,44 +105,28 @@ const PackageCard = ({
 
 const AdminDashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  
-  // Sample data structure matching the API response
-  const [dashboardData] = useState({
-    activeDevices: 0,
-    inactiveDevices: 0,
-    totalDevices: 0,
-    totalSites: 1,
-    totalProjectManagers: 0,
-    totalSupervisors: 0,
-    totalUsers: 0,
-    todayEntries: 0,
-    todayExits: 0,
-    todayTotal: 0,
-    recentActivity: [],
-    plan: {
-      packageType: "LITE",
-      packageStart: "2026-01-07T00:00:00.000Z",
-      packageEnd: "2026-02-07T00:00:00.000Z",
-      limits: {
-        pm: 1,
-        supervisor: 2,
-        devices: {
-          barriers: 1,
-          biometrics: 1,
-          anpr: 0
-        }
-      }
-    },
-    usage: {
-      pm: 0,
-      supervisor: 0,
-      devices: {
-        barriers: 0,
-        biometrics: 0,
-        anpr: 0
-      }
+  const [dashboardData, setDashboardData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('accessToken');
+      const response = await axios.get(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/client-admin/dashboard`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setDashboardData(response.data);
+    } catch (err) {
+      console.error('Error fetching dashboard:', err);
+    } finally {
+      setLoading(false);
     }
-  });
+  };
 
   const packages = [
     {
@@ -204,11 +188,33 @@ const AdminDashboard = () => {
     }
   ];
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600 font-medium">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!dashboardData) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+          <p className="text-gray-600 font-medium">Failed to load dashboard data</p>
+        </div>
+      </div>
+    );
+  }
+
   const getDaysRemaining = () => {
     const end = new Date(dashboardData.plan.packageEnd);
     const now = new Date();
     const diff = Math.ceil((end - now) / (1000 * 60 * 60 * 24));
-    return diff;
+    return diff > 0 ? diff : 0;
   };
 
   const deviceActivityRate = dashboardData.totalDevices > 0
@@ -246,9 +252,9 @@ const AdminDashboard = () => {
                   <span className="text-2xl font-bold">{getDaysRemaining()} days</span>
                 </div>
               </div>
-              <button className="bg-white text-blue-600 font-semibold px-6 py-2.5 rounded-lg hover:bg-blue-50 transition-colors">
+              {/* <button className="bg-white text-blue-600 font-semibold px-6 py-2.5 rounded-lg hover:bg-blue-50 transition-colors">
                 Manage Plan
-              </button>
+              </button> */}
             </div>
           </div>
         </div>
@@ -290,20 +296,27 @@ const AdminDashboard = () => {
                 Device Allocation
               </h3>
               <UsageBar 
-                used={dashboardData.usage.devices.barriers} 
-                limit={dashboardData.plan.limits.devices.barriers} 
+                used={dashboardData.usage.devices.BARRIER || 0} 
+                limit={dashboardData.plan.limits.devices.BARRIER || 0} 
                 label="Barriers" 
               />
               <UsageBar 
-                used={dashboardData.usage.devices.biometrics} 
-                limit={dashboardData.plan.limits.devices.biometrics} 
+                used={dashboardData.usage.devices.BIOMETRIC || 0} 
+                limit={dashboardData.plan.limits.devices.BIOMETRIC || 0} 
                 label="Biometrics" 
               />
               <UsageBar 
-                used={dashboardData.usage.devices.anpr} 
-                limit={dashboardData.plan.limits.devices.anpr} 
+                used={dashboardData.usage.devices.ANPR || 0} 
+                limit={dashboardData.plan.limits.devices.ANPR || 0} 
                 label="ANPR Cameras" 
               />
+              <div className="mt-4 pt-4 border-t border-gray-100">
+                <div className="text-sm text-gray-600">
+                  Total Devices: <span className="font-semibold text-gray-900">
+                    {(dashboardData.usage.devices.ANPR || 0) + (dashboardData.usage.devices.BARRIER || 0) + (dashboardData.usage.devices.BIOMETRIC || 0)} / {(dashboardData.plan.limits.devices.ANPR || 0) + (dashboardData.plan.limits.devices.BARRIER || 0) + (dashboardData.plan.limits.devices.BIOMETRIC || 0)}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -410,6 +423,39 @@ const AdminDashboard = () => {
           </div>
         </div>
 
+        {/* Recent Activity */}
+        <div className="mb-8">
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-gray-900">Recent Activity</h2>
+              <span className="text-sm text-gray-500">Live updates</span>
+            </div>
+
+            {dashboardData.recentActivity && dashboardData.recentActivity.length > 0 ? (
+              <div className="space-y-3">
+                {dashboardData.recentActivity.map((activity, index) => (
+                  <div key={index} className="flex items-start gap-3 py-3 border-b border-gray-100 last:border-0">
+                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <Activity className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-gray-900">{activity.title}</div>
+                      <div className="text-sm text-gray-600">{activity.description}</div>
+                      <div className="text-xs text-gray-500 mt-1">{activity.time}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <AlertCircle className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                <p className="text-gray-500 font-medium">No recent activity</p>
+                <p className="text-sm text-gray-400 mt-1">Activity will appear here when events occur</p>
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Available Packages */}
         <div className="mb-8">
           <h2 className="text-xl font-bold text-gray-900 mb-2">Available Plans</h2>
@@ -422,28 +468,6 @@ const AdminDashboard = () => {
                 isCurrent={pkg.type === dashboardData.plan.packageType}
               />
             ))}
-          </div>
-        </div>
-
-        {/* Additional Rental Options */}
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">Alternative Rental Models</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="p-4 bg-blue-50 rounded-lg">
-              <h3 className="font-semibold text-gray-900 mb-2">Standard Rental</h3>
-              <p className="text-sm text-gray-600 mb-2">Managed & Maintained by You</p>
-              <p className="text-xs text-gray-500">3 years minimum tenure</p>
-            </div>
-            <div className="p-4 bg-purple-50 rounded-lg">
-              <h3 className="font-semibold text-gray-900 mb-2">Annual Membership</h3>
-              <p className="text-sm text-gray-600 mb-2">Lump-sum annual payment</p>
-              <p className="text-xs text-gray-500">3 years minimum tenure</p>
-            </div>
-            <div className="p-4 bg-amber-50 rounded-lg">
-              <h3 className="font-semibold text-gray-900 mb-2">Site Ownership</h3>
-              <p className="text-sm text-gray-600 mb-2">5-Year full ownership</p>
-              <p className="text-xs text-gray-500">Client owned hardware</p>
-            </div>
           </div>
         </div>
 
