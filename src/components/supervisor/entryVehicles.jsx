@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+const ANPR_WEBHOOK_URL = 'https://webhooks.nexcorealliance.com/api/anpr/events';
 
 // Vehicle Types
 const VEHICLE_TYPES = [
@@ -45,6 +46,11 @@ const EntryVehicles = () => {
   const [stream, setStream] = useState(null);
   const [facingMode, setFacingMode] = useState('environment');
   
+  // ANPR Live Feed State
+  const [isANPRListening, setIsANPRListening] = useState(false);
+  const [anprError, setAnprError] = useState(null);
+  const pollingIntervalRef = useRef(null);
+  
   // Video recording states
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
@@ -67,6 +73,7 @@ const EntryVehicles = () => {
   const [anprData, setAnprData] = useState({
     vehicleNumber: '',
     capturedImage: null,
+    frameImage: null,
     confidence: 0,
     timestamp: '',
     cameraId: 'Main Gate (In)'
@@ -90,12 +97,86 @@ const EntryVehicles = () => {
     videoClip: null
   });
 
+// Helper function to convert base64 to image URL
+  const base64ToImageUrl = (base64String) => {
+    if (!base64String) return null;
+    
+    // Check if it already has data URL prefix
+    if (base64String.startsWith('data:image')) {
+      return base64String;
+    }
+    
+    // Add proper prefix for JPEG images
+    return `data:image/jpeg;base64,${base64String}`;
+  };
+
+  // Fetch latest ANPR event
+  const fetchLatestANPREvent = async () => {
+    try {
+      const response = await axios.get(`${ANPR_WEBHOOK_URL}?limit=1`);
+      
+      if (response.data) {
+        const anprEvent = response.data;
+        
+        // Extract number plate and images from the response
+        const numberPlate = anprEvent.numberPlate || anprEvent.plate || '';
+        const plateImage = anprEvent.image || anprEvent.plateImage || null;
+        const frameImage = anprEvent.frame || anprEvent.frameImage || null;
+        
+        // Only update if we have a number plate
+        if (numberPlate) {
+          // Update ANPR data with images converted from base64
+          setAnprData({
+            vehicleNumber: numberPlate,
+            capturedImage: base64ToImageUrl(plateImage),
+            frameImage: base64ToImageUrl(frameImage),
+            confidence: anprEvent.confidence || 95,
+            timestamp: anprEvent.timestamp 
+              ? new Date(anprEvent.timestamp?.$date || anprEvent.timestamp).toLocaleString()
+              : new Date().toLocaleString(),
+            cameraId: anprEvent.cameraName || anprEvent.cameraId || 'Main Gate (In)'
+          });
+          
+          setAnprError(null);
+          return true;
+        }
+      }
+      return false;
+    } catch (error) {
+      console.error('Error fetching ANPR event:', error);
+      setAnprError('Failed to fetch ANPR data');
+      return false;
+    }
+  };
+  // Start polling for ANPR events
+  const startANPRPolling = () => {
+    setIsANPRListening(true);
+    
+    // Fetch immediately
+    fetchLatestANPREvent();
+    
+    // Then poll every 2 seconds
+    pollingIntervalRef.current = setInterval(() => {
+      fetchLatestANPREvent();
+    }, 2000);
+  };
+
+  // Stop polling
+  const stopANPRPolling = () => {
+    setIsANPRListening(false);
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current);
+      pollingIntervalRef.current = null;
+    }
+  };
+
   useEffect(() => {
     fetchVendors();
-    simulateANPRCapture();
+    startANPRPolling(); // Start listening to ANPR events
     
     return () => {
       stopCamera();
+      stopANPRPolling();
       if (isRecording) stopRecording();
     };
   }, []);
@@ -123,24 +204,7 @@ const EntryVehicles = () => {
       setVendors(response.data.data || response.data || []);
     } catch (error) {
       console.error('Error fetching vendors:', error);
-      // setVendors([
-      //   { _id: '1', name: 'Blue Dart Logistics' },
-      //   { _id: '2', name: 'Amazon Supplies' },
-      //   { _id: '3', name: 'Indian Oil Corp' },
-      //   { _id: '4', name: 'Tech Solutions Ltd' },
-      //   { _id: '5', name: 'Local Supply Co' }
-      // ]);
     }
-  };
-
-  const simulateANPRCapture = () => {
-    setAnprData({
-      vehicleNumber: 'MH12-DE-1992',
-      capturedImage: '/placeholder-vehicle.jpg',
-      confidence: 98.5,
-      timestamp: new Date().toLocaleString(),
-      cameraId: 'Main Gate (In)'
-    });
   };
 
   const startCamera = async (type) => {
@@ -399,6 +463,7 @@ const EntryVehicles = () => {
         capturedBy: 'supervisor',
         media: {
           anprImage: anprData.capturedImage,
+          anprFrame: anprData.frameImage,
           challanImage: vehicleDetails.challanImage,
           frontView: mediaCapture.frontView,
           backView: mediaCapture.backView,
@@ -446,7 +511,6 @@ const EntryVehicles = () => {
       videoClip: null
     });
     setRecordingTime(0);
-    simulateANPRCapture();
   };
 
   const getCameraLabel = () => {
@@ -574,23 +638,40 @@ const EntryVehicles = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
               <div className="bg-gray-900 h-80 flex items-center justify-center relative">
-                <div className="absolute top-4 left-4 bg-red-600 text-white px-3 py-1 rounded text-sm font-semibold flex items-center gap-2">
-                  <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
-                  LIVE FEED - CAM 01
+                <div className={`absolute top-4 left-4 px-3 py-1 rounded text-sm font-semibold flex items-center gap-2 ${
+                  isANPRListening ? 'bg-red-600 text-white' : 'bg-gray-600 text-white'
+                }`}>
+                  <div className={`w-2 h-2 bg-white rounded-full ${isANPRListening ? 'animate-pulse' : ''}`}></div>
+                  {isANPRListening ? 'LIVE FEED - CAM 01' : 'FEED OFFLINE'}
                 </div>
-                <div className="text-white text-center">
-                  <Camera className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                  <p className="text-sm opacity-75">ANPR Camera Live View</p>
-                </div>
-                <div className="absolute bottom-4 left-4 right-4 bg-black/50 backdrop-blur-sm rounded-lg p-3">
-                  <div className="text-white text-xs mb-1">Vehicle Detected in Zone</div>
-                  <div className="flex items-center justify-between">
-                    <div className="text-2xl font-bold text-white">{anprData.vehicleNumber}</div>
-                    <div className="bg-green-500 text-white px-2 py-1 rounded text-xs font-semibold">
-                      {anprData.confidence}% Confidence
+
+                {anprData.frameImage ? (
+                  <img 
+                    src={anprData.frameImage} 
+                    alt="ANPR Frame"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="text-white text-center">
+                    <Camera className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                    <p className="text-sm opacity-75">ANPR Camera Live View</p>
+                    {anprError && (
+                      <p className="text-xs text-red-400 mt-2">{anprError}</p>
+                    )}
+                  </div>
+                )}
+
+                {anprData.vehicleNumber && (
+                  <div className="absolute bottom-4 left-4 right-4 bg-black/50 backdrop-blur-sm rounded-lg p-3">
+                    <div className="text-white text-xs mb-1">Vehicle Detected in Zone</div>
+                    <div className="flex items-center justify-between">
+                      <div className="text-2xl font-bold text-white">{anprData.vehicleNumber}</div>
+                      <div className="bg-green-500 text-white px-2 py-1 rounded text-xs font-semibold">
+                        {anprData.confidence}% Confidence
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
               </div>
             </div>
 
@@ -601,11 +682,23 @@ const EntryVehicles = () => {
               <div className="space-y-4">
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                   <div className="text-xs text-blue-600 font-semibold mb-1">CAPTURED IMAGE CROP</div>
-                  <div className="h-32 bg-gray-200 rounded-lg mb-3 flex items-center justify-center">
-                    <span className="text-gray-500 text-sm">[ Plate Crop Image Placeholder ]</span>
-                  </div>
+                  
+                  {anprData.capturedImage ? (
+                    <img 
+                      src={anprData.capturedImage} 
+                      alt="Number Plate"
+                      className="w-full h-32 object-contain bg-gray-200 rounded-lg mb-3"
+                    />
+                  ) : (
+                    <div className="h-32 bg-gray-200 rounded-lg mb-3 flex items-center justify-center">
+                      <span className="text-gray-500 text-sm">[ Waiting for plate detection... ]</span>
+                    </div>
+                  )}
+                  
                   <div className="flex items-center justify-center gap-4 bg-white border-2 border-blue-600 rounded-lg p-4">
-                    <div className="text-4xl font-bold text-gray-900">{anprData.vehicleNumber}</div>
+                    <div className="text-4xl font-bold text-gray-900">
+                      {anprData.vehicleNumber || 'Detecting...'}
+                    </div>
                   </div>
                   <div className="mt-3 flex items-center justify-between text-sm">
                     <span className="text-gray-600">Confidence</span>
@@ -616,20 +709,26 @@ const EntryVehicles = () => {
                 <div className="space-y-3">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-gray-600">Capture Time</span>
-                    <span className="font-semibold text-gray-900">{anprData.timestamp}</span>
+                    <span className="font-semibold text-gray-900">{anprData.timestamp || 'N/A'}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600">Camera ID</span>
+                    <span className="font-semibold text-gray-900">{anprData.cameraId}</span>
                   </div>
                 </div>
 
                 <button
-                  onClick={() => simulateANPRCapture()}
-                  className="w-full py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-semibold text-sm"
+                  onClick={fetchLatestANPREvent}
+                  disabled={!isANPRListening}
+                  className="w-full py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-semibold text-sm disabled:opacity-50"
                 >
-                  Capture Again
+                  Refresh Detection
                 </button>
 
                 <button
                   onClick={handleNext}
-                  className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold flex items-center justify-center gap-2"
+                  disabled={!anprData.vehicleNumber}
+                  className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Proceed to Check-in
                   <ArrowRight className="w-5 h-5" />
