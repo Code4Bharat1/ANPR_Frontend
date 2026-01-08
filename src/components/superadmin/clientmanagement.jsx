@@ -6,19 +6,16 @@ import {
 } from 'lucide-react';
 import SuperAdminLayout from './layout';
 
-
-
-
 // Client Card Component
 const ClientCard = ({ client, onEdit, onActivate, onDeactivate }) => (
   <div className="bg-white rounded-xl p-4 md:p-6 shadow-sm border border-gray-100 hover:shadow-md transition">
     <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-4 gap-3">
       <div className="flex-1 min-w-0">
         <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-2 truncate">
-          {client.className}
+          Client Name : {client.clientname}
         </h3>
         <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-2 truncate">
-          {client.companyName}
+          Company Name : {client.companyName}
         </h3>
         <div className="flex items-center gap-2 text-gray-600">
           <Users className="w-4 h-4 flex-shrink-0" />
@@ -47,7 +44,6 @@ const ClientCard = ({ client, onEdit, onActivate, onDeactivate }) => (
             {client.siteCount || 0} Sites
           </div>
         </div>
-
       </div>
       <div>
         <div className="text-xs text-gray-500 uppercase mb-1">Package Start</div>
@@ -437,7 +433,6 @@ const AddClientModal = ({ isOpen, onClose, onSubmit, loading }) => {
                     <option value="PRO">Pro Automation</option>
                     <option value="ENTERPRISE">Enterprise Local</option>
                   </select>
-
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -702,6 +697,11 @@ const ClientManagement = () => {
     return matchesSearch && matchesFilter;
   });
 
+  // Calculate stats
+  const totalClients = clients.length;
+  const activeClients = clients.filter(c => c.isActive).length;
+  const inactiveClients = clients.filter(c => !c.isActive).length;
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
@@ -722,6 +722,37 @@ const ClientManagement = () => {
         <Plus className="w-4 h-4 md:w-5 md:h-5" />
         Add Client
       </button>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6 mb-6">
+        <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-4 md:p-6 text-white shadow-lg">
+          <div className="flex items-center justify-between mb-2">
+            <div className="text-sm md:text-base font-medium opacity-90">Total Clients</div>
+            <Users className="w-5 h-5 md:w-6 md:h-6 opacity-80" />
+          </div>
+          <div className="text-3xl md:text-4xl font-bold">{totalClients}</div>
+        </div>
+
+        <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-4 md:p-6 text-white shadow-lg">
+          <div className="flex items-center justify-between mb-2">
+            <div className="text-sm md:text-base font-medium opacity-90">Active</div>
+            <div className="w-5 h-5 md:w-6 md:h-6 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+              <div className="w-2 h-2 md:w-3 md:h-3 bg-white rounded-full"></div>
+            </div>
+          </div>
+          <div className="text-3xl md:text-4xl font-bold">{activeClients}</div>
+        </div>
+
+        <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-xl p-4 md:p-6 text-white shadow-lg">
+          <div className="flex items-center justify-between mb-2">
+            <div className="text-sm md:text-base font-medium opacity-90">Inactive</div>
+            <div className="w-5 h-5 md:w-6 md:h-6 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+              <X className="w-3 h-3 md:w-4 md:h-4" />
+            </div>
+          </div>
+          <div className="text-3xl md:text-4xl font-bold">{inactiveClients}</div>
+        </div>
+      </div>
 
       <div className="flex flex-col sm:flex-row gap-3 md:gap-4 mb-6">
         <div className="flex-1 relative">

@@ -72,7 +72,7 @@ const Sidebar = ({ isOpen, onClose }) => {
             </div>
             <div>
               <h1 className="text-lg font-bold text-gray-900">ANPR System</h1>
-              <p className="text-xs text-gray-500">Admin Portal</p>
+              <p className="text-xs text-gray-500">Super Admin Portal</p>
             </div>
           </div>
 

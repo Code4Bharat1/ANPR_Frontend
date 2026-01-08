@@ -11,11 +11,6 @@ import SuperAdminLayout from './layout';
 import axios from 'axios';
 import api from '@/lib/axios';
 
-
-
-// Layout Component
-
-
 // Stat Card Component
 const StatCard = ({ icon: Icon, title, value, trend, trendValue, bgColor, iconColor }) => (
   <div className="bg-white rounded-xl p-4 md:p-6 shadow-sm border border-gray-100">
@@ -24,8 +19,7 @@ const StatCard = ({ icon: Icon, title, value, trend, trendValue, bgColor, iconCo
         <Icon className={`w-5 h-5 md:w-6 md:h-6 ${iconColor}`} />
       </div>
       {trend && (
-        <div className={`flex items-center gap-1 text-xs md:text-sm font-semibold ${trend === 'up' ? 'text-green-600' : 'text-red-600'
-          }`}>
+        <div className={`flex items-center gap-1 text-xs md:text-sm font-semibold ${trend === 'up' ? 'text-green-600' : 'text-red-600'}`}>
           {trend === 'up' ? <TrendingUp className="w-3 h-3 md:w-4 md:h-4" /> : <TrendingDown className="w-3 h-3 md:w-4 md:h-4" />}
           {trendValue}%
         </div>
@@ -86,33 +80,32 @@ const TripTrendChart = ({ data }) => {
 };
 
 // Revenue Chart
-const RevenueChart = ({ data }) => {
-  const maxValue = Math.max(...data.map(d => d.value), 1);
+// const RevenueChart = ({ data }) => {
+//   const maxValue = Math.max(...data.map(d => d.value), 1);
 
-  return (
-    <div className="bg-white rounded-xl p-4 md:p-6 shadow-sm border border-gray-100">
-      <div className="flex items-center justify-between mb-4 md:mb-6">
-        <h3 className="text-base md:text-lg font-bold text-gray-900">Revenue Analytics</h3>
-        {/* <div className="text-xs md:text-sm text-gray-600">Last 6 Months</div> */}
-      </div>
-      <div className="flex items-end justify-between gap-1 md:gap-2 h-40 md:h-48">
-        {data.map((item, index) => (
-          <div key={index} className="flex-1 flex flex-col items-center">
-            <div className="w-full bg-gradient-to-t from-green-400 to-green-600 rounded-t-lg relative transition-all duration-300 hover:from-green-500 hover:to-green-700" style={{
-              height: `${(item.value / maxValue) * 100}%`,
-              minHeight: '30px'
-            }}>
-              <div className="absolute -top-5 md:-top-6 left-0 right-0 text-center text-xs font-semibold text-gray-900">
-                ₹{item.value}k
-              </div>
-            </div>
-            <div className="text-xs text-gray-600 mt-2">{item.month}</div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
+//   return (
+//     <div className="bg-white rounded-xl p-4 md:p-6 shadow-sm border border-gray-100">
+//       <div className="flex items-center justify-between mb-4 md:mb-6">
+//         <h3 className="text-base md:text-lg font-bold text-gray-900">Revenue Analytics</h3>
+//       </div>
+//       <div className="flex items-end justify-between gap-1 md:gap-2 h-40 md:h-48">
+//         {data.map((item, index) => (
+//           <div key={index} className="flex-1 flex flex-col items-center">
+//             <div className="w-full bg-gradient-to-t from-green-400 to-green-600 rounded-t-lg relative transition-all duration-300 hover:from-green-500 hover:to-green-700" style={{
+//               height: `${(item.value / maxValue) * 100}%`,
+//               minHeight: '30px'
+//             }}>
+//               <div className="absolute -top-5 md:-top-6 left-0 right-0 text-center text-xs font-semibold text-gray-900">
+//                 ₹{item.value}k
+//               </div>
+//             </div>
+//             <div className="text-xs text-gray-600 mt-2">{item.month}</div>
+//           </div>
+//         ))}
+//       </div>
+//     </div>
+//   );
+// };
 
 // Main Analytics Component
 const SuperAdminAnalytics = () => {
@@ -121,47 +114,43 @@ const SuperAdminAnalytics = () => {
   const [exporting, setExporting] = useState(false);
   const [dateRange, setDateRange] = useState('7days');
   const periodMap = {
-  today: "today",
-  "7days": "7d",
-  "30days": "30d",
-  "90days": "90d"
-};
-
+    today: "today",
+    "7days": "7d",
+    "30days": "30d",
+    "90days": "90d"
+  };
 
   useEffect(() => {
     fetchAnalytics();
   }, [dateRange]);
 
-const fetchAnalytics = async () => {
-  try {
-    setLoading(true);
+  const fetchAnalytics = async () => {
+    try {
+      setLoading(true);
 
-    const period = periodMap[dateRange] || "7d";
+      const period = periodMap[dateRange] || "7d";
 
-    const [summaryRes, tripsRes, clientsRes] = await Promise.all([
-      api.get(`/api/superadmin/analytics/summary?period=${period}`),
-      api.get(`/api/superadmin/analytics/trips?period=${period}`),
-      api.get(`/api/superadmin/analytics/clients?period=${period}`),
-    ]);
+      const [summaryRes, tripsRes, clientsRes] = await Promise.all([
+        api.get(`/api/superadmin/analytics/summary?period=${period}`),
+        api.get(`/api/superadmin/analytics/trips?period=${period}`),
+        api.get(`/api/superadmin/analytics/clients?period=${period}`),
+      ]);
 
-    setAnalyticsData({
-      ...summaryRes.data,
-      tripTrends: tripsRes.data.map(t => ({
-        day: t.date,
-        value: t.trips
-      })),
-      clientDistribution: clientsRes.data,
-      revenueData: summaryRes.data.revenueData || [],
-      topClients: summaryRes.data.topClients || []
-    });
+      setAnalyticsData({
+        ...summaryRes.data,
+        tripTrends: tripsRes.data.map(t => ({
+          day: t.date,
+          value: t.trips
+        })),
+        clientDistribution: clientsRes.data,
+        revenueData: summaryRes.data.revenueData || [],
+        topClients: summaryRes.data.topClients || []
+      });
 
-  } finally {
-    setLoading(false);
-  }
-};
-
-
-
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const exportToCSV = () => {
     if (!analyticsData) return;
@@ -179,7 +168,7 @@ const fetchAnalytics = async () => {
       csvContent += `Total Sites,${analyticsData.totalSites}\n`;
       csvContent += `Total Devices,${analyticsData.totalDevices}\n`;
       csvContent += `Total Trips,${analyticsData.totalTrips}\n`;
-      csvContent += `Total Revenue (₹),${analyticsData.totalRevenue.toLocaleString()}\n\n`;
+      // csvContent += `Total Revenue (₹),${analyticsData.totalRevenue.toLocaleString()}\n\n`;
 
       csvContent += "Trip Trends - Last 7 Days\n";
       csvContent += "Day,Trips\n";
@@ -188,12 +177,12 @@ const fetchAnalytics = async () => {
       });
       csvContent += "\n";
 
-      csvContent += "Revenue Analytics - Last 6 Months\n";
-      csvContent += "Month,Revenue (₹ thousands)\n";
-      analyticsData.revenueData.forEach(item => {
-        csvContent += `${item.month},${item.value}\n`;
-      });
-      csvContent += "\n";
+      // csvContent += "Revenue Analytics - Last 6 Months\n";
+      // csvContent += "Month,Revenue (₹ thousands)\n";
+      // analyticsData.revenueData.forEach(item => {
+      //   csvContent += `${item.month},${item.value}\n`;
+      // });
+      // csvContent += "\n";
 
       csvContent += "Top Performing Clients\n";
       csvContent += "Rank,Client Name,Sites,Devices,Total Trips\n";
@@ -252,7 +241,7 @@ const fetchAnalytics = async () => {
             onChange={(e) => setDateRange(e.target.value)}
             className="px-3 md:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base bg-white"
           >
-            <option value="1year">Today</option>
+            <option value="today">Today</option>
             <option value="7days">Last 7 Days</option>
             <option value="30days">Last 30 Days</option>
             <option value="90days">Last 90 Days</option>
@@ -269,13 +258,15 @@ const fetchAnalytics = async () => {
       </div>
 
       {/* Key Metrics */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 md:gap-6 mb-6 md:mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 mb-6 md:mb-8">
         <StatCard
           icon={Users}
           title="Active Clients"
           value={analyticsData?.totalClients}
-          trend="up"
+          // trend="up"
           trendValue={analyticsData?.growth?.clients}
+          bgColor="bg-purple-50"
+          iconColor="text-purple-600"
         />
         <StatCard
           icon={MapPin}
@@ -295,44 +286,90 @@ const fetchAnalytics = async () => {
           icon={Activity}
           title="Total Trips"
           value={analyticsData?.totalTrips}
-          trend="up"
+          // trend="up"
           trendValue={analyticsData?.growth?.trips}
+          bgColor="bg-green-50"
+          iconColor="text-green-600"
         />
-        <StatCard
+        {/* <StatCard
           icon={IndianRupeeIcon}
           title="Total Revenue"
           value={`₹${analyticsData?.totalRevenue}`}
-          trend="up"
+          // trend="up"
           trendValue={analyticsData?.growth?.revenue}
-        />
+          bgColor="bg-emerald-50"
+          iconColor="text-emerald-600"
+        /> */}
       </div>
 
       {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mb-6 md:mb-8">
+      <div className="grid grid-cols-1 lg:grid-cols-1 gap-4 md:gap-6 mb-6">
         <TripTrendChart data={analyticsData?.tripTrends || []} />
-        <RevenueChart data={analyticsData?.revenueData || []} />
+        {/* <RevenueChart data={analyticsData?.revenueData || []} /> */}
       </div>
-      {analyticsData?.clientDistribution?.length ? (
-        analyticsData.clientDistribution.map((c, i) => (
-          <div key={i} className="flex justify-between text-sm py-1">
-            <span>{c.label}</span>
-            <span>{c.percent}%</span>
-          </div>
-        ))
-      ) : (
-        <p className="text-sm text-gray-500">No client distribution data</p>
-      )}
 
-      {/* Top Clients */}
-      <div className="bg-white rounded-xl p-4 md:p-6 shadow-sm border border-gray-100">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 md:mb-6">
-          <h3 className="text-base md:text-lg font-bold text-gray-900">Top Performing Clients</h3>
-          <div className="text-xs md:text-sm text-gray-600">By total trips</div>
+      {/* Client Distribution & Top Clients */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+        {/* Client Distribution */}
+        <div className="bg-gradient-to-br from-white to-purple-50 rounded-xl shadow-lg p-4 md:p-6 border border-purple-100">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-base md:text-lg font-bold text-gray-900">Client Distribution</h3>
+            <div className="bg-purple-100 p-2 rounded-lg">
+              <BarChart3 className="w-5 h-5 text-purple-600" />
+            </div>
+          </div>
+          <div className="space-y-5">
+            {analyticsData?.clientDistribution?.length ? (
+              analyticsData.clientDistribution.map((c, i) => {
+                const colors = [
+                  { from: 'from-purple-500', to: 'to-purple-700', bg: 'bg-purple-100', text: 'text-purple-700' },
+                  { from: 'from-blue-500', to: 'to-blue-700', bg: 'bg-blue-100', text: 'text-blue-700' },
+                  { from: 'from-indigo-500', to: 'to-indigo-700', bg: 'bg-indigo-100', text: 'text-indigo-700' }
+                ];
+                const color = colors[i % colors.length];
+                
+                return (
+                  <div key={i} className="group hover:scale-105 transition-transform duration-300">
+                    <div className="flex justify-between items-center mb-2">
+                      <div className="flex items-center gap-2">
+                        <div className={`w-3 h-3 rounded-full bg-gradient-to-r ${color.from} ${color.to}`} />
+                        <span className="text-xs md:text-sm font-medium text-gray-700">{c.label}</span>
+                      </div>
+                      <span className={`text-sm md:text-base font-bold px-3 py-1 rounded-full ${color.bg} ${color.text}`}>
+                        {c.percent}%
+                      </span>
+                    </div>
+                    <div className="relative w-full bg-gray-200 rounded-full h-3 overflow-hidden shadow-inner">
+                      <div 
+                        className={`bg-gradient-to-r ${color.from} ${color.to} h-3 rounded-full transition-all duration-700 ease-out shadow-md relative overflow-hidden`}
+                        style={{ width: `${c.percent}%` }}
+                      >
+                        <div className="absolute inset-0 bg-white opacity-20 animate-pulse" />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="text-center text-gray-500 py-8 flex flex-col items-center gap-3">
+                <BarChart3 className="w-12 h-12 text-gray-300" />
+                <p>No client distribution data</p>
+              </div>
+            )}
+          </div>
         </div>
-        <div className="space-y-2 md:space-y-3">
-          {(analyticsData?.topClients || []).map((client, index) => (
-            <TopClientCard key={index} client={client} rank={index + 1} />
-          ))}
+
+        {/* Top Clients */}
+        <div className="bg-white rounded-xl p-4 md:p-6 shadow-sm border border-gray-100">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 md:mb-6">
+            <h3 className="text-base md:text-lg font-bold text-gray-900">Top Performing Clients</h3>
+            <div className="text-xs md:text-sm text-gray-600">By total trips</div>
+          </div>
+          <div className="space-y-2 md:space-y-3">
+            {(analyticsData?.topClients || []).map((client, index) => (
+              <TopClientCard key={index} client={client} rank={index + 1} />
+            ))}
+          </div>
         </div>
       </div>
     </SuperAdminLayout>

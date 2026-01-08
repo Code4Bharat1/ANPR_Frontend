@@ -103,7 +103,7 @@ const SuperAdminDashboard = () => {
       {/* Client Analytics */}
       <div className="mb-6 md:mb-8">
         <h2 className="text-lg md:text-xl font-bold text-gray-900 mb-3 md:mb-4">Client Overview</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
           <DashboardCard
             icon={Users}
             value={dashboardData?.overview?.totalClients || 0}
@@ -125,13 +125,13 @@ const SuperAdminDashboard = () => {
             bgColor="bg-red-50"
             iconColor="text-red-600"
           />
-          <DashboardCard
+          {/* <DashboardCard
             icon={IndianRupee}
             value={dashboardData?.overview?.totalRevenue ? `₹${dashboardData.overview.totalRevenue.toLocaleString()}` : '₹0'}
             label="Total Revenue"
             bgColor="bg-green-50"
             iconColor="text-green-600"
-          />
+          /> */}
         </div>
       </div>
 
