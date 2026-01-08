@@ -1,14 +1,14 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { 
+import {
   Search, Plus, MapPin, Edit, Trash2, Eye, X,
   Building, User, AlertCircle, Loader
 } from 'lucide-react';
 import Sidebar from './sidebar';
-import Header from './header';  // ✅ Import Header
+import Header from './header';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ;
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 // Add/Edit Site Modal
 const SiteModal = ({ isOpen, onClose, site, onSave, mode }) => {
@@ -20,7 +20,8 @@ const SiteModal = ({ isOpen, onClose, site, onSave, mode }) => {
     contactPhone: '',
     contactEmail: '',
     status: 'Active',
-    description: ''
+    description: '',
+    gates: []
   });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
@@ -35,7 +36,8 @@ const SiteModal = ({ isOpen, onClose, site, onSave, mode }) => {
         contactPhone: site.contactPhone || '',
         contactEmail: site.contactEmail || '',
         status: site.status || 'Active',
-        description: site.description || ''
+        description: site.description || '',
+        gates: site.gates || []
       });
     } else {
       setFormData({
@@ -46,7 +48,8 @@ const SiteModal = ({ isOpen, onClose, site, onSave, mode }) => {
         contactPhone: '',
         contactEmail: '',
         status: 'Active',
-        description: ''
+        description: '',
+        gates: []
       });
     }
     setErrors({});
@@ -65,8 +68,48 @@ const SiteModal = ({ isOpen, onClose, site, onSave, mode }) => {
     } else if (!/\S+@\S+\.\S+/.test(formData.contactEmail)) {
       newErrors.contactEmail = 'Invalid email format';
     }
+
+    // Validate gates
+    const mainGateCount = formData.gates.filter(g => g.isMainGate).length;
+    if (mainGateCount > 1) {
+      newErrors.gates = 'Only one gate can be marked as main gate';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  // Gate management functions
+  const addGate = () => {
+    setFormData({
+      ...formData,
+      gates: [
+        ...formData.gates,
+        {
+          name: '',
+          isMainGate: formData.gates.length === 0,
+          isActive: true
+        }
+      ]
+    });
+  };
+
+  const removeGate = (index) => {
+    const newGates = formData.gates.filter((_, i) => i !== index);
+    setFormData({ ...formData, gates: newGates });
+  };
+
+  const updateGate = (index, field, value) => {
+    const newGates = [...formData.gates];
+
+    if (field === 'isMainGate' && value === true) {
+      newGates.forEach((gate, i) => {
+        if (i !== index) gate.isMainGate = false;
+      });
+    }
+
+    newGates[index] = { ...newGates[index], [field]: value };
+    setFormData({ ...formData, gates: newGates });
   };
 
   const handleSubmit = async (e) => {
@@ -94,8 +137,8 @@ const SiteModal = ({ isOpen, onClose, site, onSave, mode }) => {
           <h2 className="text-2xl font-bold text-white">
             {mode === 'edit' ? 'Edit Site' : 'Add New Site'}
           </h2>
-          <button 
-            onClick={onClose} 
+          <button
+            onClick={onClose}
             className="p-2 hover:bg-white/20 rounded-lg transition text-white"
           >
             <X className="w-6 h-6" />
@@ -112,9 +155,8 @@ const SiteModal = ({ isOpen, onClose, site, onSave, mode }) => {
               type="text"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition ${
-                errors.name ? 'border-red-500' : 'border-gray-300'
-              }`}
+              className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition ${errors.name ? 'border-red-500' : 'border-gray-300'
+                }`}
               placeholder="Enter site name"
             />
             {errors.name && (
@@ -135,9 +177,8 @@ const SiteModal = ({ isOpen, onClose, site, onSave, mode }) => {
                 type="text"
                 value={formData.location}
                 onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition ${
-                  errors.location ? 'border-red-500' : 'border-gray-300'
-                }`}
+                className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition ${errors.location ? 'border-red-500' : 'border-gray-300'
+                  }`}
                 placeholder="e.g., Mumbai, Maharashtra"
               />
               {errors.location && (
@@ -178,15 +219,14 @@ const SiteModal = ({ isOpen, onClose, site, onSave, mode }) => {
           {/* Contact Person */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Contact Person <span className="text-red-500">*</span>
+              Contact Person Name <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
               value={formData.contactPerson}
               onChange={(e) => setFormData({ ...formData, contactPerson: e.target.value })}
-              className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition ${
-                errors.contactPerson ? 'border-red-500' : 'border-gray-300'
-              }`}
+              className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition ${errors.contactPerson ? 'border-red-500' : 'border-gray-300'
+                }`}
               placeholder="Enter contact person name"
             />
             {errors.contactPerson && (
@@ -204,9 +244,8 @@ const SiteModal = ({ isOpen, onClose, site, onSave, mode }) => {
                 type="tel"
                 value={formData.contactPhone}
                 onChange={(e) => setFormData({ ...formData, contactPhone: e.target.value })}
-                className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition ${
-                  errors.contactPhone ? 'border-red-500' : 'border-gray-300'
-                }`}
+                className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition ${errors.contactPhone ? 'border-red-500' : 'border-gray-300'
+                  }`}
                 placeholder="+91 98765 43210"
               />
               {errors.contactPhone && (
@@ -222,9 +261,8 @@ const SiteModal = ({ isOpen, onClose, site, onSave, mode }) => {
                 type="email"
                 value={formData.contactEmail}
                 onChange={(e) => setFormData({ ...formData, contactEmail: e.target.value })}
-                className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition ${
-                  errors.contactEmail ? 'border-red-500' : 'border-gray-300'
-                }`}
+                className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition ${errors.contactEmail ? 'border-red-500' : 'border-gray-300'
+                  }`}
                 placeholder="email@example.com"
               />
               {errors.contactEmail && (
@@ -245,6 +283,104 @@ const SiteModal = ({ isOpen, onClose, site, onSave, mode }) => {
               className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition"
               placeholder="Additional notes or description"
             />
+          </div>
+
+          {/* Gates Management */}
+          <div className="border-t-2 border-gray-200 pt-5">
+            <div className="flex items-center justify-between mb-4">
+              <label className="block text-sm font-semibold text-gray-700">
+                Gates Management
+              </label>
+              <button
+                type="button"
+                onClick={addGate}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-semibold flex items-center gap-2"
+              >
+                <Plus className="w-4 h-4" />
+                Add Gate
+              </button>
+            </div>
+
+            {errors.gates && (
+              <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-red-600 text-sm font-semibold flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4" />
+                  {errors.gates}
+                </p>
+              </div>
+            )}
+
+            {formData.gates.length === 0 ? (
+              <div className="text-center py-8 bg-gray-50 rounded-xl border-2 border-dashed border-gray-300">
+                <MapPin className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+                <p className="text-gray-500 text-sm">No gates added yet</p>
+                <p className="text-gray-400 text-xs mt-1">Click "Add Gate" to add entry/exit points</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {formData.gates.map((gate, index) => (
+                  <div key={index} className="bg-gray-50 p-4 rounded-xl border-2 border-gray-200">
+                    <div className="flex items-start gap-3">
+                      <div className="flex-1 space-y-3">
+                        <input
+                          type="text"
+                          value={gate.name}
+                          onChange={(e) => updateGate(index, 'name', e.target.value)}
+                          placeholder={`Gate ${index + 1} name (e.g., Main Entrance, Back Gate)`}
+                          className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                        />
+
+                        <div className="flex items-center gap-4">
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={gate.isMainGate}
+                              onChange={(e) => updateGate(index, 'isMainGate', e.target.checked)}
+                              className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                            />
+                            <span className="text-sm font-medium text-gray-700">Main Gate</span>
+                            {gate.isMainGate && (
+                              <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-bold rounded">
+                                PRIMARY
+                              </span>
+                            )}
+                          </label>
+
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={gate.isActive}
+                              onChange={(e) => updateGate(index, 'isActive', e.target.checked)}
+                              className="w-4 h-4 text-green-600 rounded focus:ring-2 focus:ring-green-500"
+                            />
+                            <span className="text-sm font-medium text-gray-700">Active</span>
+                            <span className={`px-2 py-0.5 text-xs font-bold rounded ${gate.isActive
+                              ? 'bg-green-100 text-green-700'
+                              : 'bg-gray-100 text-gray-600'
+                              }`}>
+                              {gate.isActive ? 'ACTIVE' : 'INACTIVE'}
+                            </span>
+                          </label>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => removeGate(index)}
+                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
+                        title="Remove gate"
+                      >
+                        <Trash2 className="w-5 h-5" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <p className="text-xs text-gray-500 mt-2">
+              💡 Tip: Add all entry/exit points for your site. Mark one as the main gate for primary access.
+            </p>
           </div>
 
           {/* Action Buttons */}
@@ -287,8 +423,8 @@ const ViewSiteModal = ({ isOpen, onClose, site }) => {
       <div className="bg-white rounded-2xl max-w-3xl w-full my-4 shadow-2xl max-h-[95vh] overflow-y-auto">
         <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 flex items-center justify-between z-10">
           <h2 className="text-2xl font-bold text-white">Site Details</h2>
-          <button 
-            onClick={onClose} 
+          <button
+            onClick={onClose}
             className="p-2 hover:bg-white/20 rounded-lg transition text-white"
           >
             <X className="w-6 h-6" />
@@ -298,23 +434,35 @@ const ViewSiteModal = ({ isOpen, onClose, site }) => {
         <div className="p-6 space-y-6">
           {/* Status Badge */}
           <div className="flex items-center justify-between">
-            <h3 className="text-2xl font-bold text-gray-900">{site.name}</h3>
-            <span className={`px-4 py-2 rounded-full text-sm font-bold ${
-              site.status === 'Active' 
-                ? 'bg-green-100 text-green-700' 
-                : site.status === 'Maintenance'
-                ? 'bg-yellow-100 text-yellow-700'
-                : 'bg-gray-100 text-gray-700'
-            }`}>
+            {/* Left side */}
+            <div>
+              <div className="text-sm text-gray-600 font-semibold mb-1">
+                Site Name
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900">
+                {site.name}
+              </h3>
+            </div>
+
+            {/* Right side */}
+            <span
+              className={`px-4 py-2 rounded-full text-sm font-bold ${site.status === 'Active'
+                  ? 'bg-green-100 text-green-700'
+                  : site.status === 'Maintenance'
+                    ? 'bg-yellow-100 text-yellow-700'
+                    : 'bg-gray-100 text-gray-700'
+                }`}
+            >
               {site.status}
             </span>
           </div>
 
+
           {/* Site ID */}
-          <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
+          {/* <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
             <div className="text-sm text-gray-600 font-semibold mb-1">Site ID</div>
             <div className="font-mono text-gray-900 break-all">{site._id}</div>
-          </div>
+          </div> */}
 
           {/* Location Info */}
           <div>
@@ -357,12 +505,12 @@ const ViewSiteModal = ({ isOpen, onClose, site }) => {
           </div>
 
           {/* Site Stats */}
-          <div>
+          {/* <div>
             <h4 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
               <Building className="w-5 h-5 text-blue-600" />
               Site Statistics
             </h4>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-xl border border-blue-200 text-center">
                 <div className="text-3xl font-black text-blue-700">{site.assignedPMs || 0}</div>
                 <div className="text-sm text-blue-700 font-semibold mt-1">Project Managers</div>
@@ -375,8 +523,56 @@ const ViewSiteModal = ({ isOpen, onClose, site }) => {
                 <div className="text-3xl font-black text-purple-700">{site.totalDevices || 0}</div>
                 <div className="text-sm text-purple-700 font-semibold mt-1">Devices</div>
               </div>
+              <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-4 rounded-xl border border-orange-200 text-center">
+                <div className="text-3xl font-black text-orange-700">{site.gates?.length || 0}</div>
+                <div className="text-sm text-orange-700 font-semibold mt-1">Gates</div>
+              </div> 
             </div>
-          </div>
+          </div> */}
+
+          {/* Gates Information */}
+          {site.gates && site.gates.length > 0 && (
+            <div>
+              <h4 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
+                <MapPin className="w-5 h-5 text-blue-600" />
+                Gates ({site.gates.length})
+              </h4>
+              <div className="space-y-3">
+                {site.gates.map((gate, index) => (
+                  <div key={index} className="bg-gray-50 p-4 rounded-xl border border-gray-200">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                          <MapPin className="w-5 h-5 text-blue-600" />
+                        </div>
+                        <div>
+                          <div className="font-semibold text-gray-900">
+                            {gate.name || `Gate ${index + 1}`}
+                          </div>
+                          <div className="text-xs text-gray-500 mt-0.5">
+                            Entry/Exit Point #{index + 1}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {gate.isMainGate && (
+                          <span className="px-3 py-1 bg-blue-100 text-blue-700 text-xs font-bold rounded-full">
+                            MAIN GATE
+                          </span>
+                        )}
+                        <span className={`px-3 py-1 text-xs font-bold rounded-full ${gate.isActive
+                          ? 'bg-green-100 text-green-700'
+                          : 'bg-gray-100 text-gray-600'
+                          }`}>
+                          {gate.isActive ? 'ACTIVE' : 'INACTIVE'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Description */}
           {site.description && (
@@ -392,9 +588,9 @@ const ViewSiteModal = ({ isOpen, onClose, site }) => {
           {site.createdAt && (
             <div className="bg-blue-50 p-4 rounded-xl border border-blue-200">
               <div className="text-sm text-blue-700 font-semibold">
-                Created on: {new Date(site.createdAt).toLocaleDateString('en-IN', { 
-                  day: 'numeric', 
-                  month: 'long', 
+                Created on: {new Date(site.createdAt).toLocaleDateString('en-IN', {
+                  day: 'numeric',
+                  month: 'long',
                   year: 'numeric',
                   hour: '2-digit',
                   minute: '2-digit'
@@ -465,15 +661,14 @@ const SiteCard = ({ site, onEdit, onView, onDelete }) => (
     <div className="flex items-start justify-between mb-4">
       <div className="flex-1 min-w-0">
         <h3 className="font-bold text-gray-900 text-lg mb-1 truncate">{site.name}</h3>
-        <div className="text-xs text-gray-500 font-mono truncate">{site._id}</div>
+        {/* <div className="text-xs text-gray-500 font-mono truncate">{site._id}</div> */}
       </div>
-      <span className={`ml-2 px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap ${
-        site.status === 'Active' 
-          ? 'bg-green-100 text-green-700' 
-          : site.status === 'Maintenance'
+      <span className={`ml-2 px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap ${site.status === 'Active'
+        ? 'bg-green-100 text-green-700'
+        : site.status === 'Maintenance'
           ? 'bg-yellow-100 text-yellow-700'
           : 'bg-gray-100 text-gray-700'
-      }`}>
+        }`}>
         {site.status}
       </span>
     </div>
@@ -483,7 +678,7 @@ const SiteCard = ({ site, onEdit, onView, onDelete }) => (
       <span className="font-medium truncate">{site.location}</span>
     </div>
 
-    <div className="grid grid-cols-3 gap-3 mb-4 pb-4 border-b border-gray-100">
+    {/* <div className="grid grid-cols-3 gap-3 mb-4 pb-4 border-b border-gray-100">
       <div className="text-center">
         <div className="text-xs text-gray-500 mb-1">PMs</div>
         <div className="font-bold text-blue-600 text-lg">{site.assignedPMs || 0}</div>
@@ -493,10 +688,11 @@ const SiteCard = ({ site, onEdit, onView, onDelete }) => (
         <div className="font-bold text-green-600 text-lg">{site.assignedSupervisors || 0}</div>
       </div>
       <div className="text-center">
-        <div className="text-xs text-gray-500 mb-1">Devices</div>
-        <div className="font-bold text-purple-600 text-lg">{site.totalDevices || 0}</div>
+        <div className="text-xs text-gray-500 mb-1">Gates</div>
+        <div className="font-bold text-orange-600 text-lg">{site.gates?.length || 0}</div>
       </div>
-    </div>
+      <div className="text-center"> <div className="text-xs text-gray-500 mb-1">Devices</div> <div className="font-bold text-purple-600 text-lg">{site.totalDevices || 0}</div> </div>
+    </div> */}
 
     <div className="grid grid-cols-3 gap-2">
       <button
@@ -542,7 +738,6 @@ const SiteManagement = () => {
     fetchSites();
   }, []);
 
-  // ✅ Fetch all sites
   const fetchSites = async () => {
     try {
       setLoading(true);
@@ -561,8 +756,7 @@ const SiteManagement = () => {
       setSites(response.data.data || []);
     } catch (err) {
       console.error('❌ Error fetching sites:', err);
-      console.error('❌ Error response:', err.response?.data);
-      
+
       if (err.response?.status === 401) {
         alert('Session expired. Please login again.');
         localStorage.removeItem('accessToken');
@@ -575,18 +769,16 @@ const SiteManagement = () => {
     }
   };
 
-  // ✅ Create new site
   const handleAddSite = async (formData) => {
     try {
       const token = localStorage.getItem('accessToken');
-
       console.log('📤 Creating site with data:', formData);
 
       const response = await axios.post(
         `${API_URL}/api/client-admin/sites`,
         formData,
         {
-          headers: { 
+          headers: {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json'
           }
@@ -594,30 +786,35 @@ const SiteManagement = () => {
       );
 
       console.log('✅ Site created successfully:', response.data);
-      
+      setSites(prevSites => [response.data, ...prevSites]);
       setShowAddModal(false);
       alert('Site created successfully! ✅');
-      
-      await fetchSites();
     } catch (err) {
       console.error('❌ Error creating site:', err);
-      console.error('❌ Error response:', err.response?.data);
+
+      if (err.response?.status === 401) {
+        alert('Session expired. Please login again.');
+        localStorage.removeItem('accessToken');
+        window.location.href = '/login';
+      } else if (err.response?.status === 400) {
+        alert(err.response.data.message || 'Invalid site data. Please check your inputs.');
+      } else {
+        alert(err.response?.data?.message || 'Failed to create site. Please try again.');
+      }
       throw err;
     }
   };
 
-  // ✅ Update existing site
   const handleUpdateSite = async (formData) => {
     try {
       const token = localStorage.getItem('accessToken');
-
       console.log('📤 Updating site:', selectedSite._id, formData);
 
       const response = await axios.put(
         `${API_URL}/api/client-admin/sites/${selectedSite._id}`,
         formData,
         {
-          headers: { 
+          headers: {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json'
           }
@@ -625,59 +822,88 @@ const SiteManagement = () => {
       );
 
       console.log('✅ Site updated successfully:', response.data);
+      setSites(prevSites =>
+        prevSites.map(site =>
+          site._id === selectedSite._id ? response.data.data : site
+        )
+      );
 
       setShowEditModal(false);
       setSelectedSite(null);
-      alert('Site updated successfully! ✅');
-      
-      await fetchSites();
+      alert(response.data.message || 'Site updated successfully! ✅');
     } catch (err) {
       console.error('❌ Error updating site:', err);
-      console.error('❌ Error response:', err.response?.data);
+
+      if (err.response?.status === 401) {
+        alert('Session expired. Please login again.');
+        localStorage.removeItem('accessToken');
+        window.location.href = '/login';
+      } else if (err.response?.status === 403) {
+        alert('You do not have permission to update this site.');
+      } else if (err.response?.status === 404) {
+        alert('Site not found. It may have been deleted.');
+        await fetchSites();
+      } else if (err.response?.status === 400) {
+        alert(err.response.data.message || 'Invalid site data. Please check your inputs.');
+      } else {
+        alert(err.response?.data?.message || 'Failed to update site. Please try again.');
+      }
       throw err;
     }
   };
 
-  // ✅ Delete site
   const handleDeleteSite = async () => {
     try {
       setActionLoading(true);
       const token = localStorage.getItem('accessToken');
-      
       console.log('🗑️ Deleting site:', selectedSite._id);
 
-      await axios.delete(
+      const response = await axios.delete(
         `${API_URL}/api/client-admin/sites/${selectedSite._id}`,
         {
           headers: { Authorization: `Bearer ${token}` }
         }
       );
 
-      console.log('✅ Site deleted successfully');
+      console.log('✅ Site deleted successfully:', response.data);
+      setSites(prevSites => prevSites.filter(site => site._id !== selectedSite._id));
 
       setShowDeleteModal(false);
       setSelectedSite(null);
-      alert('Site deleted successfully! ✅');
-      
-      await fetchSites();
+      alert(response.data.message || 'Site deleted successfully! ✅');
     } catch (err) {
       console.error('❌ Error deleting site:', err);
-      console.error('❌ Error response:', err.response?.data);
-      alert(err.response?.data?.message || 'Failed to delete site');
+
+      if (err.response?.status === 401) {
+        alert('Session expired. Please login again.');
+        localStorage.removeItem('accessToken');
+        window.location.href = '/login';
+      } else if (err.response?.status === 403) {
+        alert('You do not have permission to delete this site.');
+      } else if (err.response?.status === 404) {
+        alert('Site not found. It may have already been deleted.');
+        await fetchSites();
+      } else if (err.response?.status === 400) {
+        const errorData = err.response.data;
+        alert(
+          errorData.message ||
+          `Cannot delete site. It is assigned to ${errorData.assignedPMs || 0} project manager(s) and ${errorData.assignedSupervisors || 0} supervisor(s).`
+        );
+      } else {
+        alert(err.response?.data?.message || 'Failed to delete site. Please try again.');
+      }
     } finally {
       setActionLoading(false);
     }
   };
 
-  // Handle view site
   const handleViewSite = (site) => {
     setSelectedSite(site);
     setShowViewModal(true);
   };
 
-  // Filter sites
   const filteredSites = sites.filter(site => {
-    const matchesSearch = 
+    const matchesSearch =
       site.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       site.location?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       site.contactPerson?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -699,37 +925,40 @@ const SiteManagement = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-
-      {/* ✅ Header Component with Dropdown Options */}
       <Header title="Site Management" onMenuClick={() => setSidebarOpen(true)} />
 
-      {/* Main Content */}
       <main className="lg:ml-72 max-w-7xl mx-auto px-6 py-8">
         {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-5 border-2 border-blue-200 shadow-sm">
+        {/* <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6"> <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-5 border-2 border-blue-200 shadow-sm"> <div className="text-3xl font-black text-blue-700">{sites.length}</div> <div className="text-sm text-blue-700 font-semibold mt-1">Total Sites</div> </div> <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-5 border-2 border-green-200 shadow-sm"> <div className="text-3xl font-black text-green-700"> {sites.filter(s => s.status === 'Active').length} </div> <div className="text-sm text-green-700 font-semibold mt-1">Active</div> </div> <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl p-5 border-2 border-yellow-200 shadow-sm"> <div className="text-3xl font-black text-yellow-700"> {sites.filter(s => s.status === 'Complelted').length} </div> <div className="text-sm text-yellow-700 font-semibold mt-1">Complelted</div> </div> <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-5 border-2 border-gray-200 shadow-sm"> <div className="text-3xl font-black text-gray-700"> {sites.filter(s => s.status === 'Inactive').length} </div> <div className="text-sm text-gray-700 font-semibold mt-1">Inactive</div> </div><div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-5 border-2 border-orange-200 shadow-sm">
+          <div className="text-3xl font-black text-orange-700">
+            {sites.reduce((total, site) => total + (site.gates?.length || 0), 0)}
+          </div>
+          <div className="text-sm text-orange-700 font-semibold mt-1">Total Gates</div>
+        </div> </div> */}
+        {/* <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6"> */}
+        {/* <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-5 border-2 border-blue-200 shadow-sm">
             <div className="text-3xl font-black text-blue-700">{sites.length}</div>
             <div className="text-sm text-blue-700 font-semibold mt-1">Total Sites</div>
-          </div>
-          <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-5 border-2 border-green-200 shadow-sm">
+          </div> */}
+        {/* <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-5 border-2 border-green-200 shadow-sm">
             <div className="text-3xl font-black text-green-700">
               {sites.filter(s => s.status === 'Active').length}
             </div>
             <div className="text-sm text-green-700 font-semibold mt-1">Active</div>
-          </div>
-          <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl p-5 border-2 border-yellow-200 shadow-sm">
-            <div className="text-3xl font-black text-yellow-700">
-              {sites.filter(s => s.status === 'Complelted').length}
+          </div> */}
+        {/* <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-5 border-2 border-orange-200 shadow-sm">
+            <div className="text-3xl font-black text-orange-700">
+              {sites.reduce((total, site) => total + (site.gates?.length || 0), 0)}
             </div>
-            <div className="text-sm text-yellow-700 font-semibold mt-1">Complelted</div>
-          </div>
-          <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-5 border-2 border-gray-200 shadow-sm">
+            <div className="text-sm text-orange-700 font-semibold mt-1">Total Gates</div>
+          </div> */}
+        {/* <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-5 border-2 border-gray-200 shadow-sm">
             <div className="text-3xl font-black text-gray-700">
               {sites.filter(s => s.status === 'Inactive').length}
             </div>
             <div className="text-sm text-gray-700 font-semibold mt-1">Inactive</div>
-          </div>
-        </div>
+          </div> */}
+        {/* </div> */}
 
         {/* Search and Filters */}
         <div className="flex flex-col md:flex-row gap-4 mb-6">
@@ -753,7 +982,7 @@ const SiteManagement = () => {
             <option value="Complelted">Complelted</option>
             <option value="Inactive">Inactive</option>
           </select>
-          <button 
+          <button
             onClick={() => setShowAddModal(true)}
             className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition font-bold flex items-center gap-2 shadow-lg whitespace-nowrap"
           >
@@ -770,12 +999,12 @@ const SiteManagement = () => {
               {sites.length === 0 ? 'No sites yet' : 'No sites found'}
             </h3>
             <p className="text-gray-500 mb-6">
-              {searchTerm || filterStatus !== 'All' 
-                ? 'Try adjusting your search or filters' 
+              {searchTerm || filterStatus !== 'All'
+                ? 'Try adjusting your search or filters'
                 : 'Get started by adding your first site'}
             </p>
             {sites.length === 0 && (
-              <button 
+              <button
                 onClick={() => setShowAddModal(true)}
                 className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition font-bold inline-flex items-center gap-2"
               >
@@ -806,14 +1035,14 @@ const SiteManagement = () => {
       </main>
 
       {/* Modals */}
-      <SiteModal 
+      <SiteModal
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
         onSave={handleAddSite}
         mode="add"
       />
 
-      <SiteModal 
+      <SiteModal
         isOpen={showEditModal}
         onClose={() => {
           setShowEditModal(false);
