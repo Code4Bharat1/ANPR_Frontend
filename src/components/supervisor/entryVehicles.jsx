@@ -59,6 +59,9 @@ const EntryVehicles = () => {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const recordingIntervalRef = useRef(null);
+
+
+
   
   // Driver Name
   const [driverName, setDriverName] = useState('');
@@ -113,7 +116,10 @@ const EntryVehicles = () => {
   // Fetch latest ANPR event
   const fetchLatestANPREvent = async () => {
     try {
-      const response = await axios.get(`${ANPR_WEBHOOK_URL}?limit=1`);
+      // const response = await axios.get(`${ANPR_WEBHOOK_URL}?limit=1`);
+
+      console.log(response);
+      
       
       if (response.data) {
         const anprEvent = response.data;
@@ -156,9 +162,9 @@ const EntryVehicles = () => {
     fetchLatestANPREvent();
     
     // Then poll every 2 seconds
-    pollingIntervalRef.current = setInterval(() => {
-      fetchLatestANPREvent();
-    }, 2000);
+    // pollingIntervalRef.current = setInterval(() => {
+    //   fetchLatestANPREvent();
+    // }, 2000);
   };
 
   // Stop polling
@@ -524,6 +530,37 @@ const EntryVehicles = () => {
     };
     return labels[cameraView] || 'Photo';
   };
+
+
+  useEffect(() => {
+  const eventSource = new EventSource(
+    `https://webhooks.nexcorealliance.com/api/anpr/stream`
+  );
+
+  eventSource.onmessage = (event) => {
+
+    const anprEvent = JSON.parse(event.data);
+alert("Got the data") ;
+console.log(eventSource)
+    if (!anprEvent.numberPlate) return;
+
+    setAnprData({
+      vehicleNumber: anprEvent.numberPlate,
+      capturedImage: base64ToImageUrl(anprEvent.image),
+      frameImage: base64ToImageUrl(anprEvent.frame),
+      confidence: 95,
+      timestamp: new Date(anprEvent.timestamp).toLocaleString(),
+      cameraId: anprEvent.cameraName || "Main Gate (In)",
+    });
+  };
+
+  eventSource.onerror = () => {
+    eventSource.close();
+  };
+
+  return () => eventSource.close();
+}, []);
+
 
   return (
     <SupervisorLayout>
