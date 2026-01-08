@@ -20,7 +20,7 @@ const DUMMY_ACTIVE_VEHICLES = [
     materialType: 'Steel Rods',
     entryTime: '08:30 AM',
     duration: '2h 15m',
-    status: 'loading'
+   
   },
   {
     _id: '2',
@@ -30,7 +30,7 @@ const DUMMY_ACTIVE_VEHICLES = [
     materialType: 'Cement Bags',
     entryTime: '09:45 AM',
     duration: '1h 00m',
-    status: 'unloading'
+    
   },
   {
     _id: '3',
@@ -40,7 +40,7 @@ const DUMMY_ACTIVE_VEHICLES = [
     materialType: 'Diesel Drums',
     entryTime: '07:15 AM',
     duration: '3h 30m',
-    status: 'overstay'
+   
   },
   {
     _id: '4',
@@ -50,7 +50,7 @@ const DUMMY_ACTIVE_VEHICLES = [
     materialType: 'IT Equipment',
     entryTime: '10:00 AM',
     duration: '0h 45m',
-    status: 'loading'
+    
   },
   {
     _id: '5',
@@ -60,7 +60,7 @@ const DUMMY_ACTIVE_VEHICLES = [
     materialType: 'Construction Material',
     entryTime: '06:30 AM',
     duration: '4h 15m',
-    status: 'overstay'
+    
   }
 ];
 

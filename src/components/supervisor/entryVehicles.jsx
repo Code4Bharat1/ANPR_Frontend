@@ -117,19 +117,19 @@ const EntryVehicles = () => {
   const fetchVendors = async () => {
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await axios.get(`${API_URL}/api/supervisor/vendors`, {
+      const response = await axios.get(`${API_URL}/api/project/vendors`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setVendors(response.data.data || response.data || []);
     } catch (error) {
       console.error('Error fetching vendors:', error);
-      setVendors([
-        { _id: '1', name: 'Blue Dart Logistics' },
-        { _id: '2', name: 'Amazon Supplies' },
-        { _id: '3', name: 'Indian Oil Corp' },
-        { _id: '4', name: 'Tech Solutions Ltd' },
-        { _id: '5', name: 'Local Supply Co' }
-      ]);
+      // setVendors([
+      //   { _id: '1', name: 'Blue Dart Logistics' },
+      //   { _id: '2', name: 'Amazon Supplies' },
+      //   { _id: '3', name: 'Indian Oil Corp' },
+      //   { _id: '4', name: 'Tech Solutions Ltd' },
+      //   { _id: '5', name: 'Local Supply Co' }
+      // ]);
     }
   };
 
