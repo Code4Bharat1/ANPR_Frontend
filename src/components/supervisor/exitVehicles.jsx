@@ -10,16 +10,70 @@ import {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
+// Dummy data for testing
+const DUMMY_ACTIVE_VEHICLES = [
+  {
+    _id: '1',
+    vehicleNumber: 'MH12-AB-1234',
+    vendor: 'Blue Dart Logistics',
+    driver: 'Ramesh Kumar',
+    materialType: 'Steel Rods',
+    entryTime: '08:30 AM',
+    duration: '2h 15m',
+    status: 'loading'
+  },
+  {
+    _id: '2',
+    vehicleNumber: 'GJ01-CD-5678',
+    vendor: 'Amazon Supplies',
+    driver: 'Suresh Patel',
+    materialType: 'Cement Bags',
+    entryTime: '09:45 AM',
+    duration: '1h 00m',
+    status: 'unloading'
+  },
+  {
+    _id: '3',
+    vehicleNumber: 'KA03-EF-9012',
+    vendor: 'Indian Oil Corp',
+    driver: 'Vijay Singh',
+    materialType: 'Diesel Drums',
+    entryTime: '07:15 AM',
+    duration: '3h 30m',
+    status: 'overstay'
+  },
+  {
+    _id: '4',
+    vehicleNumber: 'RJ14-GH-3456',
+    vendor: 'Tech Solutions Ltd',
+    driver: 'Anil Sharma',
+    materialType: 'IT Equipment',
+    entryTime: '10:00 AM',
+    duration: '0h 45m',
+    status: 'loading'
+  },
+  {
+    _id: '5',
+    vehicleNumber: 'DL08-IJ-7890',
+    vendor: 'Local Supply Co',
+    driver: 'Mohan Yadav',
+    materialType: 'Construction Material',
+    entryTime: '06:30 AM',
+    duration: '4h 15m',
+    status: 'overstay'
+  }
+];
+
 const ExitVehicles = () => {
-  const [currentView, setCurrentView] = useState('list'); // 'list' or 'process' or 'camera'
+  const [currentView, setCurrentView] = useState('list');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeVehicles, setActiveVehicles] = useState([]);
   const [filteredVehicles, setFilteredVehicles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState(null);
-  const [cameraField, setCameraField] = useState(null); // Track which field is being captured
+  const [cameraField, setCameraField] = useState(null);
   const [stream, setStream] = useState(null);
-  const [facingMode, setFacingMode] = useState('environment'); // 'user' or 'environment'
+  const [facingMode, setFacingMode] = useState('environment');
   
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -42,7 +96,6 @@ const ExitVehicles = () => {
   useEffect(() => {
     fetchActiveVehicles();
     
-    // Cleanup camera on unmount
     return () => {
       stopCamera();
     };
@@ -56,21 +109,36 @@ const ExitVehicles = () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('accessToken');
-      const response = await axios.get(`${API_URL}/api/supervisor/vehicles/active`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      console.log('Active vehicles response:', response.data);
       
-      // Extract data from response - handle both response.data.data and response.data
-      const data = response.data.data || response.data || [];
-      const vehiclesArray = Array.isArray(data) ? data : [];
+      // Try to fetch from API first
+      try {
+        const response = await axios.get(`${API_URL}/api/supervisor/vehicles/active`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        console.log('Active vehicles response:', response.data);
+        
+        const data = response.data.data || response.data || [];
+        const vehiclesArray = Array.isArray(data) ? data : [];
+        
+        if (vehiclesArray.length > 0) {
+          setActiveVehicles(vehiclesArray);
+          setFilteredVehicles(vehiclesArray);
+          return;
+        }
+      } catch (apiError) {
+        console.warn('API fetch failed, using dummy data:', apiError);
+      }
       
-      setActiveVehicles(vehiclesArray);
-      setFilteredVehicles(vehiclesArray);
+      // Fallback to dummy data
+      console.log('Using dummy data for active vehicles');
+      setActiveVehicles(DUMMY_ACTIVE_VEHICLES);
+      setFilteredVehicles(DUMMY_ACTIVE_VEHICLES);
+      
     } catch (error) {
       console.error('Error fetching active vehicles:', error);
-      setActiveVehicles([]);
-      setFilteredVehicles([]);
+      // Use dummy data on error
+      setActiveVehicles(DUMMY_ACTIVE_VEHICLES);
+      setFilteredVehicles(DUMMY_ACTIVE_VEHICLES);
     } finally {
       setLoading(false);
     }
@@ -122,7 +190,6 @@ const ExitVehicles = () => {
     });
   };
 
-  // Start Camera
   const startCamera = async (field) => {
     try {
       setCameraField(field);
@@ -149,7 +216,6 @@ const ExitVehicles = () => {
     }
   };
 
-  // Stop Camera
   const stopCamera = () => {
     if (stream) {
       stream.getTracks().forEach(track => track.stop());
@@ -160,13 +226,11 @@ const ExitVehicles = () => {
     }
   };
 
-  // Switch Camera (Front/Back)
   const switchCamera = async () => {
     stopCamera();
     const newFacingMode = facingMode === 'user' ? 'environment' : 'user';
     setFacingMode(newFacingMode);
     
-    // Restart camera with new facing mode
     try {
       const constraints = {
         video: {
@@ -187,36 +251,29 @@ const ExitVehicles = () => {
     }
   };
 
-  // Capture Photo
   const capturePhoto = () => {
     if (!videoRef.current || !canvasRef.current) return;
 
     const video = videoRef.current;
     const canvas = canvasRef.current;
     
-    // Set canvas dimensions to match video
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     
-    // Draw video frame to canvas
     const context = canvas.getContext('2d');
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
     
-    // Convert to base64
     const imageData = canvas.toDataURL('image/jpeg', 0.9);
     
-    // Save to state
     setExitData(prev => ({
       ...prev,
       exitMedia: { ...prev.exitMedia, [cameraField]: imageData }
     }));
 
-    // Close camera
     stopCamera();
     setCurrentView('process');
   };
 
-  // Cancel Camera
   const cancelCamera = () => {
     stopCamera();
     setCurrentView('process');
@@ -233,7 +290,6 @@ const ExitVehicles = () => {
       setLoading(true);
       const token = localStorage.getItem('accessToken');
 
-      // Prepare payload matching backend expectations
       const exitPayload = {
         vehicleId: selectedVehicle._id,
         vehicleNumber: selectedVehicle.vehicleNumber,
@@ -293,19 +349,16 @@ const ExitVehicles = () => {
   return (
     <SupervisorLayout>
       <div className="max-w-7xl mx-auto">
-        {/* Hidden canvas for photo capture */}
         <canvas ref={canvasRef} className="hidden" />
 
         {/* LIST VIEW */}
         {currentView === 'list' && (
           <>
-            {/* Header */}
             <div className="mb-6">
               <h1 className="text-2xl font-bold text-gray-900 mb-2">Vehicle Exit</h1>
               <p className="text-gray-600">Select a vehicle to process exit</p>
             </div>
 
-            {/* Search */}
             <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm mb-6">
               <div className="flex flex-col sm:flex-row gap-3">
                 <div className="flex-1 relative">
@@ -331,7 +384,6 @@ const ExitVehicles = () => {
               </div>
             </div>
 
-            {/* Active Vehicles List */}
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
               <div className="p-5 border-b border-gray-200">
                 <h2 className="text-lg font-bold text-gray-900">
@@ -417,7 +469,6 @@ const ExitVehicles = () => {
         {/* CAMERA VIEW */}
         {currentView === 'camera' && (
           <div className="fixed inset-0 bg-black z-50 flex flex-col">
-            {/* Camera Controls */}
             <div className="bg-black/50 backdrop-blur-sm p-4 flex items-center justify-between">
               <button
                 onClick={cancelCamera}
@@ -438,7 +489,6 @@ const ExitVehicles = () => {
               </button>
             </div>
 
-            {/* Video Feed */}
             <div className="flex-1 flex items-center justify-center bg-black">
               <video
                 ref={videoRef}
@@ -448,7 +498,6 @@ const ExitVehicles = () => {
               />
             </div>
 
-            {/* Capture Button */}
             <div className="bg-black/50 backdrop-blur-sm p-6 flex justify-center">
               <button
                 onClick={capturePhoto}
@@ -463,7 +512,6 @@ const ExitVehicles = () => {
         {/* PROCESS VIEW */}
         {currentView === 'process' && selectedVehicle && (
           <>
-            {/* Header */}
             <div className="mb-6">
               <button
                 onClick={handleBackToList}
@@ -573,7 +621,6 @@ const ExitVehicles = () => {
                   ))}
                 </div>
 
-                {/* Material Type Input */}
                 {exitData.exitLoadStatus === 'loaded' && (
                   <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                     <label className="block text-sm font-semibold text-gray-700 mb-2">

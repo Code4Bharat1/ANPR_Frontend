@@ -87,7 +87,7 @@ const SupervisorDashboard = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-6">
         {/* Today Entry */}
         <div className="bg-white rounded-xl p-5 border border-gray-200 shadow-sm hover:shadow-md transition">
           <div className="flex items-center justify-between mb-3">
@@ -137,7 +137,7 @@ const SupervisorDashboard = () => {
         </div>
 
         {/* Denied Entries */}
-        <div className="bg-white rounded-xl p-5 border border-gray-200 shadow-sm hover:shadow-md transition">
+        {/* <div className="bg-white rounded-xl p-5 border border-gray-200 shadow-sm hover:shadow-md transition">
           <div className="flex items-center justify-between mb-3">
             <div className="text-sm text-gray-600 font-medium">Denied Entries</div>
             <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
@@ -146,7 +146,7 @@ const SupervisorDashboard = () => {
           </div>
           <div className="text-3xl font-bold text-gray-900 mb-1">{stats.deniedEntries || 0}</div>
           <div className="text-xs text-red-600">{stats.deniedEntries > 0 ? 'Requires review' : 'No denials'}</div>
-        </div>
+        </div> */}
       </div>
 
       {/* Main Content Grid */}
@@ -154,7 +154,7 @@ const SupervisorDashboard = () => {
         {/* Recent Gate Activity */}
         <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 shadow-sm">
           <div className="p-5 border-b border-gray-200 flex items-center justify-between">
-            <h2 className="text-lg font-bold text-gray-900">Recent Gate Activity</h2>
+            <h2 className="text-lg font-bold text-gray-900">Recent Vehicle Activity</h2>
             <button
               onClick={() => router.push('/supervisor/trip-history')}
               className="text-sm text-blue-600 hover:text-blue-700 font-semibold flex items-center gap-1"
@@ -239,14 +239,14 @@ const SupervisorDashboard = () => {
                 <span className="text-gray-600">Site Name</span>
                 <span className="font-semibold text-gray-900">{siteInfo.name || 'N/A'}</span>
               </div>
-              <div className="flex items-center justify-between text-sm">
+              {/* <div className="flex items-center justify-between text-sm">
                 <span className="text-gray-600">Active Gates</span>
                 <span className="font-semibold text-gray-900">{siteInfo.gates || 0}</span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
+              </div> */}
+              {/* <div className="flex items-center justify-between text-sm">
                 <span className="text-gray-600">Current Shift</span>
                 <span className="font-semibold text-gray-900">{siteInfo.shift || 'N/A'}</span>
-              </div>
+              </div> */}
               <div className="flex items-center justify-between text-sm">
                 <span className="text-gray-600">Status</span>
                 <span className={`px-2 py-1 rounded text-xs font-semibold ${
