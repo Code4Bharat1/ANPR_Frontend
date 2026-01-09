@@ -23,7 +23,7 @@ export default function LiveAnpr() {
 
     // ❌ Connection error
     socket.on("connect_error", (err) => {
-      console.error("❌ Socket error:", err.message);
+      console.error("❌ Socket error:", err);
       setStatus("error");
     });
 
