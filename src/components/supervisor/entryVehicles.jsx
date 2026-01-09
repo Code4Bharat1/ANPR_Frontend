@@ -11,10 +11,11 @@ import {
   ArrowLeft,
   Plus,
   CheckCircle2,
+  AlertCircle,
 } from "lucide-react";
 
 const SOCKET_URL = "https://webhooks.nexcorealliance.com";
-// const SOCKET_URL = "http://localhost:5000";
+const API_URL = "https://webhooks.nexcorealliance.com/api"; // Adjust to your API base URL
 
 export default function LiveAnpr() {
   const [events, setEvents] = useState([]);
@@ -24,28 +25,23 @@ export default function LiveAnpr() {
   const [showForm, setShowForm] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [showManualEntry, setShowManualEntry] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState({ type: "", message: "" });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Form data state
   const [formData, setFormData] = useState({
-    // Step 1: Vehicle Information
     numberPlate: "",
     vehicleType: "",
     cameraName: "",
     direction: "",
     speed: "",
-
-    // Step 2: Entry/Exit Details
     isEntry: true,
     timestamp: "",
     siteId: "",
     siteName: "",
     laneId: "",
-
-    // Step 3: Images
     vehicleImage: "",
     frameImage: "",
-
-    // Step 4: Additional Information
     notes: "",
     driverName: "",
     purpose: "",
@@ -77,6 +73,23 @@ export default function LiveAnpr() {
       setEvents((prev) => [data, ...prev]);
       setCurrentEvent(data);
       setShowPopup(true);
+    });
+
+    // Listen for trip creation confirmations
+    socket.on("anpr:trip-created", (data) => {
+      console.log("✅ Trip created:", data);
+      setSubmitStatus({
+        type: "success",
+        message: `${data.type} recorded successfully!`,
+      });
+    });
+
+    socket.on("anpr:trip-completed", (data) => {
+      console.log("✅ Trip completed:", data);
+      setSubmitStatus({
+        type: "success",
+        message: "Exit recorded successfully!",
+      });
     });
 
     return () => {
@@ -156,11 +169,59 @@ export default function LiveAnpr() {
     }
   };
 
-  const handleSubmit = () => {
-    console.log("Form submitted:", formData);
-    alert("Entry recorded successfully!");
-    setShowForm(false);
-    setCurrentStep(1);
+  const handleSubmit = async () => {
+    // Validate required fields
+    if (!formData.numberPlate || !formData.siteId) {
+      setSubmitStatus({
+        type: "error",
+        message: "Number plate and site ID are required!",
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+    setSubmitStatus({ type: "", message: "" });
+
+    try {
+      const response = await fetch(`${API_URL}/trips/manual`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          // Add authorization header if needed
+          // "Authorization": `Bearer ${yourAuthToken}`,
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setSubmitStatus({
+          type: "success",
+          message: data.message || "Entry recorded successfully!",
+        });
+        
+        // Close form after 2 seconds
+        setTimeout(() => {
+          setShowForm(false);
+          setCurrentStep(1);
+          setSubmitStatus({ type: "", message: "" });
+        }, 2000);
+      } else {
+        setSubmitStatus({
+          type: "error",
+          message: data.message || "Failed to record entry",
+        });
+      }
+    } catch (error) {
+      console.error("Submit error:", error);
+      setSubmitStatus({
+        type: "error",
+        message: "Network error. Please try again.",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const getStatusColor = () => {
@@ -425,6 +486,24 @@ export default function LiveAnpr() {
         <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4 overflow-y-auto">
           <div className="bg-slate-800 rounded-xl shadow-2xl max-w-4xl w-full my-8 border border-slate-700">
             <div className="p-6">
+              {/* Status Message */}
+              {submitStatus.message && (
+                <div
+                  className={`mb-4 p-4 rounded-lg flex items-center gap-2 ${
+                    submitStatus.type === "success"
+                      ? "bg-green-500/20 border border-green-500 text-green-200"
+                      : "bg-red-500/20 border border-red-500 text-red-200"
+                  }`}
+                >
+                  {submitStatus.type === "success" ? (
+                    <CheckCircle2 className="w-5 h-5" />
+                  ) : (
+                    <AlertCircle className="w-5 h-5" />
+                  )}
+                  <span>{submitStatus.message}</span>
+                </div>
+              )}
+
               {/* Progress Bar */}
               <div className="mb-8">
                 <div className="flex items-center justify-between mb-2">
@@ -494,10 +573,14 @@ export default function LiveAnpr() {
                         className="w-full bg-slate-700 text-white px-4 py-3 rounded-lg border border-slate-600 focus:border-blue-500 focus:outline-none"
                       >
                         <option value="">Select type</option>
-                        <option value="1">Car</option>
-                        <option value="2">Truck</option>
-                        <option value="3">Motorcycle</option>
-                        <option value="4">Bus</option>
+                        <option value="TRUCK_12_WHEEL">Truck 12 Wheel</option>
+                        <option value="TRUCK_10_WHEEL">Truck 10 Wheel</option>
+                        <option value="TRUCK_6_WHEEL">Truck 6 Wheel</option>
+                        <option value="TRAILER">Trailer</option>
+                        <option value="PICKUP">Pickup</option>
+                        <option value="CAR">Car</option>
+                        <option value="BIKE">Bike</option>
+                        <option value="OTHER">Other</option>
                       </select>
                     </div>
 
@@ -592,7 +675,7 @@ export default function LiveAnpr() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="text-slate-300 text-sm font-medium mb-2 block">
-                        Site ID
+                        Site ID *
                       </label>
                       <input
                         type="text"
@@ -703,7 +786,7 @@ export default function LiveAnpr() {
                   </div>
                 </div>
               )}
-
+              
               {/* Step 4: Additional Information */}
               {currentStep === 4 && (
                 <div className="space-y-4">
