@@ -5,7 +5,8 @@ import SupervisorLayout from './SupervisorLayout';
 import axios from 'axios';
 import {
   Search, Filter, Download, Eye, Calendar, Loader2,
-  FileText, CheckCircle, XCircle, Clock, ChevronLeft, ChevronRight
+  FileText, CheckCircle, XCircle, Clock, ChevronLeft, ChevronRight,
+  X
 } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
@@ -30,27 +31,32 @@ const TripHistory = () => {
     applyFilters();
   }, [searchQuery, statusFilter, trips]);
 
-  const fetchTripHistory = async () => {
+ const fetchTripHistory = async () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('accessToken');
+      
+      // Log the request details for debugging
+      console.log('Fetching trips with period:', dateFilter);
+      
       const response = await axios.get(
         `${API_URL}/api/supervisor/trips?period=${dateFilter}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      console.log(response.data);
-      
+      console.log('Trip history response:', response.data);
       
       const data = response.data.data || response.data || [];
       setTrips(data);
     } catch (error) {
       console.error('Error fetching trip history:', error);
+      console.error('Error details:', error.response?.data);
       
+      // Show user-friendly error message
+      alert(error.response?.data?.message || 'Failed to fetch trip history. Please try again.');
     } finally {
       setLoading(false);
     }
   };
-
   const applyFilters = () => {
     let filtered = [...trips];
 

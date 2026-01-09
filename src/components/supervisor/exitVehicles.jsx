@@ -11,58 +11,7 @@ import {
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 // Dummy data for testing
-const DUMMY_ACTIVE_VEHICLES = [
-  {
-    _id: '1',
-    vehicleNumber: 'MH12-AB-1234',
-    vendor: 'Blue Dart Logistics',
-    driver: 'Ramesh Kumar',
-    materialType: 'Steel Rods',
-    entryTime: '08:30 AM',
-    duration: '2h 15m',
-   
-  },
-  {
-    _id: '2',
-    vehicleNumber: 'GJ01-CD-5678',
-    vendor: 'Amazon Supplies',
-    driver: 'Suresh Patel',
-    materialType: 'Cement Bags',
-    entryTime: '09:45 AM',
-    duration: '1h 00m',
-    
-  },
-  {
-    _id: '3',
-    vehicleNumber: 'KA03-EF-9012',
-    vendor: 'Indian Oil Corp',
-    driver: 'Vijay Singh',
-    materialType: 'Diesel Drums',
-    entryTime: '07:15 AM',
-    duration: '3h 30m',
-   
-  },
-  {
-    _id: '4',
-    vehicleNumber: 'RJ14-GH-3456',
-    vendor: 'Tech Solutions Ltd',
-    driver: 'Anil Sharma',
-    materialType: 'IT Equipment',
-    entryTime: '10:00 AM',
-    duration: '0h 45m',
-    
-  },
-  {
-    _id: '5',
-    vehicleNumber: 'DL08-IJ-7890',
-    vendor: 'Local Supply Co',
-    driver: 'Mohan Yadav',
-    materialType: 'Construction Material',
-    entryTime: '06:30 AM',
-    duration: '4h 15m',
-    
-  }
-];
+
 
 const ExitVehicles = () => {
   const [currentView, setCurrentView] = useState('list');
@@ -130,9 +79,9 @@ const ExitVehicles = () => {
       }
       
       // Fallback to dummy data
-      console.log('Using dummy data for active vehicles');
-      setActiveVehicles(DUMMY_ACTIVE_VEHICLES);
-      setFilteredVehicles(DUMMY_ACTIVE_VEHICLES);
+      // console.log('Using dummy data for active vehicles');
+      // setActiveVehicles(DUMMY_ACTIVE_VEHICLES);
+      // setFilteredVehicles(DUMMY_ACTIVE_VEHICLES);
       
     } catch (error) {
       console.error('Error fetching active vehicles:', error);

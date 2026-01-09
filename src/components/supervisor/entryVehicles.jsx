@@ -13,6 +13,7 @@ import {
   CheckCircle2,
   AlertCircle,
 } from "lucide-react";
+import axios from "axios";
 
 const SOCKET_URL = "https://webhooks.nexcorealliance.com";
 const API_URL = "https://webhooks.nexcorealliance.com/api"; // Adjust to your API base URL
@@ -182,46 +183,44 @@ export default function LiveAnpr() {
     setIsSubmitting(true);
     setSubmitStatus({ type: "", message: "" });
 
-    try {
-      const response = await fetch(`${API_URL}/trips/manual`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          // Add authorization header if needed
-          // "Authorization": `Bearer ${yourAuthToken}`,
-        },
-        body: JSON.stringify(formData),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setSubmitStatus({
-          type: "success",
-          message: data.message || "Entry recorded successfully!",
-        });
-        
-        // Close form after 2 seconds
-        setTimeout(() => {
-          setShowForm(false);
-          setCurrentStep(1);
-          setSubmitStatus({ type: "", message: "" });
-        }, 2000);
-      } else {
-        setSubmitStatus({
-          type: "error",
-          message: data.message || "Failed to record entry",
-        });
-      }
-    } catch (error) {
-      console.error("Submit error:", error);
-      setSubmitStatus({
-        type: "error",
-        message: "Network error. Please try again.",
-      });
-    } finally {
-      setIsSubmitting(false);
+   try {
+  const response = await axios.post(
+    "http://localhost:5000/api/supervisor/trips/manual",
+    formData,
+    {
+      headers: {
+        "Content-Type": "application/json",
+      },
     }
+  );
+
+  // axios me response.data hota hai
+  setSubmitStatus({
+    type: "success",
+    message: response.data.message || "Entry recorded successfully!",
+  });
+
+  setTimeout(() => {
+    setShowForm(false);
+    setCurrentStep(1);
+    setSubmitStatus({ type: "", message: "" });
+  }, 2000);
+
+} catch (error) {
+  console.error("Submit error:", error);
+
+  // backend se proper error message ho to
+  const message =
+    error.response?.data?.message ||
+    "Network error. Please try again.";
+
+  setSubmitStatus({
+    type: "error",
+    message,
+  });
+} finally {
+  setIsSubmitting(false);
+}
   };
 
   const getStatusColor = () => {
