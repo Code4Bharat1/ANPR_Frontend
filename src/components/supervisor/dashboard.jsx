@@ -87,7 +87,7 @@ const SupervisorDashboard = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-6">
         {/* Today Entry */}
         <div className="bg-white rounded-xl p-5 border border-gray-200 shadow-sm hover:shadow-md transition">
           <div className="flex items-center justify-between mb-3">

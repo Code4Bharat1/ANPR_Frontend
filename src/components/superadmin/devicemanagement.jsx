@@ -3,11 +3,9 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import {
   Plus, Search, Camera, Activity, CheckCircle, XCircle, Trash2, 
-  ChevronLeft, ChevronRight, X, Menu
+  ChevronLeft, ChevronRight, X
 } from 'lucide-react';
-import Sidebar from './sidebar';
 import SuperAdminLayout from './layout';
-
 
 const DeviceCard = ({ device, onEdit, onToggleStatus, onDelete }) => (
   <div className="bg-white rounded-xl p-4 md:p-6 shadow-sm border border-gray-100 hover:shadow-md transition">
@@ -42,13 +40,14 @@ const DeviceCard = ({ device, onEdit, onToggleStatus, onDelete }) => (
       </div>
       <div>
         <div className="text-xs text-gray-500 uppercase mb-1">Client</div>
-        <div className="font-semibold text-gray-900 text-sm md:text-base truncate">{device.clientName ?? 'Not Assigned'}
-</div>
+        <div className="font-semibold text-gray-900 text-sm md:text-base truncate">
+          {device.clientName ?? 'Not Assigned'}
+        </div>
       </div>
       <div className="col-span-2 sm:col-span-1">
         <div className="text-xs text-gray-500 uppercase mb-1">Site</div>
-        <div className="font-semibold text-gray-900 text-sm md:text-base truncate">{device.siteName ?? 'Not Assigned'}
-
+        <div className="font-semibold text-gray-900 text-sm md:text-base truncate">
+          {device.siteName ?? 'Not Assigned'}
         </div>
       </div>
       <div className="col-span-2 sm:col-span-1">
@@ -83,11 +82,8 @@ const DeviceCard = ({ device, onEdit, onToggleStatus, onDelete }) => (
   </div>
 );
 
-
-// Edit Device Modal
 const EditDeviceModal = ({ isOpen, onClose, onSubmit, loading, device, clients, sites }) => {
   const [formData, setFormData] = useState({
-    serialNumber: '',
     deviceType: 'ANPR',
     clientId: '',
     siteId: '',
@@ -95,35 +91,28 @@ const EditDeviceModal = ({ isOpen, onClose, onSubmit, loading, device, clients, 
     notes: ''
   });
 
+  useEffect(() => {
+    if (!device) return;
 
- useEffect(() => {
-  if (!device) return;
-
-  setFormData({
-    serialNumber: device.deviceId ?? '',
-    deviceType: device.type ?? 'ANPR',
-    clientId: device.clientId ?? '',
-    siteId: device.siteId ?? '',
-    ipAddress: device.ipAddress ?? '',
-    notes: device.notes ?? ''
-  });
-}, [device]);
-
-
+    setFormData({
+      deviceType: device.type ?? 'ANPR',
+      clientId: device.clientId ?? '',
+      siteId: device.siteId ?? '',
+      ipAddress: device.ipAddress ?? '',
+      notes: device.notes ?? ''
+    });
+  }, [device]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
-
 
   const handleSubmit = (e) => {
     e.preventDefault();
     onSubmit(formData);
   };
 
-
   if (!isOpen) return null;
-
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
@@ -137,36 +126,29 @@ const EditDeviceModal = ({ isOpen, onClose, onSubmit, loading, device, clients, 
 
         <form onSubmit={handleSubmit} className="p-4 md:p-6">
           <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Serial Number *
-                </label>
-                <input
-                  type="text"
-                  name="serialNumber"
-                  value={formData.serialNumber}
-                  onChange={handleChange}
-                  required
-                  disabled
-                  className="w-full px-3 md:px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600 text-sm md:text-base"
-                />
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Serial Number
+              </label>
+              <div className="text-base font-medium text-gray-900">
+                {device?.deviceId}
               </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Device Type *
-                </label>
-                <select
-                  name="deviceType"
-                  value={formData.deviceType}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-3 md:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base"
-                >
-                  <option value="ANPR">ANPR Camera</option>
-                  <option value="BARRIER">Barrier</option>
-                </select>
-              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Device Type *
+              </label>
+              <select
+                name="deviceType"
+                value={formData.deviceType}
+                onChange={handleChange}
+                required
+                className="w-full px-3 md:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base"
+              >
+                <option value="ANPR">ANPR Camera</option>
+                <option value="BARRIER">Barrier</option>
+              </select>
             </div>
 
             <div className="border-t border-gray-200 pt-4">
@@ -266,8 +248,6 @@ const EditDeviceModal = ({ isOpen, onClose, onSubmit, loading, device, clients, 
   );
 };
 
-
-// Add Device Modal
 const AddDeviceModal = ({ isOpen, onClose, onSubmit, loading, clients, sites }) => {
   const [formData, setFormData] = useState({
     serialNumber: '',
@@ -278,17 +258,14 @@ const AddDeviceModal = ({ isOpen, onClose, onSubmit, loading, clients, sites }) 
     notes: ''
   });
 
-
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
-
 
   const handleSubmit = (e) => {
     e.preventDefault();
     onSubmit(formData);
   };
-
 
   const handleReset = () => {
     setFormData({
@@ -301,9 +278,7 @@ const AddDeviceModal = ({ isOpen, onClose, onSubmit, loading, clients, sites }) 
     });
   };
 
-
   if (!isOpen) return null;
-
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
@@ -446,8 +421,6 @@ const AddDeviceModal = ({ isOpen, onClose, onSubmit, loading, clients, sites }) 
   );
 };
 
-
-// Main Device Management Component
 const DeviceManagement = () => {
   const [devices, setDevices] = useState([]);
   const [clients, setClients] = useState([]);
@@ -459,11 +432,8 @@ const DeviceManagement = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedDevice, setSelectedDevice] = useState(null);
   const [submitLoading, setSubmitLoading] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
   const [filterType, setFilterType] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
-
 
   useEffect(() => {
     fetchDevices();
@@ -471,152 +441,115 @@ const DeviceManagement = () => {
     fetchSites();
   }, []);
 
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem('accessToken');
+    if (!token) throw new Error('No authentication token found');
+    return {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    };
+  };
 
   const fetchDevices = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('accessToken');
-
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-
       const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/superadmin/devices`,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        }
+        `${process.env.NEXT_PUBLIC_API_URL}/api/devices`,
+        { headers: getAuthHeaders() }
       );
-
-    setDevices(Array.isArray(response.data) ? response.data : []);
-
+      setDevices(Array.isArray(response.data) ? response.data : []);
       setError(null);
     } catch (err) {
       console.error('Error fetching devices:', err);
       setError(err.response?.data?.message || err.message);
+      setDevices([]);
     } finally {
       setLoading(false);
     }
   };
 
-
   const fetchClients = async () => {
     try {
-      const token = localStorage.getItem('accessToken');
       const response = await axios.get(
         `${process.env.NEXT_PUBLIC_API_URL}/api/superadmin/clients`,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        }
+        { headers: getAuthHeaders() }
       );
-
       setClients(response.data.data || response.data || []);
     } catch (err) {
       console.error('Error fetching clients:', err);
     }
   };
 
-
+  const fetchSites = async () => {
+    try {
+      const response = await axios.get(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/superadmin/sites`,
+        { headers: getAuthHeaders() }
+      );
+      setSites(response.data.data || response.data || []);
+    } catch (err) {
+      console.error('Error fetching sites:', err);
+    }
+  };
 
   const handleAddDevice = async (formData) => {
     try {
       setSubmitLoading(true);
-      const token = localStorage.getItem('accessToken');
-
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-
       await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/superadmin/devices`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/devices/register`,
         formData,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        }
+        { headers: getAuthHeaders() }
       );
-
       alert('Device registered successfully!');
       setShowAddModal(false);
       fetchDevices();
     } catch (err) {
       console.error('Error registering device:', err);
-      alert(`Error registering device: ${err.response?.data?.message || err.message}`);
+      alert(`Error: ${err.response?.data?.message || err.message}`);
     } finally {
       setSubmitLoading(false);
     }
   };
-
 
   const handleEdit = (device) => {
     setSelectedDevice(device);
     setShowEditModal(true);
   };
 
-
   const handleUpdateDevice = async (formData) => {
     try {
       setSubmitLoading(true);
-      const token = localStorage.getItem('accessToken');
-
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-
       await axios.put(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/superadmin/devices/${selectedDevice._id}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/devices/${selectedDevice._id}`,
         formData,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        }
+        { headers: getAuthHeaders() }
       );
-
       alert('Device updated successfully!');
       setShowEditModal(false);
       setSelectedDevice(null);
       fetchDevices();
     } catch (err) {
       console.error('Error updating device:', err);
-      alert(`Error updating device: ${err.response?.data?.message || err.message}`);
+      alert(`Error: ${err.response?.data?.message || err.message}`);
     } finally {
       setSubmitLoading(false);
     }
   };
 
-
   const handleToggleStatus = async (device) => {
     const action = device.status === 'online' ? 'offline' : 'online';
     if (confirm(`Turn ${action} device ${device.name}?`)) {
       try {
-        const token = localStorage.getItem('accessToken');
-        
         await axios.patch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/superadmin/devices/${device._id}/toggle`,
+          `${process.env.NEXT_PUBLIC_API_URL}/api/devices/${device._id}/toggle`,
           {},
-          { 
-            headers: { 
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            } 
-          }
+          { headers: getAuthHeaders() }
         );
-        
         alert(`Device turned ${action} successfully!`);
         fetchDevices();
       } catch (err) {
         console.error('Error toggling device status:', err);
-        alert(`Error toggling device: ${err.response?.data?.message || err.message}`);
+        alert(`Error: ${err.response?.data?.message || err.message}`);
       }
     }
   };
@@ -624,40 +557,19 @@ const DeviceManagement = () => {
   const handleDelete = async (device) => {
     if (confirm(`Are you sure you want to delete device ${device.name}? This action cannot be undone.`)) {
       try {
-        const token = localStorage.getItem('accessToken');
-        
         await axios.delete(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/superadmin/devices/${device._id}`,
-          { 
-            headers: { 
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            } 
-          }
+          `${process.env.NEXT_PUBLIC_API_URL}/api/devices/${device._id}`,
+          { headers: getAuthHeaders() }
         );
-        
         alert('Device deleted successfully!');
         fetchDevices();
       } catch (err) {
         console.error('Error deleting device:', err);
-        alert(`Error deleting device: ${err.response?.data?.message || err.message}`);
+        alert(`Error: ${err.response?.data?.message || err.message}`);
       }
     }
   };
 
-
-const fetchSites = async () => {
-  try {
-    const token = localStorage.getItem('accessToken');
-    const response = await axios.get(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/superadmin/sites`,
-      { headers: { 'Authorization': `Bearer ${token}` } }
-    );
-    setSites(response.data.data || response.data || []);
-  } catch (err) {
-    console.error('Error fetching sites:', err);
-  }
-};
   const filteredDevices = devices.filter(device => {
     const matchesSearch = device.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          device.deviceId?.toLowerCase().includes(searchQuery.toLowerCase());
@@ -666,15 +578,13 @@ const fetchSites = async () => {
     return matchesSearch && matchesType && matchesStatus;
   });
 
-
   const stats = {
     total: devices.length,
     online: devices.filter(d => d.status === 'online').length,
     offline: devices.filter(d => d.status === 'offline').length,
     anpr: devices.filter(d => d.type === 'ANPR').length,
-    barriers: devices.filter(d => d.type === 'BARRIER' || d.type === 'Barrier').length
+    barriers: devices.filter(d => d.type === 'BARRIER').length
   };
-
 
   if (loading) {
     return (
@@ -686,7 +596,6 @@ const fetchSites = async () => {
       </div>
     );
   }
-
 
   return (
     <SuperAdminLayout title="Device Management">
@@ -783,26 +692,8 @@ const fetchSites = async () => {
       </div>
 
       {filteredDevices.length > 0 && (
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="text-sm text-gray-600">
-            Showing {filteredDevices.length} device{filteredDevices.length !== 1 ? 's' : ''}
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-              disabled={currentPage === 1}
-              className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
-            >
-              <ChevronLeft className="w-5 h-5" />
-            </button>
-            <button
-              onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-              disabled={currentPage === totalPages}
-              className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
-            >
-              <ChevronRight className="w-5 h-5" />
-            </button>
-          </div>
+        <div className="text-center text-sm text-gray-600">
+          Showing {filteredDevices.length} device{filteredDevices.length !== 1 ? 's' : ''}
         </div>
       )}
 
@@ -830,6 +721,5 @@ const fetchSites = async () => {
     </SuperAdminLayout>
   );
 };
-
 
 export default DeviceManagement;
