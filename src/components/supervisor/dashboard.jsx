@@ -7,6 +7,11 @@ import {
   LogIn, LogOut as ExitIcon, Car, Clock, TrendingUp,
   AlertCircle, MapPin, Activity, ArrowRight, Package, Truck
 } from 'lucide-react';
+/* ✅ NEW: Charts */
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip,
+  ResponsiveContainer, PieChart, Pie, Cell
+} from 'recharts';
 import { useRouter } from 'next/navigation';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
@@ -67,6 +72,20 @@ const SupervisorDashboard = () => {
       setLoading(false);
     }
   };
+  /* ===================== NEW: Chart Data ===================== */
+  const barData = [
+    { name: 'Entry', value: stats.todayEntry },
+    { name: 'Exit', value: stats.todayExit },
+    // { name: 'Denied', value: stats.deniedEntries },
+  ];
+
+  const pieData = [
+    { name: 'Inside', value: stats.vehiclesInside },
+    { name: 'Pending Exit', value: stats.pendingExit },
+    { name: 'Exited Today', value: stats.todayExit },
+  ];
+
+  const COLORS = ['#22c55e', '#f59e0b', '#3b82f6'];
 
   if (loading) {
     return (
@@ -148,7 +167,41 @@ const SupervisorDashboard = () => {
           <div className="text-xs text-red-600">{stats.deniedEntries > 0 ? 'Requires review' : 'No denials'}</div>
         </div> */}
       </div>
+<div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
 
+        <div className="bg-white p-5 ">
+          <h3 className="text-lg font-bold mb-4">Today Vehicle Movement</h3>
+          <ResponsiveContainer width="100%" height={260}>
+            <BarChart data={barData}>
+              <XAxis dataKey="name" />
+              <YAxis allowDecimals={false} />
+              <Tooltip />
+              <Bar dataKey="value" radius={[6, 6, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        <div className="bg-white p-5 ">
+          <h3 className="text-lg font-bold mb-4">Vehicle Status Overview</h3>
+          <ResponsiveContainer width="100%" height={260}>
+            <PieChart>
+              <Pie
+                data={pieData}
+                dataKey="value"
+                nameKey="name"
+                outerRadius={90}
+                label
+              >
+                {pieData.map((_, i) => (
+                  <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip />
+            </PieChart>
+          </ResponsiveContainer>
+        
+</div>
+          </div>
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Recent Gate Activity */}
