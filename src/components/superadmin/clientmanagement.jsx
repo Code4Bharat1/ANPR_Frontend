@@ -657,30 +657,31 @@ const ClientManagement = () => {
     }
   };
 
-  const handleDeactivate = async (client) => {
-    if (confirm(`Deactivate client ${client.companyName || client.name}?`)) {
-      try {
-        const token = localStorage.getItem('accessToken');
+const handleDeactivate = async (client) => {
+  if (confirm(`Deactivate client ${client.companyName}?`)) {
+    try {
+      const token = localStorage.getItem("accessToken");
 
-        await axios.patch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/superadmin/clients/${client._id}/deactivate`,
-          {},
-          {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
-          }
-        );
+      await axios.put(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/superadmin/clients/${client._id}`,
+        { isActive: false },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
-        alert('Client deactivated successfully!');
-        fetchClients();
-      } catch (err) {
-        console.error('Error deactivating client:', err);
-        alert(`Error deactivating client: ${err.response?.data?.message || err.message}`);
-      }
+      alert("Client deactivated successfully!");
+      fetchClients();
+    } catch (err) {
+      console.error("Error deactivating client:", err.response?.data || err);
+      alert(err.response?.data?.message || "Server error");
     }
-  };
+  }
+};
+
 
   const filteredClients = clients.filter(client => {
     const searchTerm = searchQuery.toLowerCase();

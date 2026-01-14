@@ -79,6 +79,7 @@ const UserManagement = () => {
         : '/api/client-admin/supervisors';
 
       const response = await api.get(endpoint);
+      console.log(response);
 
       let usersData = [];
       if (activeTab === 'Project Managers') {
@@ -471,12 +472,12 @@ const UserManagement = () => {
                       </td>
                     )}
                     {activeTab === 'Supervisors' && (
-  <td className="px-6 py-4 text-sm text-gray-900">
-    {user.projectManagerId && typeof user.projectManagerId === 'object'
-      ? user.projectManagerId.name
-      : '-'}
-  </td>
-)}
+                      <td className="px-6 py-4 text-sm text-gray-900">
+                        {user.projectManagerId && typeof user.projectManagerId === 'object'
+                          ? user.projectManagerId.name
+                          : '-'}
+                      </td>
+                    )}
                     <td className="px-6 py-4">
                       <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${user.status === 'Active'
                         ? 'bg-green-100 text-green-700'
@@ -510,7 +511,7 @@ const UserManagement = () => {
                               assignedSites: user.assignedSites?.map(s => s._id || s) || [],
                               siteId: user.siteId?._id || user.siteId || '',
                               assignedSupervisors: user.assignedSupervisors?.map(s => s._id || s) || [],
-                                supervisors: user.supervisors?.map(s => s._id || s) || [],
+                              supervisors: user.supervisors?.map(s => s._id || s) || [],
                               projectManagerId: user.projectManagerId?._id || user.projectManagerId || '',
                             });
                             setShowEdit(true);

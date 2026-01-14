@@ -1,231 +1,234 @@
 "use client";
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { 
-  Search, Plus, User, Eye, Edit, MapPin, X, AlertCircle, CheckCircle, Mail, Calendar, Activity
+import {
+  Search, Plus, User, Mail,
+  Phone, Power, X, Building2, Lock,
+  UserCheck, UserX, Check, Users, Eye, Edit, MapPin,
+  Clock // Using Clock instead of Activity
 } from 'lucide-react';
 import Sidebar from './sidebar';
 import Header from './header';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
+const api = axios.create({
+  baseURL: API_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('accessToken');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
 
 const SupervisorManagement = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [supervisors, setSupervisors] = useState([]);
   const [sites, setSites] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingSites, setLoadingSites] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState('All Status');
-  const [showAddModal, setShowAddModal] = useState(false);
+  const [filterStatus, setFilterStatus] = useState('All');
+  const [showAdd, setShowAdd] = useState(false);
+  const [showView, setShowView] = useState(false);
+  const [showEdit, setShowEdit] = useState(false);
   const [selectedSupervisor, setSelectedSupervisor] = useState(null);
-  const [showDetailsModal, setShowDetailsModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [alert, setAlert] = useState(null);
-  
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    siteId: ''
-  });
-  const [editFormData, setEditFormData] = useState({
-    name: '',
-    email: '',
+    mobile: '',
+    address: '',
+    password: '',
     siteId: '',
-    contactNumber: ''
-  });
-  const [formErrors, setFormErrors] = useState({});
-  const [submitting, setSubmitting] = useState(false);
-
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-  
-  const axiosInstance = axios.create({
-    baseURL: API_URL,
-    timeout: 10000,
-    headers: {
-      'Content-Type': 'application/json'
-    }
+    projectManagerId: '',
   });
 
-  axiosInstance.interceptors.request.use(
-    (config) => {
-      const token = localStorage.getItem('accessToken');
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-      }
-      return config;
-    },
-    (error) => {
-      return Promise.reject(error);
+  const [projectManagers, setProjectManagers] = useState([]);
+  const [loadingPMs, setLoadingPMs] = useState(false);
+
+
+  const fetchProjectManagers = async () => {
+    try {
+      setLoadingPMs(true);
+      const response = await api.get('/api/client-admin/project-managers');
+      console.log(response);
+      
+      const pmsData = response.data.projectManagers || response.data.data || response.data || [];
+      setProjectManagers(Array.isArray(pmsData) ? pmsData : []);
+    } catch (err) {
+      console.error('Error fetching project managers:', err);
+      setProjectManagers([]);
+    } finally {
+      setLoadingPMs(false);
     }
-  );
+  };
 
   useEffect(() => {
-    fetchData();
+    fetchSupervisors();
+    fetchSites();
   }, []);
 
-  const fetchData = async () => {
+  const fetchSupervisors = async () => {
     try {
       setLoading(true);
+      const response = await api.get('/api/project/supervisors');
 
-      const supervisorsRes = await axiosInstance.get('/api/project/supervisors');
-      setSupervisors(supervisorsRes.data);
-      console.log(supervisorsRes.data);
+      let supervisorsData = response.data.supervisors || response.data.data || response.data || [];
 
-      const sitesRes = await axiosInstance.get('/api/project/sites');
-      setSites(sitesRes.data);
+      if (!Array.isArray(supervisorsData)) {
+        supervisorsData = [];
+      }
+
+      setSupervisors(supervisorsData);
     } catch (err) {
-      showAlert('error', err.response?.data?.message || 'Failed to load data');
+      console.error('Error fetching supervisors:', err);
+      alert(err.response?.data?.message || 'Failed to fetch supervisors');
+      setSupervisors([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const showAlert = (type, message) => {
-    setAlert({ type, message });
-    setTimeout(() => setAlert(null), 4000);
-  };
-
-  const handleViewDetails = (supervisor) => {
-    setSelectedSupervisor(supervisor);
-    setShowDetailsModal(true);
-  };
-
-  const closeDetailsModal = () => {
-    setShowDetailsModal(false);
-    setSelectedSupervisor(null);
-  };
-
-  const handleEdit = (supervisor) => {
-    setSelectedSupervisor(supervisor);
-    setEditFormData({
-      name: supervisor.name || '',
-      email: supervisor.email || '',
-      siteId: supervisor.siteId?._id || '',
-      contactNumber: supervisor.contactNumber || ''
-    });
-    setShowEditModal(true);
-  };
-
-  const closeEditModal = () => {
-    setShowEditModal(false);
-    setSelectedSupervisor(null);
-    setFormErrors({});
-  };
-
-  const validateEditForm = () => {
-    const errors = {};
-    
-    if (!editFormData.name.trim()) errors.name = 'Name is required';
-    if (!editFormData.email.trim()) {
-      errors.email = 'Email is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editFormData.email)) {
-      errors.email = 'Invalid email format';
-    }
-    if (!editFormData.siteId) errors.siteId = 'Please select a site';
-    
-    setFormErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-
-  const handleUpdateSubmit = async () => {
-    if (!validateEditForm()) return;
-    
+  const fetchSites = async () => {
     try {
-      setSubmitting(true);
+      setLoadingSites(true);
+      const response = await api.get('/api/project/sites');
 
-      const response = await axiosInstance.put(
-        `/api/project/supervisors/${selectedSupervisor._id}`, 
-        editFormData
-      );
-      
-      setSupervisors(supervisors.map(sup => 
-        sup._id === selectedSupervisor._id ? response.data : sup
-      ));
-      
-      showAlert('success', 'Supervisor updated successfully!');
-      closeEditModal();
-      fetchData(); // Refresh data
+      const sitesData = response.data.data || response.data.sites || response.data || [];
+      setSites(Array.isArray(sitesData) ? sitesData : []);
     } catch (err) {
-      showAlert('error', err.response?.data?.message || 'Failed to update supervisor');
+      console.error('Error fetching sites:', err);
+      setSites([]);
     } finally {
-      setSubmitting(false);
+      setLoadingSites(false);
     }
   };
 
-  const validateForm = () => {
-    const errors = {};
-    
-    if (!formData.name.trim()) errors.name = 'Name is required';
-    if (!formData.email.trim()) {
-      errors.email = 'Email is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      errors.email = 'Invalid email format';
-    }
-    if (!formData.siteId) errors.siteId = 'Please select a site';
-    
-    setFormErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
+  const handleOpenAddModal = () => {
+    // Get current project manager from token or localStorage
+    const projectManagerId = localStorage.getItem('userId') || '';
 
-  const handleSubmit = async () => {
-    if (!validateForm()) return;
-    
-    try {
-      setSubmitting(true);
-
-      const response = await axiosInstance.post('/api/project/supervisors', formData);
-      
-      setSupervisors([...supervisors, response.data]);
-      showAlert('success', 'Supervisor added successfully!');
-      setShowAddModal(false);
-      resetForm();
-    } catch (err) {
-      showAlert('error', err.response?.data?.message || 'Failed to add supervisor');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const resetForm = () => {
     setFormData({
       name: '',
       email: '',
-      siteId: ''
+      mobile: '',
+      address: '',
+      password: '',
+      siteId: '',
+      projectManagerId: projectManagerId,
     });
-    setFormErrors({});
+    setShowAdd(true);
+    fetchSites();
+    fetchProjectManagers();
   };
 
-  const handleToggleStatus = async (id, currentStatus) => {
+  const handleCreateSupervisor = async () => {
     try {
-      await axiosInstance.patch(`/api/project/supervisors/${id}/enable-disable`);
-      
-      setSupervisors(supervisors.map(sup => 
-        sup._id === id ? { ...sup, isActive: !currentStatus } : sup
-      ));
-      showAlert('success', 'Status updated successfully!');
+      const payload = {
+        name: formData.name,
+        email: formData.email,
+        mobile: formData.mobile,
+        address: formData.address,
+        password: formData.password,
+        siteId: formData.siteId,
+        projectManagerId: formData.projectManagerId,
+      };
+
+      await api.post('/api/project/supervisors', payload);
+
+      alert('Supervisor created successfully!');
+
+      setFormData({
+        name: '',
+        email: '',
+        mobile: '',
+        address: '',
+        password: '',
+        siteId: '',
+        projectManagerId: formData.projectManagerId,
+      });
+
+      setShowAdd(false);
+      await fetchSupervisors();
+
     } catch (err) {
-      showAlert('error', err.response?.data?.message || 'Failed to update status');
+      console.error('Error creating supervisor:', err);
+      alert(err.response?.data?.message || err.message || 'Failed to create supervisor');
     }
   };
 
-  const filteredSupervisors = supervisors.filter(sup => {
-    const matchesSearch = sup.name?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = filterStatus === 'All Status' || 
-      (filterStatus === 'Active' && sup.isActive) || 
-      (filterStatus === 'Inactive' && !sup.isActive);
-    return matchesSearch && matchesStatus;
-  });
+  const handleUpdateSupervisor = async () => {
+    try {
+      const payload = {
+        name: formData.name,
+        email: formData.email,
+        mobile: formData.mobile,
+        address: formData.address,
+        siteId: formData.siteId,
+      };
 
-  const stats = {
-    total: supervisors.length,
-    active: supervisors.filter(s => s.isActive).length,
-    trips: supervisors.reduce((sum, s) => sum + (s.todayTrips || 0), 0)
+      if (formData.password) {
+        payload.password = formData.password;
+      }
+
+      await api.put(`/api/project/supervisors/${selectedSupervisor._id}`, payload);
+
+      alert('Supervisor updated successfully!');
+
+      setFormData({
+        name: '',
+        email: '',
+        mobile: '',
+        address: '',
+        password: '',
+        siteId: '',
+        projectManagerId: formData.projectManagerId,
+      });
+
+      setShowEdit(false);
+      setSelectedSupervisor(null);
+      await fetchSupervisors();
+
+    } catch (err) {
+      console.error('Error updating supervisor:', err);
+      alert(err.response?.data?.message || err.message || 'Failed to update supervisor');
+    }
   };
+
+  const handleToggleStatus = async (supervisorId, currentStatus) => {
+    try {
+      await api.patch(`/api/project/supervisors/${supervisorId}/enable-disable`);
+
+      alert('Status updated successfully!');
+      await fetchSupervisors();
+
+    } catch (err) {
+      console.error('Error updating status:', err);
+      alert(err.response?.data?.message || 'Failed to update status');
+    }
+  };
+
+  const filteredSupervisors = Array.isArray(supervisors) ? supervisors.filter(supervisor => {
+    const matchesSearch = supervisor.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      supervisor.email?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = filterStatus === 'All' ||
+      (filterStatus === 'Active' && supervisor.isActive) ||
+      (filterStatus === 'Inactive' && !supervisor.isActive);
+    return matchesSearch && matchesStatus;
+  }) : [];
 
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600 font-medium">Loading supervisors...</p>
+          <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading supervisors...</p>
         </div>
       </div>
     );
@@ -234,37 +237,31 @@ const SupervisorManagement = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-
-      {alert && (
-        <div className={`fixed top-4 right-4 z-50 flex items-center gap-3 px-6 py-4 rounded-lg shadow-lg ${
-          alert.type === 'success' ? 'bg-green-500' : 'bg-red-500'
-        } text-white animate-slide-in`}>
-          {alert.type === 'success' ? <CheckCircle className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
-          <span className="font-medium">{alert.message}</span>
-        </div>
-      )}
-
-      <Header title="Supervisors" onMenuClick={() => setSidebarOpen(true)} />
+      <Header title="Supervisor Management" onMenuClick={() => setSidebarOpen(true)} />
 
       <main className="lg:ml-72 max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
-        
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-            <div className="text-sm text-gray-600 mb-1">Total Supervisors</div>
-            <div className="text-3xl font-bold text-gray-900">{stats.total}</div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+          <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100">
+            <div className="text-xs sm:text-sm text-gray-600 mb-1">Total Supervisors</div>
+            <div className="text-2xl sm:text-3xl font-bold text-gray-900">
+              {Array.isArray(supervisors) ? supervisors.length : 0}
+            </div>
           </div>
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-            <div className="text-sm text-gray-600 mb-1">Active Supervisors</div>
-            <div className="text-3xl font-bold text-green-600">{stats.active}</div>
+          <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100">
+            <div className="text-xs sm:text-sm text-gray-600 mb-1">Active</div>
+            <div className="text-2xl sm:text-3xl font-bold text-green-600">
+              {Array.isArray(supervisors) ? supervisors.filter(s => s.isActive).length : 0}
+            </div>
           </div>
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 sm:col-span-2 lg:col-span-1">
-            <div className="text-sm text-gray-600 mb-1">Total Supervisor Trips</div>
-            <div className="text-3xl font-bold text-gray-900">{stats.trips}</div>
+          <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100">
+            <div className="text-xs sm:text-sm text-gray-600 mb-1">Inactive</div>
+            <div className="text-2xl sm:text-3xl font-bold text-red-600">
+              {Array.isArray(supervisors) ? supervisors.filter(s => !s.isActive).length : 0}
+            </div>
           </div>
         </div>
 
-        {/* Search and Filters */}
         <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-6">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -273,303 +270,462 @@ const SupervisorManagement = () => {
               placeholder="Search supervisors..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent outline-none"
+              className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm sm:text-base"
             />
           </div>
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
-            className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent outline-none"
+            className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm sm:text-base"
           >
-            <option value="All Status">All Status</option>
+            <option value="All">All Status</option>
             <option value="Active">Active</option>
             <option value="Inactive">Inactive</option>
           </select>
+          <button
+            onClick={handleOpenAddModal}
+            className="px-4 sm:px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold flex items-center justify-center gap-2 text-sm sm:text-base whitespace-nowrap"
+          >
+            <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
+            Add Supervisor
+          </button>
         </div>
 
-        {/* Table - Desktop */}
+        {/* Desktop Table */}
         <div className="hidden md:block bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Name</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Email</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Assigned Site</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Status</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Today Trips</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Actions</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Name
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Assigned Site
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Today's Trips
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {filteredSupervisors.length === 0 ? (
-                  <tr>
-                    <td colSpan="6" className="px-6 py-12 text-center">
-                      <User className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                      <p className="text-gray-500">No supervisors found</p>
+                {filteredSupervisors.map((supervisor) => (
+                  <tr key={supervisor._id || supervisor.id} className="hover:bg-gray-50 transition">
+                    <td className="px-6 py-4">
+                      <div>
+                        <div className="font-semibold text-gray-900">{supervisor.name}</div>
+                        <div className="text-sm text-gray-600">{supervisor.email}</div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-900">
+                      {supervisor.siteId?.name || '-'}
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${supervisor.isActive
+                        ? 'bg-green-100 text-green-700'
+                        : 'bg-gray-100 text-gray-700'
+                        }`}>
+                        {supervisor.isActive ? 'Active' : 'Inactive'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-900 font-semibold">
+                      {supervisor.todayTrips || 0}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => {
+                            setSelectedSupervisor(supervisor);
+                            setShowView(true);
+                          }}
+                          className="p-2 hover:bg-blue-50 rounded-lg transition text-blue-600"
+                          title="View"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            setSelectedSupervisor(supervisor);
+                            setFormData({
+                              name: supervisor.name || '',
+                              email: supervisor.email || '',
+                              mobile: supervisor.mobile || '',
+                              address: supervisor.address || '',
+                              password: '',
+                              siteId: supervisor.siteId?._id || supervisor.siteId || '',
+                              projectManagerId: supervisor.projectManagerId?._id || supervisor.projectManagerId || '',
+                            });
+                            setShowEdit(true);
+                            fetchSites();
+                          }}
+                          className="p-2 hover:bg-orange-50 rounded-lg transition text-orange-600"
+                          title="Edit"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleToggleStatus(supervisor._id, supervisor.isActive)}
+                          className={`p-2 hover:bg-gray-100 rounded-lg transition ${supervisor.isActive ? 'text-red-600' : 'text-green-600'
+                            }`}
+                          title={supervisor.isActive ? 'Disable' : 'Enable'}
+                        >
+                          <Power className="w-4 h-4" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
-                ) : (
-                  filteredSupervisors.map((sup) => (
-                    <tr key={sup._id} className="hover:bg-gray-50 transition">
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center flex-shrink-0">
-                            <User className="w-5 h-5 text-indigo-600" />
-                          </div>
-                          <div className="font-semibold text-gray-900">{sup.name}</div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-600">{sup.email}</td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <MapPin className="w-4 h-4" />
-                          {sup.siteId?.name || 'Not Assigned'}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <button
-                          onClick={() => handleToggleStatus(sup._id, sup.isActive)}
-                          className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold cursor-pointer transition ${
-                            sup.isActive ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                          }`}
-                        >
-                          {sup.isActive ? 'Active' : 'Inactive'}
-                        </button>
-                      </td>
-                      <td className="px-6 py-4 font-semibold text-gray-900">{sup.todayTrips || 0}</td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-                          <button 
-                            onClick={() => handleViewDetails(sup)}
-                            className="p-2 hover:bg-gray-100 rounded-lg text-indigo-600 transition" 
-                            title="View Details"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
-                          <button 
-                            onClick={() => handleEdit(sup)}
-                            className="p-2 hover:bg-gray-100 rounded-lg text-gray-600 transition" 
-                            title="Edit"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
+                ))}
               </tbody>
             </table>
           </div>
+
+          {filteredSupervisors.length === 0 && (
+            <div className="text-center py-12">
+              <User className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+              <p className="text-gray-500">No supervisors found</p>
+            </div>
+          )}
         </div>
 
-        {/* Cards - Mobile */}
+        {/* Mobile Cards */}
         <div className="md:hidden space-y-4">
-          {filteredSupervisors.length === 0 ? (
+          {filteredSupervisors.map((supervisor) => (
+            <div key={supervisor._id || supervisor.id} className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex-1">
+                  <h3 className="font-semibold text-gray-900">{supervisor.name}</h3>
+                  <p className="text-sm text-gray-600">{supervisor.email}</p>
+                </div>
+                <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${supervisor.isActive
+                  ? 'bg-green-100 text-green-700'
+                  : 'bg-gray-100 text-gray-700'
+                  }`}>
+                  {supervisor.isActive ? 'Active' : 'Inactive'}
+                </span>
+              </div>
+
+              <div className="space-y-2 mb-3">
+                <div className="text-sm text-gray-600">
+                  <Building2 className="w-4 h-4 inline mr-1" />
+                  {supervisor.siteId?.name || '-'}
+                </div>
+                <div className="text-sm text-gray-600">
+                  <Clock className="w-4 h-4 inline mr-1" />
+                  Today's Trips: <span className="font-semibold">{supervisor.todayTrips || 0}</span>
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    setSelectedSupervisor(supervisor);
+                    setShowView(true);
+                  }}
+                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg font-semibold text-sm transition"
+                >
+                  <Eye className="w-4 h-4" />
+                  View
+                </button>
+                <button
+                  onClick={() => {
+                    setSelectedSupervisor(supervisor);
+                    setFormData({
+                      name: supervisor.name || '',
+                      email: supervisor.email || '',
+                      mobile: supervisor.mobile || '',
+                      address: supervisor.address || '',
+                      password: '',
+                      siteId: supervisor.siteId?._id || supervisor.siteId || '',
+                      projectManagerId: supervisor.projectManagerId?._id || supervisor.projectManagerId || '',
+                    });
+                    setShowEdit(true);
+                    fetchSites();
+                  }}
+                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-orange-50 text-orange-600 hover:bg-orange-100 rounded-lg font-semibold text-sm transition"
+                >
+                  <Edit className="w-4 h-4" />
+                  Edit
+                </button>
+                <button
+                  onClick={() => handleToggleStatus(supervisor._id || supervisor.id, supervisor.isActive)}
+                  className={`flex items-center justify-center gap-2 px-3 py-2 rounded-lg font-semibold text-sm transition ${supervisor.isActive
+                    ? 'bg-red-50 text-red-600 hover:bg-red-100'
+                    : 'bg-green-50 text-green-600 hover:bg-green-100'
+                    }`}
+                >
+                  <Power className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          ))}
+
+          {filteredSupervisors.length === 0 && (
             <div className="bg-white rounded-xl p-12 text-center">
               <User className="w-16 h-16 text-gray-300 mx-auto mb-4" />
               <p className="text-gray-500">No supervisors found</p>
             </div>
-          ) : (
-            filteredSupervisors.map((sup) => (
-              <div key={sup._id} className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center">
-                      <User className="w-5 h-5 text-indigo-600" />
-                    </div>
-                    <div>
-                      <div className="font-semibold text-gray-900">{sup.name}</div>
-                      <div className="text-sm text-gray-600">{sup.email}</div>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => handleToggleStatus(sup._id, sup.isActive)}
-                    className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
-                      sup.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
-                    }`}
-                  >
-                    {sup.isActive ? 'Active' : 'Inactive'}
-                  </button>
-                </div>
-                
-                <div className="space-y-2 mb-3 text-sm">
-                  <div className="flex items-center gap-2 text-gray-600">
-                    <MapPin className="w-4 h-4" />
-                    {sup.siteId?.name || 'Not Assigned'}
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Today's Trips:</span>
-                    <span className="font-semibold text-gray-900">{sup.todayTrips || 0}</span>
-                  </div>
-                </div>
-
-                <div className="flex gap-2">
-                  <button 
-                    onClick={() => handleViewDetails(sup)}
-                    className="flex-1 px-3 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition text-sm font-semibold flex items-center justify-center gap-2"
-                  >
-                    <Eye className="w-4 h-4" />
-                    View
-                  </button>
-                  <button 
-                    onClick={() => handleEdit(sup)}
-                    className="flex-1 px-3 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition text-sm font-semibold flex items-center justify-center gap-2"
-                  >
-                    <Edit className="w-4 h-4" />
-                    Edit
-                  </button>
-                </div>
-              </div>
-            ))
           )}
         </div>
       </main>
 
-      {/* Supervisor Details Modal */}
-      {showDetailsModal && selectedSupervisor && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            {/* Modal Header */}
-            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-900">Supervisor Details</h2>
-              <button 
-                onClick={closeDetailsModal}
-                className="text-gray-400 hover:text-gray-600 transition"
+      {/* View Supervisor Modal */}
+      {showView && selectedSupervisor && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white flex items-center justify-between p-6 border-b border-gray-200">
+              <h2 className="text-2xl font-bold text-gray-900">Supervisor Details</h2>
+              <button
+                onClick={() => {
+                  setShowView(false);
+                  setSelectedSupervisor(null);
+                }}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
               >
                 <X className="w-6 h-6" />
               </button>
             </div>
 
-            {/* Modal Body */}
-            <div className="p-6 space-y-6">
-              {/* Name & Status */}
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center">
-                    <User className="w-8 h-8 text-indigo-600" />
-                  </div>
-                  <div>
-                    <h3 className="text-2xl font-bold text-gray-900 mb-1">{selectedSupervisor.name}</h3>
-                    {/* <p className="text-sm text-gray-500">{selectedSupervisor._id}</p> */}
-                  </div>
-                </div>
-                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                  selectedSupervisor.isActive 
-                    ? 'bg-green-100 text-green-700' 
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="text-sm font-medium text-gray-500">Name</label>
+                <p className="text-base font-semibold text-gray-900 mt-1">{selectedSupervisor.name}</p>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-500">Email</label>
+                <p className="text-base text-gray-900 mt-1">{selectedSupervisor.email}</p>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-500">Phone</label>
+                <p className="text-base text-gray-900 mt-1">{selectedSupervisor.mobile || '-'}</p>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-500">Address</label>
+                <p className="text-base text-gray-900 mt-1">{selectedSupervisor.address || '-'}</p>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-500">Status</label>
+                <p className="mt-1">
+                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${selectedSupervisor.isActive
+                    ? 'bg-green-100 text-green-700'
                     : 'bg-gray-100 text-gray-700'
-                }`}>
-                  {selectedSupervisor.isActive ? 'Active' : 'Inactive'}
-                </span>
+                    }`}>
+                    {selectedSupervisor.isActive ? 'Active' : 'Inactive'}
+                  </span>
+                </p>
               </div>
 
-              {/* Email */}
-              <div className="bg-gray-50 rounded-lg p-4">
-                <div className="flex items-start gap-3">
-                  <Mail className="w-5 h-5 text-gray-400 mt-0.5" />
-                  <div>
-                    <div className="text-xs text-gray-500 mb-1">Email Address</div>
-                    <div className="text-gray-900 font-medium">{selectedSupervisor.email}</div>
-                  </div>
-                </div>
+              <div>
+                <label className="text-sm font-medium text-gray-500">Assigned Site</label>
+                <p className="text-base text-gray-900 bg-gray-50 px-3 py-2 rounded mt-1">
+                  {selectedSupervisor.siteId?.name || '-'}
+                </p>
               </div>
 
-              {/* Site & Contact */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="flex items-start gap-3">
-                    <MapPin className="w-5 h-5 text-gray-400 mt-0.5" />
-                    <div>
-                      <div className="text-xs text-gray-500 mb-1">Assigned Site</div>
-                      <div className="text-gray-900 font-medium">
-                        {selectedSupervisor.siteId?.name || 'Not Assigned'}
-                      </div>
-                      {selectedSupervisor.siteId?.location && (
-                        <div className="text-xs text-gray-500 mt-1">
-                          {selectedSupervisor.siteId.location}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="flex items-start gap-3">
-                    <Activity className="w-5 h-5 text-gray-400 mt-0.5" />
-                    <div>
-                      <div className="text-xs text-gray-500 mb-1">Contact Number</div>
-                      <div className="text-gray-900 font-medium">
-                        {selectedSupervisor.mobile || 'N/A'}
-                      </div>
-                    </div>
-                  </div>
-                </div>
+              <div>
+                <label className="text-sm font-medium text-gray-500">Today's Trips</label>
+                <p className="text-2xl font-bold text-gray-900 mt-1">
+                  {selectedSupervisor.todayTrips || 0}
+                </p>
               </div>
 
-              {/* Stats */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="text-xs text-gray-500 mb-1">Today's Trips</div>
-                  <div className="text-2xl font-bold text-gray-900">{selectedSupervisor.todayTrips || 0}</div>
-                </div>
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="text-xs text-gray-500 mb-1">Total Trips</div>
-                  <div className="text-2xl font-bold text-gray-900">{selectedSupervisor.totalTrips || 0}</div>
-                </div>
-                <div className="bg-gray-50 rounded-lg p-4 sm:col-span-1 col-span-2">
-                  <div className="text-xs text-gray-500 mb-1">Completed Trips</div>
-                  <div className="text-2xl font-bold text-gray-900">{selectedSupervisor.completedTrips || 0}</div>
-                </div>
-              </div>
-
-              {/* Created Date */}
-              {selectedSupervisor.createdAt && (
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="flex items-start gap-3">
-                    <Calendar className="w-5 h-5 text-gray-400 mt-0.5" />
-                    <div>
-                      <div className="text-xs text-gray-500 mb-1">Joined Date</div>
-                      <div className="text-gray-900 font-medium">
-                        {new Date(selectedSupervisor.createdAt).toLocaleDateString('en-IN', {
-                          day: 'numeric',
-                          month: 'long',
-                          year: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Additional Info */}
-              {selectedSupervisor.notes && (
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="text-xs text-gray-500 mb-2">Notes</div>
-                  <div className="text-gray-900">{selectedSupervisor.notes}</div>
+              {selectedSupervisor.projectManagerId && (
+                <div>
+                  <label className="text-sm font-medium text-gray-500">Project Manager</label>
+                  <p className="text-base text-gray-900 bg-blue-50 px-3 py-2 rounded mt-1">
+                    {selectedSupervisor.projectManagerId.name || '-'}
+                  </p>
                 </div>
               )}
             </div>
 
-            {/* Modal Footer */}
-            <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 px-6 py-4 flex gap-3">
-              <button 
-                onClick={closeDetailsModal}
-                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition font-semibold"
+            <div className="sticky bottom-0 bg-gray-50 flex justify-end p-6 border-t border-gray-200">
+              <button
+                onClick={() => {
+                  setShowView(false);
+                  setSelectedSupervisor(null);
+                }}
+                className="px-6 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
               >
                 Close
               </button>
-              <button 
-                onClick={() => handleToggleStatus(selectedSupervisor._id, selectedSupervisor.isActive)}
-                className={`flex-1 px-4 py-2 rounded-lg transition font-semibold ${
-                  selectedSupervisor.isActive 
-                    ? 'bg-gray-600 text-white hover:bg-gray-700' 
-                    : 'bg-green-600 text-white hover:bg-green-700'
-                }`}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Supervisor Modal */}
+      {showAdd && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white flex items-center justify-between p-4 sm:p-6 border-b border-gray-200">
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
+                Add Supervisor
+              </h2>
+              <button
+                onClick={() => setShowAdd(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
               >
-                {selectedSupervisor.isActive ? 'Deactivate' : 'Activate'}
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="p-4 sm:p-6 space-y-4">
+              <div>
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                  <User className="w-4 h-4" />
+                  Full Name
+                </label>
+                <input
+                  placeholder="John Doe"
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="w-full border border-gray-300 px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                  <Mail className="w-4 h-4" />
+                  Email Address
+                </label>
+                <input
+                  placeholder="john@example.com"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  className="w-full border border-gray-300 px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                  <Phone className="w-4 h-4" />
+                  Phone Number
+                </label>
+                <input
+                  placeholder="+91 98765 43210"
+                  type="tel"
+                  value={formData.mobile}
+                  onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
+                  className="w-full border border-gray-300 px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                  <MapPin className="w-4 h-4" />
+                  Address
+                </label>
+                <textarea
+                  placeholder="Enter full address"
+                  value={formData.address}
+                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  rows={3}
+                  className="w-full border border-gray-300 px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                />
+              </div>
+
+              <div>
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                  <Lock className="w-4 h-4" />
+                  Password
+                </label>
+                <input
+                  placeholder="Enter password"
+                  // type="password"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  className="w-full border border-gray-300 px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                  <User className="w-4 h-4" />
+                  Project Manager <span className="text-red-500">*</span>
+                </label>
+                {loadingPMs ? (
+                  <div className="w-full border border-gray-300 px-4 py-3 rounded-lg bg-gray-50 flex items-center justify-center">
+                    <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mr-2"></div>
+                    <span className="text-sm text-gray-600">Loading...</span>
+                  </div>
+                ) : (
+                  <select
+                    value={formData.projectManagerId}
+                    onChange={(e) => setFormData({ ...formData, projectManagerId: e.target.value })}
+                    className="w-full border border-gray-300 px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">Select Project Manager</option>
+                    {projectManagers.map((pm) => (
+                      <option key={pm._id || pm.id} value={pm._id || pm.id}>
+                        {pm.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+
+              <div>
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                  <Building2 className="w-4 h-4" />
+                  Assigned Site <span className="text-red-500">*</span>
+                </label>
+
+                {loadingSites ? (
+                  <div className="w-full border border-gray-300 px-4 py-3 rounded-lg bg-gray-50 flex items-center justify-center">
+                    <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mr-2"></div>
+                    <span className="text-sm text-gray-600">Loading sites...</span>
+                  </div>
+                ) : sites.length === 0 ? (
+                  <div className="border border-gray-300 rounded-lg p-4 text-center text-sm text-gray-500">
+                    No sites available
+                  </div>
+                ) : (
+                  <select
+                    value={formData.siteId}
+                    onChange={(e) => setFormData({ ...formData, siteId: e.target.value })}
+                    className="w-full border border-gray-300 px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">Select Site</option>
+                    {sites.map((site) => (
+                      <option key={site._id || site.id} value={site._id || site.id}>
+                        {site.name || site.siteName}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+            </div>
+
+            <div className="sticky bottom-0 bg-gray-50 flex flex-col sm:flex-row justify-end gap-3 p-4 sm:p-6 border-t border-gray-200">
+              <button
+                onClick={() => setShowAdd(false)}
+                className="w-full sm:w-auto px-6 py-2.5 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-100 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCreateSupervisor}
+                disabled={
+                  !formData.name ||
+                  !formData.email ||
+                  !formData.password ||
+                  !formData.siteId
+                }
+                className="w-full sm:w-auto px-6 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200 disabled:bg-gray-300 disabled:cursor-not-allowed disabled:shadow-none"
+              >
+                Create Supervisor
               </button>
             </div>
           </div>
@@ -577,142 +733,152 @@ const SupervisorManagement = () => {
       )}
 
       {/* Edit Supervisor Modal */}
-      {showEditModal && selectedSupervisor && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            {/* Modal Header */}
-            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-900">Edit Supervisor</h2>
-              <button 
-                onClick={closeEditModal}
-                className="text-gray-400 hover:text-gray-600 transition"
+      {showEdit && selectedSupervisor && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white flex items-center justify-between p-4 sm:p-6 border-b border-gray-200">
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
+                Edit Supervisor
+              </h2>
+              <button
+                onClick={() => {
+                  setShowEdit(false);
+                  setSelectedSupervisor(null);
+                }}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
               >
                 <X className="w-6 h-6" />
               </button>
             </div>
 
-            {/* Modal Body */}
-            <div className="p-6 space-y-4">
-              {/* Name Field */}
+            <div className="p-4 sm:p-6 space-y-4">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Name <span className="text-red-500">*</span>
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                  <User className="w-4 h-4" />
+                  Full Name
                 </label>
                 <input
+                  placeholder="John Doe"
                   type="text"
-                  value={editFormData.name}
-                  onChange={(e) => setEditFormData({...editFormData, name: e.target.value})}
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent outline-none ${
-                    formErrors.name ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  placeholder="Enter supervisor name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="w-full border border-gray-300 px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
-                {formErrors.name && (
-                  <p className="text-red-500 text-sm mt-1">{formErrors.name}</p>
-                )}
               </div>
 
-              {/* Email Field */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Email <span className="text-red-500">*</span>
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                  <Mail className="w-4 h-4" />
+                  Email Address
                 </label>
                 <input
+                  placeholder="john@example.com"
                   type="email"
-                  value={editFormData.email}
-                  onChange={(e) => setEditFormData({...editFormData, email: e.target.value})}
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent outline-none ${
-                    formErrors.email ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  placeholder="Enter email address"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  className="w-full border border-gray-300 px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
-                {formErrors.email && (
-                  <p className="text-red-500 text-sm mt-1">{formErrors.email}</p>
-                )}
               </div>
 
-              {/* Site Selection */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                  <Phone className="w-4 h-4" />
+                  Phone Number
+                </label>
+                <input
+                  placeholder="+91 98765 43210"
+                  type="tel"
+                  value={formData.mobile}
+                  onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
+                  className="w-full border border-gray-300 px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                  <MapPin className="w-4 h-4" />
+                  Address
+                </label>
+                <textarea
+                  placeholder="Enter full address"
+                  value={formData.address}
+                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  rows={3}
+                  className="w-full border border-gray-300 px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                />
+              </div>
+
+              <div>
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                  <Lock className="w-4 h-4" />
+                  Password (Leave blank to keep current)
+                </label>
+                <input
+                  placeholder="Enter new password"
+                  type="password"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  className="w-full border border-gray-300 px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                  <Building2 className="w-4 h-4" />
                   Assigned Site <span className="text-red-500">*</span>
                 </label>
-                <select
-                  value={editFormData.siteId}
-                  onChange={(e) => setEditFormData({...editFormData, siteId: e.target.value})}
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent outline-none ${
-                    formErrors.siteId ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                >
-                  <option value="">Select a site</option>
-                  {sites.map((site) => (
-                    <option key={site._id} value={site._id}>
-                      {site.name} - {site.location}
-                    </option>
-                  ))}
-                </select>
-                {formErrors.siteId && (
-                  <p className="text-red-500 text-sm mt-1">{formErrors.siteId}</p>
-                )}
-              </div>
 
-              {/* Contact Number Field */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Contact Number
-                </label>
-                <input
-                  type="text"
-                  value={editFormData.mobile}
-                  onChange={(e) => setEditFormData({...editFormData, mobile: e.target.value})}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent outline-none"
-                  placeholder="Enter contact number"
-                />
+                {loadingSites ? (
+                  <div className="w-full border border-gray-300 px-4 py-3 rounded-lg bg-gray-50 flex items-center justify-center">
+                    <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mr-2"></div>
+                    <span className="text-sm text-gray-600">Loading sites...</span>
+                  </div>
+                ) : sites.length === 0 ? (
+                  <div className="border border-gray-300 rounded-lg p-4 text-center text-sm text-gray-500">
+                    No sites available
+                  </div>
+                ) : (
+                  <select
+                    value={formData.siteId}
+                    onChange={(e) => setFormData({ ...formData, siteId: e.target.value })}
+                    className="w-full border border-gray-300 px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">Select Site</option>
+                    {sites.map((site) => (
+                      <option key={site._id || site.id} value={site._id || site.id}>
+                        {site.name || site.siteName}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
             </div>
 
-            {/* Modal Footer */}
-            <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 px-6 py-4 flex gap-3">
-              <button 
-                onClick={closeEditModal}
-                disabled={submitting}
-                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition font-semibold disabled:opacity-50"
+            <div className="sticky bottom-0 bg-gray-50 flex flex-col sm:flex-row justify-end gap-3 p-4 sm:p-6 border-t border-gray-200">
+              <button
+                onClick={() => {
+                  setShowEdit(false);
+                  setSelectedSupervisor(null);
+                }}
+                className="w-full sm:w-auto px-6 py-2.5 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-100 transition-colors"
               >
                 Cancel
               </button>
-              <button 
-                onClick={handleUpdateSubmit}
-                disabled={submitting}
-                className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-semibold disabled:opacity-50 flex items-center justify-center gap-2"
+              <button
+                onClick={handleUpdateSupervisor}
+                disabled={
+                  !formData.name ||
+                  !formData.email ||
+                  !formData.siteId
+                }
+                className="w-full sm:w-auto px-6 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200 disabled:bg-gray-300 disabled:cursor-not-allowed disabled:shadow-none"
               >
-                {submitting ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    Updating...
-                  </>
-                ) : (
-                  'Update Supervisor'
-                )}
+                Update Supervisor
               </button>
             </div>
           </div>
         </div>
       )}
-
-      <style jsx>{`
-        @keyframes slide-in {
-          from {
-            transform: translateX(100%);
-            opacity: 0;
-          }
-          to {
-            transform: translateX(0);
-            opacity: 1;
-          }
-        }
-        .animate-slide-in {
-          animation: slide-in 0.3s ease-out;
-        }
-      `}</style>
     </div>
   );
 };
