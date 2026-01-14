@@ -4,7 +4,7 @@ import axios from 'axios';
 import {
   Search, Plus, User, Mail,
   Phone, Power, X, Building2, Lock,
-  UserCheck, UserX, Check, Users, Eye, Edit, MapPin
+  UserCheck, UserX, Check, Users, Eye, Edit, MapPin, EyeOff
 } from 'lucide-react';
 import Sidebar from './sidebar';
 import Header from './header';
@@ -43,6 +43,9 @@ const UserManagement = () => {
   const [showView, setShowView] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showEditPassword, setShowEditPassword] = useState(false);
+  
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -52,7 +55,7 @@ const UserManagement = () => {
     password: '',
     assignedSites: [],
     siteId: '',
-    Supervisors: [],
+    assignedSupervisors: [],
     projectManagerId: '',
   });
 
@@ -68,7 +71,10 @@ const UserManagement = () => {
       siteId: '',
       assignedSupervisors: [],
       projectManagerId: '',
+      password: '',
     }));
+    setShowPassword(false);
+    setShowEditPassword(false);
   }, [activeTab]);
 
   const fetchUsers = async () => {
@@ -79,7 +85,6 @@ const UserManagement = () => {
         : '/api/client-admin/supervisors';
 
       const response = await api.get(endpoint);
-      console.log(response);
 
       let usersData = [];
       if (activeTab === 'Project Managers') {
@@ -160,6 +165,7 @@ const UserManagement = () => {
       assignedSupervisors: [],
       projectManagerId: '',
     });
+    setShowPassword(false);
     setShowAdd(true);
     fetchSites();
 
@@ -231,11 +237,11 @@ const UserManagement = () => {
         role: activeTab,
         password: '',
         assignedSites: [],
-        supervisor: '',
         siteId: '',
         assignedSupervisors: [],
         projectManagerId: '',
       });
+      setShowPassword(false);
 
       setShowAdd(false);
       await fetchUsers();
@@ -286,9 +292,10 @@ const UserManagement = () => {
         password: '',
         assignedSites: [],
         siteId: '',
-        Supervisors: [],
+        assignedSupervisors: [],
         projectManagerId: '',
       });
+      setShowEditPassword(false);
 
       setShowEdit(false);
       setSelectedUser(null);
@@ -468,7 +475,6 @@ const UserManagement = () => {
                         {user.supervisors?.length > 0
                           ? `${user.supervisors.length} supervisors`
                           : '-'}
-
                       </td>
                     )}
                     {activeTab === 'Supervisors' && (
@@ -514,6 +520,7 @@ const UserManagement = () => {
                               supervisors: user.supervisors?.map(s => s._id || s) || [],
                               projectManagerId: user.projectManagerId?._id || user.projectManagerId || '',
                             });
+                            setShowEditPassword(false);
                             setShowEdit(true);
                             fetchSites();
                             if (activeTab === 'Project Managers') {
@@ -617,6 +624,7 @@ const UserManagement = () => {
                       supervisors: user.supervisors?.map(s => s._id || s) || [],
                       projectManagerId: user.projectManagerId?._id || user.projectManagerId || '',
                     });
+                    setShowEditPassword(false);
                     setShowEdit(true);
                     fetchSites();
                     if (activeTab === 'Project Managers') {
@@ -838,14 +846,31 @@ const UserManagement = () => {
                 <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
                   <Lock className="w-4 h-4" />
                   Password
+                  {activeTab === 'Supervisors' && <span className="text-red-500">*</span>}
                 </label>
-                <input
-                  placeholder="Enter password"
-                  type="password"
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  className="w-full border border-gray-300 px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
+                <div className="relative">
+                  <input
+                    placeholder="Enter password"
+                    type={showPassword ? "text" : "password"}
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    className="w-full border border-gray-300 px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="w-5 h-5" />
+                    ) : (
+                      <Eye className="w-5 h-5" />
+                    )}
+                  </button>
+                </div>
+                {activeTab === 'Supervisors' && (
+                  <p className="text-xs text-gray-500 mt-1">Password is required for supervisor</p>
+                )}
               </div>
 
               {activeTab === 'Supervisors' && (
@@ -1086,14 +1111,31 @@ const UserManagement = () => {
                 <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
                   <Lock className="w-4 h-4" />
                   Password (Leave blank to keep current)
+                  {activeTab === 'Supervisors' && <span className="text-red-500">*</span>}
                 </label>
-                <input
-                  placeholder="Enter new password"
-                  type="password"
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  className="w-full border border-gray-300 px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
+                <div className="relative">
+                  <input
+                    placeholder={activeTab === 'Supervisors' ? "Enter new password (required)" : "Enter new password"}
+                    type={showEditPassword ? "text" : "password"}
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    className="w-full border border-gray-300 px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowEditPassword(!showEditPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  >
+                    {showEditPassword ? (
+                      <EyeOff className="w-5 h-5" />
+                    ) : (
+                      <Eye className="w-5 h-5" />
+                    )}
+                  </button>
+                </div>
+                {activeTab === 'Supervisors' && (
+                  <p className="text-xs text-red-500 mt-1">Password is required when editing supervisor</p>
+                )}
               </div>
 
               {activeTab === 'Supervisors' && (
@@ -1243,6 +1285,7 @@ const UserManagement = () => {
                 disabled={
                   !formData.name ||
                   !formData.email ||
+                  (activeTab === 'Supervisors' && !formData.password) ||
                   (activeTab === 'Project Managers' && formData.assignedSites.length === 0) ||
                   (activeTab === 'Supervisors' && (!formData.siteId || !formData.projectManagerId))
                 }
