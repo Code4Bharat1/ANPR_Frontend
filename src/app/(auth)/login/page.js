@@ -70,9 +70,9 @@ export default function LoginPage() {
         {/* Logo */}
         <div className="flex justify-center mb-6">
           <div className="relative w-14 h-14">
-            <Image 
-              src="/logo.png" 
-              alt="Company Logo" 
+            <Image
+              src="/logo.png"
+              alt="Company Logo"
               width={56}
               height={56}
               className="object-cover"

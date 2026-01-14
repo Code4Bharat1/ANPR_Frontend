@@ -1,7 +1,6 @@
 import axios from "axios";
 
-const API_URL =
-  process.env.NEXT_PUBLIC_API_URL ;
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export const api = axios.create({
   baseURL: API_URL,
@@ -15,10 +14,8 @@ export const api = axios.create({
    ACCESS TOKEN HELPERS
 ========================== */
 const getAccessToken = () => localStorage.getItem("accessToken");
-const setAccessToken = (token) =>
-  localStorage.setItem("accessToken", token);
-const clearAccessToken = () =>
-  localStorage.removeItem("accessToken");
+const setAccessToken = (token) => localStorage.setItem("accessToken", token);
+const clearAccessToken = () => localStorage.removeItem("accessToken");
 
 /* ==========================
    REQUEST INTERCEPTOR
@@ -41,9 +38,7 @@ let isRefreshing = false;
 let failedQueue = [];
 
 const processQueue = (error, token = null) => {
-  failedQueue.forEach((p) =>
-    error ? p.reject(error) : p.resolve(token)
-  );
+  failedQueue.forEach((p) => (error ? p.reject(error) : p.resolve(token)));
   failedQueue = [];
 };
 
@@ -58,14 +53,11 @@ api.interceptors.response.use(
       originalRequest.url === "/auth/refresh"
     ) {
       clearAccessToken();
-      window.location.href = "/login";
+
       return Promise.reject(error);
     }
 
-    if (
-      error.response?.status === 401 &&
-      !originalRequest._retry
-    ) {
+    if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
       if (isRefreshing) {
@@ -88,14 +80,13 @@ api.interceptors.response.use(
 
         processQueue(null, newAccessToken);
 
-        originalRequest.headers.Authorization =
-          `Bearer ${newAccessToken}`;
+        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
 
         return api(originalRequest);
       } catch (err) {
         processQueue(err, null);
         clearAccessToken();
-        window.location.href = "/login";
+
         return Promise.reject(err);
       } finally {
         isRefreshing = false;
