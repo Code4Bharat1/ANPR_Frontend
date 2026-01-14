@@ -171,141 +171,266 @@ const PMSites = () => {
       </main>
 
       {/* Site Details Modal */}
-      {showModal && selectedSite && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            {/* Modal Header */}
-            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-900">Site Details</h2>
-              <button 
-                onClick={closeModal}
-                className="text-gray-400 hover:text-gray-600 transition"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
+     {showModal && selectedSite && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+      {/* Modal Header */}
+      <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+        <h2 className="text-xl font-bold text-gray-900">Site Details</h2>
+        <button 
+          onClick={closeModal}
+          className="text-gray-400 hover:text-gray-600 transition"
+        >
+          <X className="w-6 h-6" />
+        </button>
+      </div>
 
-            {/* Modal Body */}
-            <div className="p-6 space-y-6">
-              {/* Site Name & Status */}
-              <div className="flex items-start justify-between">
-                <div>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-1">{selectedSite.name}</h3>
-                  <p className="text-sm text-gray-500">{selectedSite.id}</p>
-                </div>
-                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                  selectedSite.status === 'Active' 
-                    ? 'bg-green-100 text-green-700' 
-                    : selectedSite.status === 'Maintenance'
-                    ? 'bg-yellow-100 text-yellow-700'
-                    : 'bg-gray-100 text-gray-700'
-                }`}>
-                  {selectedSite.status}
-                </span>
-              </div>
+      {/* Modal Body */}
+      <div className="p-6 space-y-6">
+        {/* Site Name & Status */}
+        <div className="flex items-start justify-between">
+          <div>
+            <h3 className="text-2xl font-bold text-gray-900 mb-1">{selectedSite.name}</h3>
+            <p className="text-sm text-gray-500">{selectedSite.id}</p>
+          </div>
+          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+            selectedSite.status === 'Active' 
+              ? 'bg-green-100 text-green-700' 
+              : selectedSite.status === 'Maintenance'
+              ? 'bg-yellow-100 text-yellow-700'
+              : 'bg-gray-100 text-gray-700'
+          }`}>
+            {selectedSite.status}
+          </span>
+        </div>
 
-              {/* Address */}
-              <div className="bg-gray-50 rounded-lg p-4">
-                <div className="flex items-start gap-3">
-                  <MapPin className="w-5 h-5 text-gray-400 mt-0.5" />
-                  <div>
-                    <div className="text-xs text-gray-500 mb-1">Location</div>
-                    <div className="text-gray-900 font-medium">{selectedSite.location}</div>
-                  </div>
-                </div>
-              </div><div className="bg-gray-50 rounded-lg p-4">
-                <div className="flex items-start gap-3">
-                  <MapPin className="w-5 h-5 text-gray-400 mt-0.5" />
-                  <div>
-                    <div className="text-xs text-gray-500 mb-1">Address</div>
-                    <div className="text-gray-900 font-medium">{selectedSite.address}</div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Supervisor & Contact */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="flex items-start gap-3">
-                    <User className="w-5 h-5 text-gray-400 mt-0.5" />
-                    <div>
-                      <div className="text-xs text-gray-500 mb-1">Contact Person</div>
-                      <div className="text-gray-900 font-medium">
-                        {selectedSite.contactPerson || 'Not assigned'}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="flex items-start gap-3">
-                    <Phone className="w-5 h-5 text-gray-400 mt-0.5" />
-                    <div>
-                      <div className="text-xs text-gray-500 mb-1">Contact Number</div>
-                      <div className="text-gray-900 font-medium">
-                        {selectedSite.contactPhone || 'N/A'}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Stats */}
-              <div className="grid grid-cols-2 sm:grid-cols-2 gap-4">
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="text-xs text-gray-500 mb-1">Total Supervisors</div>
-                  <div className="text-2xl font-bold text-gray-900">{selectedSite.supervisors}</div>
-                </div>
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="text-xs text-gray-500 mb-1">Active Vehicles</div>
-                  <div className="text-2xl font-bold text-gray-900">{selectedSite.activeVehicles}</div>
-                </div>
-                
-              </div>
-
-              {/* Created Date */}
-              <div className="bg-gray-50 rounded-lg p-4">
-                <div className="flex items-start gap-3">
-                  <Calendar className="w-5 h-5 text-gray-400 mt-0.5" />
-                  <div>
-                    <div className="text-xs text-gray-500 mb-1">Created Date</div>
-                    <div className="text-gray-900 font-medium">
-                      {selectedSite.createdAt 
-                        ? new Date(selectedSite.createdAt).toLocaleDateString('en-IN', {
-                            day: 'numeric',
-                            month: 'long',
-                            year: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })
-                        : 'N/A'
-                      }
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Additional Info if available */}
-              {selectedSite.description && (
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="text-xs text-gray-500 mb-2">Description</div>
-                  <div className="text-gray-900">{selectedSite.description}</div>
-                </div>
-              )}
-            </div>
-
-            {/* Modal Footer */}
-            <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 px-6 py-4">
-              <button 
-                onClick={closeModal}
-                className="w-full px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-semibold"
-              >
-                Close
-              </button>
+        {/* Address */}
+        <div className="bg-gray-50 rounded-lg p-4">
+          <div className="flex items-start gap-3">
+            <MapPin className="w-5 h-5 text-gray-400 mt-0.5" />
+            <div>
+              <div className="text-xs text-gray-500 mb-1">Location</div>
+              <div className="text-gray-900 font-medium">{selectedSite.location}</div>
             </div>
           </div>
         </div>
-      )}
+
+        {/* NEW: Site Activity - Live Vehicle Condition */}
+        <div className="bg-gray-50 rounded-lg p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Activity className="w-5 h-5 text-indigo-600" />
+            <h4 className="font-semibold text-gray-900">Site Activity - Live Vehicle Status</h4>
+          </div>
+          <div className="space-y-3">
+            {selectedSite.liveVehicles && selectedSite.liveVehicles.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {selectedSite.liveVehicles.map((vehicle, index) => (
+                  <div key={index} className="bg-white rounded-lg p-3 border border-gray-200">
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <div className="font-medium text-gray-900">{vehicle.vehicleNumber}</div>
+                        <div className="text-xs text-gray-500">{vehicle.type}</div>
+                      </div>
+                      <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                        vehicle.status === 'Working' ? 'bg-green-100 text-green-700' :
+                        vehicle.status === 'Idle' ? 'bg-yellow-100 text-yellow-700' :
+                        vehicle.status === 'Maintenance' ? 'bg-red-100 text-red-700' :
+                        'bg-gray-100 text-gray-700'
+                      }`}>
+                        {vehicle.status}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div className="text-gray-600">Driver: <span className="font-medium">{vehicle.driver || 'N/A'}</span></div>
+                      <div className="text-gray-600">Fuel: <span className="font-medium">{vehicle.fuelLevel}%</span></div>
+                      <div className="text-gray-600">Hours Today: <span className="font-medium">{vehicle.hoursOperated}h</span></div>
+                      <div className="text-gray-600">Last Update: <span className="font-medium">{vehicle.lastUpdate}</span></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-4">
+                <Activity className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                <p className="text-gray-500">No live vehicle data available</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* NEW: Traffic Site - Exit/Entry Vehicles */}
+        <div className="bg-gray-50 rounded-lg p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <MapPin className="w-5 h-5 text-indigo-600" />
+            <h4 className="font-semibold text-gray-900">Traffic Site - Vehicle Movement</h4>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Entry Vehicles */}
+            <div className="bg-white rounded-lg p-4 border border-gray-200">
+              <div className="flex items-center justify-between mb-3">
+                <h5 className="font-semibold text-green-700">Entry Vehicles</h5>
+                <span className="bg-green-100 text-green-700 text-xs font-semibold px-2 py-1 rounded-full">
+                  {selectedSite.entryVehicles?.length || 0}
+                </span>
+              </div>
+              <div className="space-y-2">
+                {selectedSite.entryVehicles && selectedSite.entryVehicles.length > 0 ? (
+                  selectedSite.entryVehicles.slice(0, 5).map((vehicle, index) => (
+                    <div key={index} className="flex justify-between items-center text-sm">
+                      <span className="text-gray-700">{vehicle.vehicleNumber}</span>
+                      <span className="text-gray-500 text-xs">{vehicle.time}</span>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-gray-500 text-sm">No recent entries</p>
+                )}
+                {selectedSite.entryVehicles && selectedSite.entryVehicles.length > 5 && (
+                  <p className="text-indigo-600 text-sm font-medium text-center pt-2">
+                    +{selectedSite.entryVehicles.length - 5} more entries
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Exit Vehicles */}
+            <div className="bg-white rounded-lg p-4 border border-gray-200">
+              <div className="flex items-center justify-between mb-3">
+                <h5 className="font-semibold text-red-700">Exit Vehicles</h5>
+                <span className="bg-red-100 text-red-700 text-xs font-semibold px-2 py-1 rounded-full">
+                  {selectedSite.exitVehicles?.length || 0}
+                </span>
+              </div>
+              <div className="space-y-2">
+                {selectedSite.exitVehicles && selectedSite.exitVehicles.length > 0 ? (
+                  selectedSite.exitVehicles.slice(0, 5).map((vehicle, index) => (
+                    <div key={index} className="flex justify-between items-center text-sm">
+                      <span className="text-gray-700">{vehicle.vehicleNumber}</span>
+                      <span className="text-gray-500 text-xs">{vehicle.time}</span>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-gray-500 text-sm">No recent exits</p>
+                )}
+                {selectedSite.exitVehicles && selectedSite.exitVehicles.length > 5 && (
+                  <p className="text-indigo-600 text-sm font-medium text-center pt-2">
+                    +{selectedSite.exitVehicles.length - 5} more exits
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+          
+          {/* Traffic Summary */}
+          <div className="mt-4 pt-4 border-t border-gray-200">
+            <div className="grid grid-cols-3 gap-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-gray-900">{selectedSite.vehiclesOnSite || 0}</div>
+                <div className="text-xs text-gray-500">Currently On Site</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-700">{selectedSite.todayEntries || 0}</div>
+                <div className="text-xs text-gray-500">Today's Entries</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-red-700">{selectedSite.todayExits || 0}</div>
+                <div className="text-xs text-gray-500">Today's Exits</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Supervisor & Contact */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="bg-gray-50 rounded-lg p-4">
+            <div className="flex items-start gap-3">
+              <User className="w-5 h-5 text-gray-400 mt-0.5" />
+              <div>
+                <div className="text-xs text-gray-500 mb-1">Contact Person</div>
+                <div className="text-gray-900 font-medium">
+                  {selectedSite.contactPerson || 'Not assigned'}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-gray-50 rounded-lg p-4">
+            <div className="flex items-start gap-3">
+              <Phone className="w-5 h-5 text-gray-400 mt-0.5" />
+              <div>
+                <div className="text-xs text-gray-500 mb-1">Contact Number</div>
+                <div className="text-gray-900 font-medium">
+                  {selectedSite.contactPhone || 'N/A'}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Stats */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="bg-gray-50 rounded-lg p-4">
+            <div className="text-xs text-gray-500 mb-1">Total Supervisors</div>
+            <div className="text-2xl font-bold text-gray-900">{selectedSite.supervisors}</div>
+          </div>
+          <div className="bg-gray-50 rounded-lg p-4">
+            <div className="text-xs text-gray-500 mb-1">Active Vehicles</div>
+            <div className="text-2xl font-bold text-gray-900">{selectedSite.activeVehicles}</div>
+          </div>
+          <div className="bg-gray-50 rounded-lg p-4">
+            <div className="text-xs text-gray-500 mb-1">Total Vehicles</div>
+            <div className="text-2xl font-bold text-gray-900">{selectedSite.totalVehicles || 0}</div>
+          </div>
+          <div className="bg-gray-50 rounded-lg p-4">
+            <div className="text-xs text-gray-500 mb-1">Site Utilization</div>
+            <div className="text-2xl font-bold text-gray-900">
+              {selectedSite.utilization ? `${selectedSite.utilization}%` : 'N/A'}
+            </div>
+          </div>
+        </div>
+
+        {/* Created Date */}
+        <div className="bg-gray-50 rounded-lg p-4">
+          <div className="flex items-start gap-3">
+            <Calendar className="w-5 h-5 text-gray-400 mt-0.5" />
+            <div>
+              <div className="text-xs text-gray-500 mb-1">Created Date</div>
+              <div className="text-gray-900 font-medium">
+                {selectedSite.createdAt 
+                  ? new Date(selectedSite.createdAt).toLocaleDateString('en-IN', {
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })
+                  : 'N/A'
+                }
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Additional Info if available */}
+        {selectedSite.description && (
+          <div className="bg-gray-50 rounded-lg p-4">
+            <div className="text-xs text-gray-500 mb-2">Description</div>
+            <div className="text-gray-900">{selectedSite.description}</div>
+          </div>
+        )}
+      </div>
+
+      {/* Modal Footer */}
+      <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 px-6 py-4">
+        <button 
+          onClick={closeModal}
+          className="w-full px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-semibold"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+)}
     </div>
   );
 };

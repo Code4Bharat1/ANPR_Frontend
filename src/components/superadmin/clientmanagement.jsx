@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import {
-  Plus, Search, Users, ChevronLeft, ChevronRight, X, Menu
+  Plus, Search, Users, ChevronLeft, ChevronRight, X, Menu, Eye, EyeOff
 } from 'lucide-react';
 import SuperAdminLayout from './layout';
 
@@ -113,7 +113,7 @@ const EditClientModal = ({ isOpen, onClose, onSubmit, loading, client }) => {
         companyName: client.companyName || '',
         email: client.email || '',
         phone: client.phone || '',
-        packageType: client.packageType || 'basic',
+        packageType: client.packageType || 'LITE',
         packageStart: client.packageStart ? client.packageStart.split('T')[0] : '',
         packageEnd: client.packageEnd ? client.packageEnd.split('T')[0] : '',
         address: client.address || ''
@@ -302,6 +302,8 @@ const AddClientModal = ({ isOpen, onClose, onSubmit, loading }) => {
     address: ''
   });
 
+  const [showPassword, setShowPassword] = useState(false);
+
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
@@ -318,11 +320,12 @@ const AddClientModal = ({ isOpen, onClose, onSubmit, loading }) => {
       email: '',
       phone: '',
       password: '',
-      packageType: 'basic',
+      packageType: 'LITE',
       packageStart: '',
       packageEnd: '',
       address: ''
     });
+    setShowPassword(false);
   };
 
   if (!isOpen) return null;
@@ -402,15 +405,29 @@ const AddClientModal = ({ isOpen, onClose, onSubmit, loading }) => {
               <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Password *
               </label>
-              <input
-                type="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                required
-                placeholder="Minimum 8 characters"
-                className="w-full px-3 md:px-4 py-2 md:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base"
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  required
+                  placeholder="Minimum 8 characters"
+                  className="w-full px-3 md:px-4 py-2 md:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent pr-10 text-sm md:text-base"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                >
+                  {showPassword ? (
+                    <EyeOff className="w-5 h-5" />
+                  ) : (
+                    <Eye className="w-5 h-5" />
+                  )}
+                </button>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">Password must be at least 8 characters long</p>
             </div>
 
             <div className="border-t border-gray-200 pt-4">
