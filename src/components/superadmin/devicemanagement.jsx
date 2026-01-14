@@ -11,8 +11,8 @@ const DeviceCard = ({ device, onEdit, onToggleStatus, onDelete }) => (
   <div className="bg-white rounded-xl p-4 md:p-6 shadow-sm border border-gray-100 hover:shadow-md transition">
     <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-4 gap-3">
       <div className="flex items-center gap-3">
-        <div className={`w-10 h-10 md:w-12 md:h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${device.type === 'ANPR' ? 'bg-blue-50' : 'bg-green-50'}`}>
-          {device.type === 'ANPR' ? (
+        <div className={`w-10 h-10 md:w-12 md:h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${device.devicetype === 'ANPR' ? 'bg-blue-50' : 'bg-green-50'}`}>
+          {device.devicetype === 'ANPR' ? (
             <Camera className={`w-5 h-5 md:w-6 md:h-6 ${device.status === 'online' ? 'text-blue-600' : 'text-gray-400'}`} />
           ) : (
             <Activity className={`w-5 h-5 md:w-6 md:h-6 ${device.status === 'online' ? 'text-green-600' : 'text-gray-400'}`} />
@@ -457,6 +457,8 @@ const DeviceManagement = () => {
         `${process.env.NEXT_PUBLIC_API_URL}/api/devices`,
         { headers: getAuthHeaders() }
       );
+      console.log(response);
+      
       setDevices(Array.isArray(response.data) ? response.data : []);
       setError(null);
     } catch (err) {
