@@ -12,13 +12,30 @@ import {
   Plus,
   CheckCircle2,
   AlertCircle,
+  LayoutDashboard,
+  LogIn,
+  LogOut as ExitIcon,
+  FileText,
+  BarChart3,
+  Settings,
+  LogOut,
+  Menu,
+  Bell,
+  Shield
 } from "lucide-react";
 import axios from "axios";
+import { useRouter, usePathname } from 'next/navigation';
+import Image from 'next/image';
 
 const SOCKET_URL = "https://webhooks.nexcorealliance.com";
-const API_URL = "https://webhooks.nexcorealliance.com/api"; // Adjust to your API base URL
+const API_URL = "https://webhooks.nexcorealliance.com/api";
 
 export default function LiveAnpr() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [userData, setUserData] = useState(null);
+  
   const [events, setEvents] = useState([]);
   const [status, setStatus] = useState("disconnected");
   const [showPopup, setShowPopup] = useState(false);
@@ -47,6 +64,31 @@ export default function LiveAnpr() {
     driverName: "",
     purpose: "",
   });
+
+  useEffect(() => {
+    const data = localStorage.getItem('supervisorData');
+    if (data) {
+      setUserData(JSON.parse(data));
+    }
+  }, []);
+
+  const menuItems = [
+    { icon: LayoutDashboard, label: 'Dashboard', path: '/supervisor/dashboard' },
+    { icon: LogIn, label: 'Entry Vehicles', path: '/supervisor/entry-vehicles' },
+    { icon: ExitIcon, label: 'Exit Vehicles', path: '/supervisor/exit-vehicles' },
+    { icon: Car, label: 'Active Vehicles', path: '/supervisor/active-vehicles' },
+    { icon: FileText, label: 'Trip History', path: '/supervisor/trip-history' },
+    { icon: BarChart3, label: 'Analytics', path: '/supervisor/analytics' }
+  ];
+
+  const handleLogout = () => {
+    if (confirm('Are you sure you want to logout?')) {
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('supervisorData');
+      localStorage.removeItem('userRole');
+      router.push('/login');
+    }
+  };
 
   useEffect(() => {
     const socket = io(SOCKET_URL, {
@@ -183,44 +225,41 @@ export default function LiveAnpr() {
     setIsSubmitting(true);
     setSubmitStatus({ type: "", message: "" });
 
-   try {
-  const response = await axios.post(
-    "http://localhost:5000/api/supervisor/trips/manual",
-    formData,
-    {
-      headers: {
-        "Content-Type": "application/json",
-      },
+    try {
+      const response = await axios.post(
+        "http://localhost:5000/api/supervisor/trips/manual",
+        formData,
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      setSubmitStatus({
+        type: "success",
+        message: response.data.message || "Entry recorded successfully!",
+      });
+
+      setTimeout(() => {
+        setShowForm(false);
+        setCurrentStep(1);
+        setSubmitStatus({ type: "", message: "" });
+      }, 2000);
+
+    } catch (error) {
+      console.error("Submit error:", error);
+      const message =
+        error.response?.data?.message ||
+        "Network error. Please try again.";
+
+      setSubmitStatus({
+        type: "error",
+        message,
+      });
+    } finally {
+      setIsSubmitting(false);
     }
-  );
-
-  // axios me response.data hota hai
-  setSubmitStatus({
-    type: "success",
-    message: response.data.message || "Entry recorded successfully!",
-  });
-
-  setTimeout(() => {
-    setShowForm(false);
-    setCurrentStep(1);
-    setSubmitStatus({ type: "", message: "" });
-  }, 2000);
-
-} catch (error) {
-  console.error("Submit error:", error);
-
-  // backend se proper error message ho to
-  const message =
-    error.response?.data?.message ||
-    "Network error. Please try again.";
-
-  setSubmitStatus({
-    type: "error",
-    message,
-  });
-} finally {
-  setIsSubmitting(false);
-}
   };
 
   const getStatusColor = () => {
@@ -241,101 +280,254 @@ export default function LiveAnpr() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="bg-slate-800 rounded-lg shadow-2xl p-6 mb-6 border border-slate-700">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Car className="w-8 h-8 text-blue-400" />
-              <div>
-                <h1 className="text-3xl font-bold text-white">
-                  Live ANPR System
-                </h1>
-                <p className="text-slate-400 text-sm mt-1">
-                  Real-time vehicle tracking and management
-                </p>
+    <div className="min-h-screen bg-gray-50 flex">
+      {/* Sidebar - Desktop */}
+      <aside className="hidden lg:flex lg:flex-col lg:w-64 bg-white border-r border-gray-200 fixed h-full z-40">
+        <div className="p-6 border-b border-gray-200">
+          <div className="flex items-center gap-3">
+            <div className="relative w-10 h-10 flex-shrink-0">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
+                <Car className="w-6 h-6 text-white" />
               </div>
             </div>
+            <div>
+              <span className="text-xl font-bold text-gray-900">SecureGate</span>
+              <p className="text-xs text-gray-500">ANPR System</p>
+            </div>
+          </div>
+        </div>
+
+        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+          {menuItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = pathname === item.path;
+            return (
+              <button
+                key={item.path}
+                onClick={() => router.push(item.path)}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${
+                  isActive
+                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-200'
+                    : 'text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                <Icon className="w-5 h-5" />
+                <span className="font-medium">{item.label}</span>
+              </button>
+            );
+          })}
+        </nav>
+
+        <div className="p-4 border-t border-gray-200">
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg transition font-medium"
+          >
+            <LogOut className="w-5 h-5" />
+            <span>Logout</span>
+          </button>
+        </div>
+      </aside>
+
+      {/* Main Content */}
+      <div className="flex-1 lg:ml-64">
+        <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
+          <div className="flex items-center justify-between px-4 lg:px-6 py-4">
+            <button
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="lg:hidden p-2 hover:bg-gray-100 rounded-lg transition"
+            >
+              <Menu className="w-6 h-6 text-gray-700" />
+            </button>
+
+            <div className="flex-1" />
+
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
                 <div
                   className={`w-3 h-3 rounded-full ${getStatusColor()} animate-pulse`}
                 ></div>
-                <span className="text-white font-medium capitalize">
+                <span className="text-gray-700 font-medium capitalize text-sm">
                   {status}
                 </span>
               </div>
-              <button
-                onClick={() => setShowManualEntry(true)}
-                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
-              >
-                <Plus className="w-4 h-4" />
-                Manual Entry
+              
+              <button className="relative p-2 hover:bg-gray-100 rounded-lg transition">
+                <Bell className="w-5 h-5 text-gray-700" />
+                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
               </button>
+              
+              <div className="flex items-center gap-3">
+                <div className="text-right hidden sm:block">
+                  <div className="text-sm font-semibold text-gray-900">
+                    {userData?.name || 'Supervisor'}
+                  </div>
+                  <div className="text-xs text-gray-500">Site Supervisor</div>
+                </div>
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold text-sm">
+                    {userData?.name?.charAt(0) || 'S'}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
+        </header>
 
-        {/* Recent Events */}
-        <div className="bg-slate-800 rounded-lg shadow-2xl p-6 border border-slate-700">
-          <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-            <Clock className="w-5 h-5 text-blue-400" />
-            Recent Events ({events.length})
-          </h2>
-
-          {events.length === 0 ? (
-            <p className="text-slate-400 text-center py-8">
-              No events received yet. Waiting for ANPR data...
-            </p>
-          ) : (
-            <div className="space-y-3 max-h-96 overflow-y-auto">
-              {events.map((e, index) => (
-                <div
-                  key={e._id || index}
-                  className="bg-slate-700 p-4 rounded-lg border border-slate-600 hover:border-blue-500 transition-colors"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div
-                        className={`px-3 py-1 rounded-full text-xs font-bold ${
-                          e.isEntry
-                            ? "bg-green-500 text-white"
-                            : "bg-red-500 text-white"
-                        }`}
-                      >
-                        {e.isEntry ? "ENTRY" : "EXIT"}
-                      </div>
-                      <div>
-                        <p className="text-white font-bold text-lg">
-                          {e.numberPlate}
-                        </p>
-                        <p className="text-slate-400 text-sm">
-                          {e.cameraName} •{" "}
-                          {new Date(e.timestamp).toLocaleString()}
-                        </p>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => {
-                        setCurrentEvent(e);
-                        setShowPopup(true);
-                      }}
-                      className="text-blue-400 hover:text-blue-300 text-sm font-medium"
-                    >
-                      View Details
-                    </button>
+        <main className="p-4 lg:p-6">
+          <div className="max-w-7xl mx-auto">
+            {/* Header Card */}
+            <div className="bg-slate-800 rounded-lg shadow-2xl p-6 mb-6 border border-slate-700">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <Car className="w-8 h-8 text-blue-400" />
+                  <div>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-white">
+                      Live ANPR System
+                    </h1>
+                    <p className="text-slate-400 text-sm mt-1">
+                      Real-time vehicle tracking and management
+                    </p>
                   </div>
                 </div>
-              ))}
+                <div className="flex items-center gap-4 w-full sm:w-auto">
+                  <div className="flex items-center gap-2">
+                    <div
+                      className={`w-3 h-3 rounded-full ${getStatusColor()} animate-pulse`}
+                    ></div>
+                    <span className="text-white font-medium capitalize text-sm">
+                      {status}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => setShowManualEntry(true)}
+                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors whitespace-nowrap"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Manual Entry
+                  </button>
+                </div>
+              </div>
             </div>
-          )}
-        </div>
+
+            {/* Recent Events */}
+            <div className="bg-slate-800 rounded-lg shadow-2xl p-6 border border-slate-700">
+              <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                <Clock className="w-5 h-5 text-blue-400" />
+                Recent Events ({events.length})
+              </h2>
+
+              {events.length === 0 ? (
+                <p className="text-slate-400 text-center py-8">
+                  No events received yet. Waiting for ANPR data...
+                </p>
+              ) : (
+                <div className="space-y-3 max-h-96 overflow-y-auto">
+                  {events.map((e, index) => (
+                    <div
+                      key={e._id || index}
+                      className="bg-slate-700 p-4 rounded-lg border border-slate-600 hover:border-blue-500 transition-colors"
+                    >
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                        <div className="flex items-center gap-4">
+                          <div
+                            className={`px-3 py-1 rounded-full text-xs font-bold ${
+                              e.isEntry
+                                ? "bg-green-500 text-white"
+                                : "bg-red-500 text-white"
+                            }`}
+                          >
+                            {e.isEntry ? "ENTRY" : "EXIT"}
+                          </div>
+                          <div>
+                            <p className="text-white font-bold text-lg">
+                              {e.numberPlate}
+                            </p>
+                            <p className="text-slate-400 text-sm">
+                              {e.cameraName} •{" "}
+                              {new Date(e.timestamp).toLocaleString()}
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => {
+                            setCurrentEvent(e);
+                            setShowPopup(true);
+                          }}
+                          className="text-blue-400 hover:text-blue-300 text-sm font-medium whitespace-nowrap"
+                        >
+                          View Details
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </main>
       </div>
+
+      {/* Mobile Sidebar */}
+      {sidebarOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setSidebarOpen(false)} />
+          <aside className="absolute left-0 top-0 bottom-0 w-64 bg-white shadow-xl">
+            <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="relative w-10 h-10 flex-shrink-0">
+                  <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
+                    <Car className="w-6 h-6 text-white" />
+                  </div>
+                </div>
+                <div>
+                  <span className="text-xl font-bold text-gray-900">SecureGate</span>
+                  <p className="text-xs text-gray-500">ANPR System</p>
+                </div>
+              </div>
+              <button onClick={() => setSidebarOpen(false)} className="p-2 hover:bg-gray-100 rounded-lg transition">
+                <X className="w-6 h-6 text-gray-700" />
+              </button>
+            </div>
+
+            <nav className="p-4 space-y-1">
+              {menuItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = pathname === item.path;
+                return (
+                  <button
+                    key={item.path}
+                    onClick={() => {
+                      router.push(item.path);
+                      setSidebarOpen(false);
+                    }}
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${
+                      isActive
+                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-200'
+                        : 'text-gray-700 hover:bg-gray-100'
+                    }`}
+                  >
+                    <Icon className="w-5 h-5" />
+                    <span className="font-medium">{item.label}</span>
+                  </button>
+                );
+              })}
+              
+              <button
+                onClick={handleLogout}
+                className="w-full flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg transition font-medium mt-4"
+              >
+                <LogOut className="w-5 h-5" />
+                <span>Logout</span>
+              </button>
+            </nav>
+          </aside>
+        </div>
+      )}
 
       {/* Event Popup */}
       {showPopup && currentEvent && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-[60] p-4">
           <div className="bg-slate-800 rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto border border-slate-700">
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
@@ -434,7 +626,7 @@ export default function LiveAnpr() {
                 </div>
               </div>
 
-              <div className="mt-6 flex gap-3">
+              <div className="mt-6 flex flex-col sm:flex-row gap-3">
                 <button
                   onClick={handlePopupContinue}
                   className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
@@ -456,13 +648,13 @@ export default function LiveAnpr() {
 
       {/* Manual Entry Confirmation */}
       {showManualEntry && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-[60] p-4">
           <div className="bg-slate-800 rounded-xl shadow-2xl max-w-md w-full p-6 border border-slate-700">
             <h3 className="text-xl font-bold text-white mb-4">Manual Entry</h3>
             <p className="text-slate-400 mb-6">
               Create a manual vehicle entry record.
             </p>
-            <div className="flex gap-3">
+            <div className="flex flex-col sm:flex-row gap-3">
               <button
                 onClick={handleManualEntry}
                 className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-medium transition-colors"
@@ -482,7 +674,7 @@ export default function LiveAnpr() {
 
       {/* Multi-Step Form */}
       {showForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4 overflow-y-auto">
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-[60] p-4 overflow-y-auto">
           <div className="bg-slate-800 rounded-xl shadow-2xl max-w-4xl w-full my-8 border border-slate-700">
             <div className="p-6">
               {/* Status Message */}
@@ -509,14 +701,14 @@ export default function LiveAnpr() {
                   {[1, 2, 3, 4].map((step) => (
                     <div key={step} className="flex items-center flex-1">
                       <div
-                        className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${
+                        className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-bold text-sm sm:text-base ${
                           currentStep >= step
                             ? "bg-blue-600 text-white"
                             : "bg-slate-700 text-slate-400"
                         }`}
                       >
                         {currentStep > step ? (
-                          <CheckCircle2 className="w-5 h-5" />
+                          <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5" />
                         ) : (
                           step
                         )}
@@ -532,10 +724,10 @@ export default function LiveAnpr() {
                   ))}
                 </div>
                 <div className="flex justify-between text-xs text-slate-400 mt-2">
-                  <span>Vehicle Info</span>
-                  <span>Entry Details</span>
-                  <span>Images</span>
-                  <span>Additional</span>
+                  <span className="text-center w-full">Vehicle Info</span>
+                  <span className="text-center w-full">Entry Details</span>
+                  <span className="text-center w-full">Images</span>
+                  <span className="text-center w-full">Additional</span>
                 </div>
               </div>
 
@@ -560,7 +752,7 @@ export default function LiveAnpr() {
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="text-slate-300 text-sm font-medium mb-2 block">
                         Vehicle Type
@@ -598,7 +790,7 @@ export default function LiveAnpr() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="text-slate-300 text-sm font-medium mb-2 block">
                         Direction
@@ -671,7 +863,7 @@ export default function LiveAnpr() {
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="text-slate-300 text-sm font-medium mb-2 block">
                         Site ID *
@@ -733,7 +925,7 @@ export default function LiveAnpr() {
                         <img
                           src={base64ToImageSrc(formData.vehicleImage)}
                           alt="Vehicle"
-                          className="w-full h-64 object-cover rounded-lg border-2 border-slate-600"
+                          className="w-full h-48 sm:h-64 object-cover rounded-lg border-2 border-slate-600"
                         />
                         <button
                           onClick={() =>
@@ -763,7 +955,7 @@ export default function LiveAnpr() {
                         <img
                           src={base64ToImageSrc(formData.frameImage)}
                           alt="Frame"
-                          className="w-full h-64 object-cover rounded-lg border-2 border-slate-600"
+                          className="w-full h-48 sm:h-64 object-cover rounded-lg border-2 border-slate-600"
                         />
                         <button
                           onClick={() =>
@@ -869,11 +1061,11 @@ export default function LiveAnpr() {
               )}
 
               {/* Navigation Buttons */}
-              <div className="mt-8 flex gap-3">
+              <div className="mt-8 flex flex-col sm:flex-row gap-3">
                 {currentStep > 1 && (
                   <button
                     onClick={handlePrevStep}
-                    className="px-6 bg-slate-700 hover:bg-slate-600 text-white py-3 rounded-lg font-medium transition-colors flex items-center gap-2"
+                    className="px-6 bg-slate-700 hover:bg-slate-600 text-white py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
                   >
                     <ArrowLeft className="w-4 h-4" />
                     Previous

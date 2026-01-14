@@ -10,9 +10,6 @@ import {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
-// Dummy data for testing
-
-
 const ExitVehicles = () => {
   const [currentView, setCurrentView] = useState('list');
   const [searchQuery, setSearchQuery] = useState('');
@@ -59,7 +56,6 @@ const ExitVehicles = () => {
       setLoading(true);
       const token = localStorage.getItem('accessToken');
       
-      // Try to fetch from API first
       try {
         const response = await axios.get(`${API_URL}/api/supervisor/vehicles/active`, {
           headers: { Authorization: `Bearer ${token}` }
@@ -75,19 +71,11 @@ const ExitVehicles = () => {
           return;
         }
       } catch (apiError) {
-        console.warn('API fetch failed, using dummy data:', apiError);
+        console.warn('API fetch failed:', apiError);
       }
-      
-      // Fallback to dummy data
-      // console.log('Using dummy data for active vehicles');
-      // setActiveVehicles(DUMMY_ACTIVE_VEHICLES);
-      // setFilteredVehicles(DUMMY_ACTIVE_VEHICLES);
       
     } catch (error) {
       console.error('Error fetching active vehicles:', error);
-      // Use dummy data on error
-      setActiveVehicles(DUMMY_ACTIVE_VEHICLES);
-      setFilteredVehicles(DUMMY_ACTIVE_VEHICLES);
     } finally {
       setLoading(false);
     }
@@ -229,7 +217,6 @@ const ExitVehicles = () => {
   };
 
   const handleAllowExit = async () => {
-    // Validation
     if (exitData.exitLoadStatus === 'loaded' && !exitData.returnMaterialType.trim()) {
       alert('Please enter return material type');
       return;
@@ -415,45 +402,61 @@ const ExitVehicles = () => {
           </>
         )}
 
-        {/* CAMERA VIEW */}
+        {/* CAMERA VIEW - FIXED VERSION */}
         {currentView === 'camera' && (
           <div className="fixed inset-0 bg-black z-50 flex flex-col">
-            <div className="bg-black/50 backdrop-blur-sm p-4 flex items-center justify-between">
+            {/* Header */}
+            <div className="bg-black/80 backdrop-blur-sm p-3 sm:p-4 flex items-center justify-between shrink-0">
               <button
                 onClick={cancelCamera}
-                className="p-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+                className="p-2 sm:p-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition active:scale-95"
               >
-                <X className="w-6 h-6" />
+                <X className="w-5 h-5 sm:w-6 sm:h-6" />
               </button>
               
-              <div className="text-white font-semibold">
-                Capture {cameraField === 'frontView' ? 'Front View' : cameraField === 'backView' ? 'Back View' : 'Load View'}
+              <div className="text-white font-semibold text-sm sm:text-base">
+                Capture {cameraField === 'frontView' ? 'Front View' : 
+                         cameraField === 'backView' ? 'Back View' : 'Load View'}
               </div>
 
               <button
                 onClick={switchCamera}
-                className="p-3 bg-white/20 text-white rounded-lg hover:bg-white/30 transition"
+                className="p-2 sm:p-3 bg-white/20 text-white rounded-lg hover:bg-white/30 transition active:scale-95"
               >
-                <RotateCw className="w-6 h-6" />
+                <RotateCw className="w-5 h-5 sm:w-6 sm:h-6" />
               </button>
             </div>
 
-            <div className="flex-1 flex items-center justify-center bg-black">
+            {/* Video Container */}
+            <div className="flex-1 flex items-center justify-center bg-black overflow-hidden">
               <video
                 ref={videoRef}
                 autoPlay
                 playsInline
-                className="w-full h-full object-contain"
+                muted
+                className="w-full h-full object-cover"
               />
             </div>
 
-            <div className="bg-black/50 backdrop-blur-sm p-6 flex justify-center">
+            {/* Capture Button - Fixed at bottom with safe area */}
+            <div 
+              className="bg-black/80 backdrop-blur-sm p-4 sm:p-6 flex justify-center items-center shrink-0" 
+              style={{ paddingBottom: 'max(2rem, env(safe-area-inset-bottom) + 1rem)' }}
+            >
               <button
                 onClick={capturePhoto}
-                className="w-20 h-20 bg-white rounded-full flex items-center justify-center hover:bg-gray-200 transition shadow-xl"
+                className="w-16 h-16 sm:w-20 sm:h-20 bg-white rounded-full flex items-center justify-center active:scale-95 transition shadow-2xl relative touch-manipulation"
+                style={{ WebkitTapHighlightColor: 'transparent' }}
               >
-                <div className="w-16 h-16 bg-white border-4 border-gray-300 rounded-full"></div>
+                <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white border-4 border-gray-400 rounded-full"></div>
               </button>
+            </div>
+
+            {/* Helper text */}
+            <div className="absolute bottom-24 sm:bottom-32 left-0 right-0 text-center pointer-events-none">
+              <p className="text-white text-sm sm:text-base font-medium drop-shadow-lg px-4">
+                Tap the button to capture photo
+              </p>
             </div>
           </div>
         )}
@@ -677,7 +680,7 @@ const ExitVehicles = () => {
                     <>
                       <CheckCircle className="w-5 h-5" />
                       Approve & Allow Exit
-                    </>
+                      </>
                   )}
                 </button>
               </div>
