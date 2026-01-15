@@ -5,6 +5,8 @@ import {
   Search, Download, Calendar,
   FileText, TrendingUp
 } from 'lucide-react';
+import Sidebar from './sidebar';
+import Header from './header';
 
 const AdminReports = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -252,8 +254,12 @@ const AdminReports = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Sidebar and Header added here */}
+      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <Header title="Reports" onMenuClick={() => setSidebarOpen(true)} />
+
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+      <main className="lg:ml-72 max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         {/* Debug Info */}
        
         {/* Stats Cards */}
