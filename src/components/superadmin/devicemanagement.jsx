@@ -2,86 +2,95 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import {
-  Plus, Search, Camera, Activity, CheckCircle, XCircle, Trash2, 
+  Plus, Search, Camera, Activity, CheckCircle, XCircle, Trash2,
   ChevronLeft, ChevronRight, X
 } from 'lucide-react';
 import SuperAdminLayout from './layout';
 
-const DeviceCard = ({ device, onEdit, onToggleStatus, onDelete }) => (
-  <div className="bg-white rounded-xl p-4 md:p-6 shadow-sm border border-gray-100 hover:shadow-md transition">
-    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-4 gap-3">
-      <div className="flex items-center gap-3">
-        <div className={`w-10 h-10 md:w-12 md:h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${device.devicetype === 'ANPR' ? 'bg-blue-50' : 'bg-green-50'}`}>
-          {device.devicetype === 'ANPR' ? (
-            <Camera className={`w-5 h-5 md:w-6 md:h-6 ${device.status === 'online' ? 'text-blue-600' : 'text-gray-400'}`} />
+const DeviceCard = ({ device, onEdit, onToggleStatus, onDelete }) => {
+  // Device type ko properly extract karein
+  const deviceType = device.devicetype || device.type || 'ANPR';
+  const isANPR = deviceType === 'ANPR';
+  const deviceName = device.name || device.deviceId || 'Unnamed Device';
+
+  return (
+    <div className="bg-white rounded-xl p-4 md:p-6 shadow-sm border border-gray-100 hover:shadow-md transition">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-4 gap-3">
+        <div className="flex items-center gap-3">
+          <div className={`w-10 h-10 md:w-12 md:h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${isANPR ? 'bg-blue-50' : 'bg-green-50'}`}>
+            {isANPR ? (
+              <Camera className={`w-5 h-5 md:w-6 md:h-6 ${device.status === 'online' ? 'text-blue-600' : 'text-gray-400'}`} />
+            ) : (
+              <Activity className={`w-5 h-5 md:w-6 md:h-6 ${device.status === 'online' ? 'text-green-600' : 'text-gray-400'}`} />
+            )}
+          </div>
+          <div className="min-w-0">
+            {/* ✅ Yeh line uncomment karein aur proper fallback add karein */}
+            <h3 className="text-base md:text-lg font-bold text-gray-900 truncate">{deviceName}</h3>
+            <div className="text-xs md:text-sm text-gray-600 truncate">{device.deviceId}</div>
+          </div>
+        </div>
+        <span className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1 whitespace-nowrap self-start ${device.status === 'online' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>
+          {device.status === 'online' ? (
+            <CheckCircle className="w-3 h-3" />
           ) : (
-            <Activity className={`w-5 h-5 md:w-6 md:h-6 ${device.status === 'online' ? 'text-green-600' : 'text-gray-400'}`} />
+            <XCircle className="w-3 h-3" />
           )}
-        </div>
-        <div className="min-w-0">
-          <h3 className="text-base md:text-lg font-bold text-gray-900 truncate">{device.name}</h3>
-          <div className="text-xs md:text-sm text-gray-600 truncate">{device.deviceId}</div>
-        </div>
+          {device.status?.toUpperCase()}
+        </span>
       </div>
-      <span className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1 whitespace-nowrap self-start ${device.status === 'online' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>
-        {device.status === 'online' ? (
-          <CheckCircle className="w-3 h-3" />
-        ) : (
-          <XCircle className="w-3 h-3" />
-        )}
-        {device.status?.toUpperCase()}
-      </span>
-    </div>
 
-    <div className="grid grid-cols-2 gap-3 md:gap-4 mb-4">
-      <div>
-        <div className="text-xs text-gray-500 uppercase mb-1">Type</div>
-        <div className="font-semibold text-gray-900 text-sm md:text-base">{device.type}</div>
-      </div>
-      <div>
-        <div className="text-xs text-gray-500 uppercase mb-1">Client</div>
-        <div className="font-semibold text-gray-900 text-sm md:text-base truncate">
-          {device.clientName ?? 'Not Assigned'}
+      <div className="grid grid-cols-2 gap-3 md:gap-4 mb-4">
+        <div>
+          <div className="text-xs text-gray-500 uppercase mb-1">Type</div>
+          <div className="font-semibold text-gray-900 text-sm md:text-base">
+            {deviceType} {/* ✅ Yeh line change karein */}
+          </div>
+        </div>
+        <div>
+          <div className="text-xs text-gray-500 uppercase mb-1">Client</div>
+          <div className="font-semibold text-gray-900 text-sm md:text-base truncate">
+            {device.clientName ?? 'Not Assigned'}
+          </div>
+        </div>
+        <div className="col-span-2 sm:col-span-1">
+          <div className="text-xs text-gray-500 uppercase mb-1">Site</div>
+          <div className="font-semibold text-gray-900 text-sm md:text-base truncate">
+            {device.siteName ?? 'Not Assigned'}
+          </div>
+        </div>
+        <div className="col-span-2 sm:col-span-1">
+          <div className="text-xs text-gray-500 uppercase mb-1">Last Active</div>
+          <div className="font-semibold text-gray-900 text-sm md:text-base truncate">
+            {device.lastActive ? new Date(device.lastActive).toLocaleString() : 'Never'}
+          </div>
         </div>
       </div>
-      <div className="col-span-2 sm:col-span-1">
-        <div className="text-xs text-gray-500 uppercase mb-1">Site</div>
-        <div className="font-semibold text-gray-900 text-sm md:text-base truncate">
-          {device.siteName ?? 'Not Assigned'}
-        </div>
-      </div>
-      <div className="col-span-2 sm:col-span-1">
-        <div className="text-xs text-gray-500 uppercase mb-1">Last Active</div>
-        <div className="font-semibold text-gray-900 text-sm md:text-base truncate">
-          {device.lastActive ? new Date(device.lastActive).toLocaleString() : 'Never'}
-        </div>
+
+      <div className="flex flex-col sm:flex-row gap-2">
+        <button
+          onClick={() => onEdit(device)}
+          className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium text-sm"
+        >
+          Edit
+        </button>
+        <button
+          onClick={() => onDelete(device)}
+          className="flex-1 px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition font-medium text-sm flex items-center justify-center gap-2"
+        >
+          <Trash2 className="w-4 h-4" />
+          Delete
+        </button>
+        <button
+          onClick={() => onToggleStatus(device)}
+          className={`flex-1 px-4 py-2 rounded-lg transition font-medium text-sm ${device.status === 'online' ? 'bg-gray-100 hover:bg-gray-200 text-gray-700' : 'bg-green-50 hover:bg-green-100 text-green-600'}`}
+        >
+          {device.status === 'online' ? 'Turn OFF' : 'Turn ON'}
+        </button>
       </div>
     </div>
-
-    <div className="flex flex-col sm:flex-row gap-2">
-      <button
-        onClick={() => onEdit(device)}
-        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium text-sm"
-      >
-        Edit
-      </button>
-      <button
-        onClick={() => onDelete(device)}
-        className="flex-1 px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition font-medium text-sm flex items-center justify-center gap-2"
-      >
-        <Trash2 className="w-4 h-4" />
-        Delete
-      </button>
-      <button
-        onClick={() => onToggleStatus(device)}
-        className={`flex-1 px-4 py-2 rounded-lg transition font-medium text-sm ${device.status === 'online' ? 'bg-gray-100 hover:bg-gray-200 text-gray-700' : 'bg-green-50 hover:bg-green-100 text-green-600'}`}
-      >
-        {device.status === 'online' ? 'Turn OFF' : 'Turn ON'}
-      </button>
-    </div>
-  </div>
-);
-
+  );
+};
 const EditDeviceModal = ({ isOpen, onClose, onSubmit, loading, device, clients, sites }) => {
   const [formData, setFormData] = useState({
     deviceType: 'ANPR',
@@ -250,6 +259,7 @@ const EditDeviceModal = ({ isOpen, onClose, onSubmit, loading, device, clients, 
 
 const AddDeviceModal = ({ isOpen, onClose, onSubmit, loading, clients, sites }) => {
   const [formData, setFormData] = useState({
+    deviceName: '',
     serialNumber: '',
     deviceType: 'ANPR',
     clientId: '',
@@ -269,6 +279,7 @@ const AddDeviceModal = ({ isOpen, onClose, onSubmit, loading, clients, sites }) 
 
   const handleReset = () => {
     setFormData({
+      deviceName: '', // ✅ Add this
       serialNumber: '',
       deviceType: 'ANPR',
       clientId: '',
@@ -295,126 +306,142 @@ const AddDeviceModal = ({ isOpen, onClose, onSubmit, loading, clients, sites }) 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Serial Number *
+                  Device Name *
                 </label>
                 <input
                   type="text"
-                  name="serialNumber"
-                  value={formData.serialNumber}
+                  name="deviceName"
+                  value={formData.deviceName}
                   onChange={handleChange}
                   required
-                  placeholder="e.g., DEV-2024-001"
+                  placeholder="e.g., Entrance Camera"
                   className="w-full px-3 md:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base"
                 />
               </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Serial Number *
+                  </label>
+                  <input
+                    type="text"
+                    name="serialNumber"
+                    value={formData.serialNumber}
+                    onChange={handleChange}
+                    required
+                    placeholder="e.g., DEV-2024-001"
+                    className="w-full px-3 md:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Device Type *
+                  </label>
+                  <select
+                    name="deviceType"
+                    value={formData.deviceType}
+                    onChange={handleChange}
+                    required
+                    className="w-full px-3 md:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base"
+                  >
+                    <option value="ANPR">ANPR Camera</option>
+                    <option value="BARRIER">Barrier</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="border-t border-gray-200 pt-4">
+                <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-4">Assignment</h3>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Assign to Client *
+                    </label>
+                    <select
+                      name="clientId"
+                      value={formData.clientId}
+                      onChange={handleChange}
+                      required
+                      className="w-full px-3 md:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base"
+                    >
+                      <option value="">Select Client</option>
+                      {clients.map(client => (
+                        <option key={client._id} value={client._id}>
+                          {client.companyName || client.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Assign to Site *
+                    </label>
+                    <select
+                      name="siteId"
+                      value={formData.siteId}
+                      onChange={handleChange}
+                      required
+                      className="w-full px-3 md:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base"
+                    >
+                      <option value="">Select Site</option>
+                      {sites.map(site => (
+                        <option key={site._id} value={site._id}>
+                          {site.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Device Type *
+                  IP Address
                 </label>
-                <select
-                  name="deviceType"
-                  value={formData.deviceType}
+                <input
+                  type="text"
+                  name="ipAddress"
+                  value={formData.ipAddress}
                   onChange={handleChange}
-                  required
+                  placeholder="e.g., 192.168.1.100"
                   className="w-full px-3 md:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base"
-                >
-                  <option value="ANPR">ANPR Camera</option>
-                  <option value="BARRIER">Barrier</option>
-                </select>
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Notes
+                </label>
+                <textarea
+                  name="notes"
+                  value={formData.notes}
+                  onChange={handleChange}
+                  rows={3}
+                  placeholder="Additional notes about the device"
+                  className="w-full px-3 md:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base"
+                />
               </div>
             </div>
 
-            <div className="border-t border-gray-200 pt-4">
-              <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-4">Assignment</h3>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Assign to Client *
-                  </label>
-                  <select
-                    name="clientId"
-                    value={formData.clientId}
-                    onChange={handleChange}
-                    required
-                    className="w-full px-3 md:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base"
-                  >
-                    <option value="">Select Client</option>
-                    {clients.map(client => (
-                      <option key={client._id} value={client._id}>
-                        {client.companyName || client.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Assign to Site *
-                  </label>
-                  <select
-                    name="siteId"
-                    value={formData.siteId}
-                    onChange={handleChange}
-                    required
-                    className="w-full px-3 md:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base"
-                  >
-                    <option value="">Select Site</option>
-                    {sites.map(site => (
-                      <option key={site._id} value={site._id}>
-                        {site.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
+            <div className="flex flex-col sm:flex-row gap-3 mt-6">
+              <button
+                type="button"
+                onClick={handleReset}
+                className="flex-1 px-4 md:px-6 py-2.5 md:py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-semibold text-sm md:text-base"
+              >
+                Reset
+              </button>
+              <button
+                type="submit"
+                disabled={loading}
+                className="flex-1 px-4 md:px-6 py-2.5 md:py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed text-sm md:text-base"
+              >
+                {loading ? 'Registering...' : 'Register Device'}
+              </button>
             </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                IP Address
-              </label>
-              <input
-                type="text"
-                name="ipAddress"
-                value={formData.ipAddress}
-                onChange={handleChange}
-                placeholder="e.g., 192.168.1.100"
-                className="w-full px-3 md:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Notes
-              </label>
-              <textarea
-                name="notes"
-                value={formData.notes}
-                onChange={handleChange}
-                rows={3}
-                placeholder="Additional notes about the device"
-                className="w-full px-3 md:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base"
-              />
-            </div>
-          </div>
-
-          <div className="flex flex-col sm:flex-row gap-3 mt-6">
-            <button
-              type="button"
-              onClick={handleReset}
-              className="flex-1 px-4 md:px-6 py-2.5 md:py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-semibold text-sm md:text-base"
-            >
-              Reset
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="flex-1 px-4 md:px-6 py-2.5 md:py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed text-sm md:text-base"
-            >
-              {loading ? 'Registering...' : 'Register Device'}
-            </button>
-          </div>
+            </div>  
         </form>
       </div>
     </div>
@@ -458,7 +485,7 @@ const DeviceManagement = () => {
         { headers: getAuthHeaders() }
       );
       console.log(response);
-      
+
       setDevices(Array.isArray(response.data) ? response.data : []);
       setError(null);
     } catch (err) {
@@ -574,7 +601,7 @@ const DeviceManagement = () => {
 
   const filteredDevices = devices.filter(device => {
     const matchesSearch = device.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         device.deviceId?.toLowerCase().includes(searchQuery.toLowerCase());
+      device.deviceId?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesType = filterType === 'all' || device.type === filterType;
     const matchesStatus = filterStatus === 'all' || device.status === filterStatus;
     return matchesSearch && matchesType && matchesStatus;

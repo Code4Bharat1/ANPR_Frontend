@@ -86,7 +86,7 @@ const SiteModal = ({ isOpen, onClose, site, onSave, mode }) => {
       gates: [
         ...formData.gates,
         {
-          name: '',
+          gateName: '',  // ✅ Use gateName, not name
           isMainGate: formData.gates.length === 0,
           isActive: true
         }
@@ -447,10 +447,10 @@ const ViewSiteModal = ({ isOpen, onClose, site }) => {
             {/* Right side */}
             <span
               className={`px-4 py-2 rounded-full text-sm font-bold ${site.status === 'Active'
-                  ? 'bg-green-100 text-green-700'
-                  : site.status === 'Maintenance'
-                    ? 'bg-yellow-100 text-yellow-700'
-                    : 'bg-gray-100 text-gray-700'
+                ? 'bg-green-100 text-green-700'
+                : site.status === 'Maintenance'
+                  ? 'bg-yellow-100 text-yellow-700'
+                  : 'bg-gray-100 text-gray-700'
                 }`}
             >
               {site.status}
