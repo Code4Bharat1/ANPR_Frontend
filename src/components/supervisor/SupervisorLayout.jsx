@@ -6,7 +6,7 @@ import {
   LayoutDashboard, LogIn, LogOut as ExitIcon, Car, FileText,
   BarChart3, Settings, LogOut, Menu, X, Bell, Shield
 } from 'lucide-react';
-import Image from 'next/image'; // ✅ Import Image
+import Image from 'next/image';
 
 const SupervisorLayout = ({ children }) => {
   const router = useRouter();
@@ -43,7 +43,7 @@ const SupervisorLayout = ({ children }) => {
     <div className="min-h-screen bg-gray-50 flex">
       {/* Sidebar - Desktop */}
       <aside className="hidden lg:flex lg:flex-col lg:w-64 bg-white border-r border-gray-200 fixed h-full z-50">
-        {/* ✅ Logo Header - Desktop */}
+        {/* Logo Header - Desktop */}
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center gap-3">
             <div className="relative w-10 h-10 flex-shrink-0">
@@ -109,10 +109,7 @@ const SupervisorLayout = ({ children }) => {
             <div className="flex-1" />
 
             <div className="flex items-center gap-4">
-              <button className="relative p-2 hover:bg-gray-100 rounded-lg transition">
-                <Bell className="w-5 h-5 text-gray-700" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
-              </button>
+              {/* 🔴 Notification Bell REMOVED */}
               
               <div className="flex items-center gap-3">
                 <div className="text-right hidden sm:block">
@@ -141,7 +138,7 @@ const SupervisorLayout = ({ children }) => {
         <div className="fixed inset-0 z-50 lg:hidden">
           <div className="absolute inset-0 bg-black/50" onClick={() => setSidebarOpen(false)} />
           <aside className="absolute left-0 top-0 bottom-0 w-64 bg-white shadow-xl">
-            {/* ✅ Logo Header - Mobile */}
+            {/* Logo Header - Mobile */}
             <div className="p-4 border-b border-gray-200 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="relative w-10 h-10 flex-shrink-0">
