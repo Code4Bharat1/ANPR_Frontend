@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { 
-  Search, Plus, Package, Eye, Edit, Mail, Phone, X, AlertCircle, CheckCircle, Building
+  Search, Plus, Package, Eye, Edit, Mail, Phone, X, AlertCircle, CheckCircle, Building, Trash2
 } from 'lucide-react';
 import Sidebar from './sidebar';
 import Header from './header';  // ✅ Import Header
@@ -14,7 +14,10 @@ const VendorManagement = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
   const [alert, setAlert] = useState(null);
+  const [selectedVendor, setSelectedVendor] = useState(null);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -47,6 +50,18 @@ const VendorManagement = () => {
       return config;
     },
     (error) => {
+      return Promise.reject(error);
+    }
+  );
+
+  // Add response interceptor for error handling
+  axiosInstance.interceptors.response.use(
+    (response) => response,
+    (error) => {
+      if (error.response?.status === 401) {
+        localStorage.removeItem('accessToken');
+        window.location.href = '/login';
+      }
       return Promise.reject(error);
     }
   );
@@ -120,6 +135,84 @@ const VendorManagement = () => {
       showAlert('error', err.response?.data?.message || 'Failed to add vendor');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleEditVendor = (vendor) => {
+    setSelectedVendor(vendor);
+    setFormData({
+      name: vendor.name,
+      email: vendor.email,
+      phone: vendor.phone,
+      address: vendor.address,
+      assignedSites: vendor.assignedSites?.map(site => site._id) || []
+    });
+    setShowEditModal(true);
+  };
+
+  const handleUpdateVendor = async () => {
+    if (!validateForm()) return;
+    
+    try {
+      setSubmitting(true);
+      const response = await axiosInstance.patch(
+        `/api/project/vendors/${selectedVendor._id}`,
+        formData
+      );
+      
+      // Update vendor in state
+      setVendors(vendors.map(v => 
+        v._id === selectedVendor._id ? response.data : v
+      ));
+      
+      showAlert('success', 'Vendor updated successfully!');
+      setShowEditModal(false);
+      setSelectedVendor(null);
+      resetForm();
+    } catch (err) {
+      console.error('Update error:', err);
+      showAlert('error', err.response?.data?.message || 'Failed to update vendor');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleViewVendor = (vendor) => {
+    setSelectedVendor(vendor);
+    setShowViewModal(true);
+  };
+
+  const handleDeleteVendor = async (vendorId) => {
+    if (!window.confirm('Are you sure you want to delete this vendor?')) return;
+    
+    try {
+      await axiosInstance.delete(`/api/project/vendors/${vendorId}`);
+      
+      // Remove vendor from state
+      setVendors(vendors.filter(v => v._id !== vendorId));
+      showAlert('success', 'Vendor deleted successfully!');
+    } catch (err) {
+      console.error('Delete error:', err);
+      showAlert('error', err.response?.data?.message || 'Failed to delete vendor');
+    }
+  };
+
+  const handleToggleStatus = async (vendorId, currentStatus) => {
+    try {
+      const response = await axiosInstance.patch(
+        `/api/project/vendors/${vendorId}/toggle-status`,
+        { isActive: !currentStatus }
+      );
+      
+      // Update vendor in state
+      setVendors(vendors.map(v => 
+        v._id === vendorId ? { ...v, isActive: !currentStatus } : v
+      ));
+      
+      showAlert('success', `Vendor ${!currentStatus ? 'activated' : 'deactivated'} successfully!`);
+    } catch (err) {
+      console.error('Toggle status error:', err);
+      showAlert('error', err.response?.data?.message || 'Failed to update status');
     }
   };
 
@@ -275,20 +368,38 @@ const VendorManagement = () => {
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
-                          vendor.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
-                        }`}>
+                        <button
+                          onClick={() => handleToggleStatus(vendor._id, vendor.isActive)}
+                          className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold cursor-pointer ${
+                            vendor.isActive ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          }`}
+                        >
                           {vendor.isActive ? 'Active' : 'Inactive'}
-                        </span>
+                        </button>
                       </td>
                       <td className="px-6 py-4 font-semibold text-gray-900">{vendor.totalTrips || 0}</td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
-                          <button className="p-2 hover:bg-gray-100 rounded-lg text-indigo-600 transition" title="Edit">
+                          <button 
+                            onClick={() => handleEditVendor(vendor)}
+                            className="p-2 hover:bg-gray-100 rounded-lg text-indigo-600 transition" 
+                            title="Edit"
+                          >
                             <Edit className="w-4 h-4" />
                           </button>
-                          <button className="p-2 hover:bg-gray-100 rounded-lg text-gray-600 transition" title="View">
+                          <button 
+                            onClick={() => handleViewVendor(vendor)}
+                            className="p-2 hover:bg-gray-100 rounded-lg text-gray-600 transition" 
+                            title="View"
+                          >
                             <Eye className="w-4 h-4" />
+                          </button>
+                          <button 
+                            onClick={() => handleDeleteVendor(vendor._id)}
+                            className="p-2 hover:bg-gray-100 rounded-lg text-red-600 transition" 
+                            title="Delete"
+                          >
+                            <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
                       </td>
@@ -322,11 +433,14 @@ const VendorManagement = () => {
                       </span>
                     </div>
                   </div>
-                  <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
-                    vendor.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
-                  }`}>
+                  <button
+                    onClick={() => handleToggleStatus(vendor._id, vendor.isActive)}
+                    className={`px-2.5 py-1 rounded-full text-xs font-semibold cursor-pointer ${
+                      vendor.isActive ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
                     {vendor.isActive ? 'Active' : 'Inactive'}
-                  </span>
+                  </button>
                 </div>
                 
                 <div className="space-y-2 mb-3 text-sm">
@@ -346,13 +460,26 @@ const VendorManagement = () => {
                 </div>
 
                 <div className="flex gap-2">
-                  <button className="flex-1 px-3 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition text-sm font-semibold flex items-center justify-center gap-2">
+                  <button 
+                    onClick={() => handleEditVendor(vendor)}
+                    className="flex-1 px-3 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition text-sm font-semibold flex items-center justify-center gap-2"
+                  >
                     <Edit className="w-4 h-4" />
                     Edit
                   </button>
-                  <button className="flex-1 px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition text-sm font-semibold flex items-center justify-center gap-2">
+                  <button 
+                    onClick={() => handleViewVendor(vendor)}
+                    className="flex-1 px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition text-sm font-semibold flex items-center justify-center gap-2"
+                  >
                     <Eye className="w-4 h-4" />
                     View
+                  </button>
+                  <button 
+                    onClick={() => handleDeleteVendor(vendor._id)}
+                    className="flex-1 px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition text-sm font-semibold flex items-center justify-center gap-2"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Delete
                   </button>
                 </div>
               </div>
@@ -465,7 +592,8 @@ const VendorManagement = () => {
                 )}
               </div>
 
-              {/* <div className="flex gap-3 pt-4">
+              {/* UNCOMMENTED BUTTONS - यहाँ buttons uncomment हैं */}
+              <div className="flex gap-3 pt-4">
                 <button
                   onClick={() => { setShowAddModal(false); resetForm(); }}
                   className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium"
@@ -479,7 +607,207 @@ const VendorManagement = () => {
                 >
                   {submitting ? 'Adding...' : 'Add Vendor'}
                 </button>
-              </div> */}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Vendor Modal */}
+      {showEditModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl max-w-2xl w-full shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 sticky top-0 bg-white">
+              <h2 className="text-xl font-bold text-gray-900">Edit Vendor</h2>
+              <button onClick={() => { setShowEditModal(false); resetForm(); setSelectedVendor(null); }} className="p-2 hover:bg-gray-100 rounded-lg transition">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Vendor Name *</label>
+                  <input
+                    type="text"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-600 outline-none ${
+                      formErrors.name ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                    placeholder="Enter vendor name"
+                  />
+                  {formErrors.name && <p className="text-red-500 text-xs mt-1">{formErrors.name}</p>}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Email *</label>
+                  <input
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-600 outline-none ${
+                      formErrors.email ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                    placeholder="vendor@example.com"
+                  />
+                  {formErrors.email && <p className="text-red-500 text-xs mt-1">{formErrors.email}</p>}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number *</label>
+                  <input
+                    type="tel"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-600 outline-none ${
+                      formErrors.phone ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                    placeholder="1234567890"
+                  />
+                  {formErrors.phone && <p className="text-red-500 text-xs mt-1">{formErrors.phone}</p>}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Address *</label>
+                  <input
+                    type="text"
+                    value={formData.address}
+                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-600 outline-none ${
+                      formErrors.address ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                    placeholder="Enter address"
+                  />
+                  {formErrors.address && <p className="text-red-500 text-xs mt-1">{formErrors.address}</p>}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Assign Sites * (Select multiple)</label>
+                <div className={`border rounded-lg p-4 max-h-48 overflow-y-auto ${
+                  formErrors.assignedSites ? 'border-red-500' : 'border-gray-300'
+                }`}>
+                  {sites.length === 0 ? (
+                    <p className="text-gray-500 text-sm">No sites available</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {sites.map((site) => (
+                        <label key={site._id} className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={formData.assignedSites.includes(site._id)}
+                            onChange={() => toggleSiteSelection(site._id)}
+                            className="w-4 h-4 text-indigo-600 rounded focus:ring-2 focus:ring-indigo-600"
+                          />
+                          <div className="flex items-center gap-2">
+                            <Building className="w-4 h-4 text-gray-500" />
+                            <span className="text-sm text-gray-700">{site.name}</span>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                {formErrors.assignedSites && <p className="text-red-500 text-xs mt-1">{formErrors.assignedSites}</p>}
+                {formData.assignedSites.length > 0 && (
+                  <p className="text-indigo-600 text-xs mt-2">{formData.assignedSites.length} site(s) selected</p>
+                )}
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  onClick={() => { setShowEditModal(false); resetForm(); setSelectedVendor(null); }}
+                  className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleUpdateVendor}
+                  disabled={submitting}
+                  className="flex-1 px-4 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-semibold disabled:opacity-50"
+                >
+                  {submitting ? 'Updating...' : 'Update Vendor'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* View Vendor Modal */}
+      {showViewModal && selectedVendor && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl max-w-lg w-full shadow-2xl">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h2 className="text-xl font-bold text-gray-900">Vendor Details</h2>
+              <button 
+                onClick={() => { setShowViewModal(false); setSelectedVendor(null); }}
+                className="p-2 hover:bg-gray-100 rounded-lg transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+                  <Package className="w-6 h-6 text-purple-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900">{selectedVendor.name}</h3>
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                    selectedVendor.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
+                  }`}>
+                    {selectedVendor.isActive ? 'Active' : 'Inactive'}
+                  </span>
+                </div>
+              </div>
+              
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Mail className="w-4 h-4 text-gray-400" />
+                  <span className="text-gray-700">{selectedVendor.email}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Phone className="w-4 h-4 text-gray-400" />
+                  <span className="text-gray-700">{selectedVendor.phone}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Building className="w-4 h-4 text-gray-400" />
+                  <span className="text-gray-700">{selectedVendor.address}</span>
+                </div>
+              </div>
+              
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-2">Assigned Sites:</h4>
+                <div className="flex flex-wrap gap-2">
+                  {selectedVendor.assignedSites?.map(site => (
+                    <span key={site._id} className="inline-flex items-center px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm">
+                      <Building className="w-3 h-3 mr-1" />
+                      {site.name}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              
+              <div className="pt-4 border-t border-gray-200">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Total Trips:</span>
+                  <span className="text-lg font-bold text-gray-900">{selectedVendor.totalTrips || 0}</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="p-6 border-t border-gray-200">
+              <button
+                onClick={() => { setShowViewModal(false); setSelectedVendor(null); }}
+                className="w-full px-4 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-semibold"
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>
