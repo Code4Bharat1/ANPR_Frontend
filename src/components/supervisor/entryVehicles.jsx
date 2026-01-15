@@ -253,17 +253,61 @@ const EntryVehicles = () => {
   }
 };
 
+
+
   const fetchVendors = async () => {
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await axios.get(`${API_URL}/api/project/vendors`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setVendors(response.data.data || response.data || []);
+      console.log('Fetching vendors...');
+      
+      // TRY 1: Try the supervisor endpoint first
+      let response;
+      try {
+        response = await axios.get(`${API_URL}/api/supervisor/vendors`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        console.log('Supervisor vendors response:', response.data);
+      } catch (supervisorError) {
+        console.log('Supervisor vendors endpoint failed, trying project endpoint...');
+        
+        // TRY 2: Try the project endpoint
+        response = await axios.get(`${API_URL}/api/project/vendors`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        console.log('Project vendors response:', response.data);
+      }
+      
+      // Handle different response structures
+      let vendorsData = [];
+      
+      if (response.data) {
+        if (Array.isArray(response.data)) {
+          vendorsData = response.data;
+        } else if (response.data.data && Array.isArray(response.data.data)) {
+          vendorsData = response.data.data;
+        } else if (response.data.success && Array.isArray(response.data.data)) {
+          vendorsData = response.data.data;
+        } else if (Array.isArray(response.data.vendors)) {
+          vendorsData = response.data.vendors;
+        }
+      }
+      
+      console.log('Final vendors data:', vendorsData);
+      setVendors(vendorsData);
+      
     } catch (error) {
-      console.error('Error fetching vendors:', error);
+      console.error('❌ Error fetching vendors:', error);
+      console.error('Error response:', error.response?.data);
+      setVendors([]);
+      
+      // Show user-friendly error
+      if (error.response?.status === 403) {
+        console.log('You may not have permission to access vendors');
+      }
     }
   };
+
+  
 
   // ========== NEW OCR FUNCTIONS ==========
   const startOCRScan = () => {
@@ -782,7 +826,7 @@ const EntryVehicles = () => {
       vendorId: finalVendor,
       entryTime: new Date().toISOString(),
       entryGate: 'Main Gate',
-      loadStatus: vehicleDetails.loadStatus,
+      loadStatus: vehicleDetails.loadStatus || 'FULL',
       purpose: vehicleDetails.materialType || 'Material Delivery',
       notes: vehicleDetails.notes,
       siteId: vehicleDetails.siteId,
@@ -801,7 +845,7 @@ const EntryVehicles = () => {
     };
 
     // ✅ CORRECTED ENDPOINT
-    const response = await axios.post(`${API_URL}/api/supervisor/trips/manual`, entryData, {
+    const response = await axios.post(`${API_URL}/api/supervisor/vehicles/entry`, entryData, {
       headers: { Authorization: `Bearer ${token}` }
     });
 
