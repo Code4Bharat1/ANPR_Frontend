@@ -245,7 +245,7 @@ const PMReports = () => {
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Trip ID</th>
+                  {/* <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Trip ID</th> */}
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Vehicle</th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Vendor</th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Site</th>
@@ -267,7 +267,7 @@ const PMReports = () => {
                 ) : (
                   filteredReports.map((report) => (
                     <tr key={report._id} className="hover:bg-gray-50 transition">
-                      <td className="px-6 py-4 font-semibold text-indigo-600">{report.tripId}</td>
+                      {/* <td className="px-6 py-4 font-semibold text-indigo-600">{report.tripId}</td> */}
                       <td className="px-6 py-4 font-mono text-sm text-gray-900">
                         {report.vehicleId?.vehicleNumber || 'N/A'}
                       </td>

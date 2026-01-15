@@ -38,6 +38,8 @@ const SupervisorManagement = () => {
   const [showAdd, setShowAdd] = useState(false);
   const [showView, setShowView] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showEditPassword, setShowEditPassword] = useState(false);
   const [selectedSupervisor, setSelectedSupervisor] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
@@ -49,30 +51,43 @@ const SupervisorManagement = () => {
     projectManagerId: '',
   });
 
-  const [projectManagers, setProjectManagers] = useState([]);
-  const [loadingPMs, setLoadingPMs] = useState(false);
-
-
-  const fetchProjectManagers = async () => {
-    try {
-      setLoadingPMs(true);
-      const response = await api.get('/api/client-admin/project-managers');
-      console.log(response);
-      
-      const pmsData = response.data.projectManagers || response.data.data || response.data || [];
-      setProjectManagers(Array.isArray(pmsData) ? pmsData : []);
-    } catch (err) {
-      console.error('Error fetching project managers:', err);
-      setProjectManagers([]);
-    } finally {
-      setLoadingPMs(false);
-    }
-  };
+  // Add state for current logged-in project manager
+  const [currentProjectManager, setCurrentProjectManager] = useState(null);
+  const [loadingCurrentPM, setLoadingCurrentPM] = useState(false);
 
   useEffect(() => {
     fetchSupervisors();
     fetchSites();
+    fetchCurrentProjectManager(); // Fetch current PM profile on component mount
   }, []);
+
+  // Function to fetch current logged-in project manager profile
+  const fetchCurrentProjectManager = async () => {
+    try {
+      setLoadingCurrentPM(true);
+      const response = await api.get('/api/project/profile');
+      console.log('Current PM profile:', response.data);
+
+      // Store the current PM data
+      setCurrentProjectManager(response.data);
+
+      // If we have the PM data, set it as the default projectManagerId
+      if (response.data._id) {
+        setFormData(prev => ({
+          ...prev,
+          projectManagerId: response.data._id
+        }));
+      }
+
+      return response.data;
+    } catch (err) {
+      console.error('Error fetching current project manager profile:', err);
+      alert(err.response?.data?.message || 'Failed to fetch your profile');
+      return null;
+    } finally {
+      setLoadingCurrentPM(false);
+    }
+  };
 
   const fetchSupervisors = async () => {
     try {
@@ -110,10 +125,13 @@ const SupervisorManagement = () => {
     }
   };
 
-  const handleOpenAddModal = () => {
-    // Get current project manager from token or localStorage
-    const projectManagerId = localStorage.getItem('userId') || '';
+  const handleOpenAddModal = async () => {
+    // Ensure we have current PM data
+    if (!currentProjectManager) {
+      await fetchCurrentProjectManager();
+    }
 
+    // Set form data with current PM ID
     setFormData({
       name: '',
       email: '',
@@ -121,11 +139,10 @@ const SupervisorManagement = () => {
       address: '',
       password: '',
       siteId: '',
-      projectManagerId: projectManagerId,
+      projectManagerId: currentProjectManager?._id || localStorage.getItem('userId') || '',
     });
     setShowAdd(true);
     fetchSites();
-    fetchProjectManagers();
   };
 
   const handleCreateSupervisor = async () => {
@@ -151,7 +168,7 @@ const SupervisorManagement = () => {
         address: '',
         password: '',
         siteId: '',
-        projectManagerId: formData.projectManagerId,
+        projectManagerId: formData.projectManagerId, // Keep PM ID
       });
 
       setShowAdd(false);
@@ -171,6 +188,7 @@ const SupervisorManagement = () => {
         mobile: formData.mobile,
         address: formData.address,
         siteId: formData.siteId,
+        projectManagerId: formData.projectManagerId, // Include PM ID in update if needed
       };
 
       if (formData.password) {
@@ -636,45 +654,70 @@ const SupervisorManagement = () => {
                 />
               </div>
 
+              {/* Add Supervisor Modal - Password field with show/hide toggle */}
               <div>
                 <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
                   <Lock className="w-4 h-4" />
-                  Password
+                  Password <span className="text-red-500">*</span>
                 </label>
-                <input
-                  placeholder="Enter password"
-                  // type="password"
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  className="w-full border border-gray-300 px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
+                <div className="relative">
+                  <input
+                    placeholder="Enter password"
+                    type={showPassword ? "text" : "password"} 
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    className="w-full border border-gray-300 px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-12"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  >
+                    {showPassword ? (
+                      <Eye className="w-5 h-5" />
+                    ) : (
+                      <Eye className="w-5 h-5" />
+                    )}
+                  </button>
+                </div>
               </div>
 
+              {/* Display current logged-in Project Manager */}
               <div>
                 <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                  <User className="w-4 h-4" />
-                  Project Manager <span className="text-red-500">*</span>
+                  <UserCheck className="w-4 h-4" />
+                  Your Profile (Project Manager)
                 </label>
-                {loadingPMs ? (
+                {loadingCurrentPM ? (
                   <div className="w-full border border-gray-300 px-4 py-3 rounded-lg bg-gray-50 flex items-center justify-center">
                     <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mr-2"></div>
-                    <span className="text-sm text-gray-600">Loading...</span>
+                    <span className="text-sm text-gray-600">Loading your profile...</span>
+                  </div>
+                ) : currentProjectManager ? (
+                  <div className="w-full border border-gray-300 bg-blue-50 px-4 py-3 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="font-semibold text-blue-700">{currentProjectManager.name}</div>
+                        <div className="text-sm text-blue-600">{currentProjectManager.email}</div>
+                      </div>
+                      <Check className="w-5 h-5 text-green-500" />
+                    </div>
+                    <div className="text-xs text-blue-500 mt-1">
+                      You are creating a supervisor under your management
+                    </div>
                   </div>
                 ) : (
-                  <select
-                    value={formData.projectManagerId}
-                    onChange={(e) => setFormData({ ...formData, projectManagerId: e.target.value })}
-                    className="w-full border border-gray-300 px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="">Select Project Manager</option>
-                    {projectManagers.map((pm) => (
-                      <option key={pm._id || pm.id} value={pm._id || pm.id}>
-                        {pm.name}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="w-full border border-gray-300 px-4 py-3 rounded-lg bg-yellow-50 text-yellow-700 text-sm">
+                    Unable to load your profile. Supervisor will be created under your account.
+                  </div>
                 )}
               </div>
+
+              {/* Hidden field for projectManagerId */}
+              <input
+                type="hidden"
+                value={formData.projectManagerId}
+              />
 
               <div>
                 <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
@@ -721,7 +764,8 @@ const SupervisorManagement = () => {
                   !formData.name ||
                   !formData.email ||
                   !formData.password ||
-                  !formData.siteId
+                  !formData.siteId ||
+                  !formData.projectManagerId
                 }
                 className="w-full sm:w-auto px-6 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200 disabled:bg-gray-300 disabled:cursor-not-allowed disabled:shadow-none"
               >
@@ -808,18 +852,32 @@ const SupervisorManagement = () => {
                 />
               </div>
 
+              {/* Edit Supervisor Modal - Password field with show/hide toggle */}
               <div>
                 <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
                   <Lock className="w-4 h-4" />
                   Password (Leave blank to keep current)
                 </label>
-                <input
-                  placeholder="Enter new password"
-                  type="password"
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  className="w-full border border-gray-300 px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
+                <div className="relative">
+                  <input
+                    placeholder="Enter new password"
+                    type={showEditPassword ? "text" : "password"}
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    className="w-full border border-gray-300 px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-12"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowEditPassword(!showEditPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  >
+                    {showEditPassword ? (
+                      <Eye className="w-5 h-5" />
+                    ) : (
+                      <Eye className="w-5 h-5" />
+                    )}
+                  </button>
+                </div>
               </div>
 
               <div>
