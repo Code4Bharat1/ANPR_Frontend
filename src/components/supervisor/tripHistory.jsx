@@ -260,24 +260,24 @@ const TripHistory = () => {
                 <table className="w-full">
                   <thead className="bg-gray-50 border-b border-gray-200">
                     <tr>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">TRIP ID</th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">VEHICLE</th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">VENDOR</th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">ENTRY TIME</th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">EXIT TIME</th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">DURATION</th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">STATUS</th>
-                      <th className="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase">ACTION</th>
+                      {/* <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">TRIP ID</th> */}
+                      <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase">VEHICLE</th>
+                      <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase">VENDOR</th>
+                      <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase">ENTRY TIME</th>
+                      <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase">EXIT TIME</th>
+                      <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase">DURATION</th>
+                      <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase">STATUS</th>
+                      <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase">ACTION</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
                     {currentTrips.map((trip) => (
                       <tr key={trip._id} className="hover:bg-gray-50 transition">
-                        <td className="px-6 py-4">
+                        {/* <td className="px-6 py-4">
                           <div className="font-semibold text-gray-900">{trip.tripId || 'N/A'}</div>
-                        </td>
+                        </td> */}
                         <td className="px-6 py-4">
-                          <div className="font-bold text-gray-900">{trip.vehicleNumber || 'N/A'}</div>
+                          <div className="font-bold text-center text-gray-900">{trip.vehicleNumber || 'N/A'}</div>
                         </td>
                         <td className="px-6 py-4">
                           <div className="font-semibold text-gray-900">{trip.vendor || 'N/A'}</div>
