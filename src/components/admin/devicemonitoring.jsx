@@ -43,54 +43,84 @@ const DeviceMonitoring = () => {
   };
 
   // Normalize devices to handle different API response structures
-  const normalizedDevices = devices.map(device => {
-    // Handle device ID - API uses 'serialNo'
-    const deviceId = device.serialNo || device.deviceId || device.id || device._id || 'N/A';
-    
-    // Handle device type - API uses 'devicetype' (lowercase)
-    const deviceType = device.devicetype || device.type || device.deviceType || 'Unknown';
-    
-    // Handle site - API returns siteId as ObjectId, not populated site
+ const normalizedDevices = devices.map(device => {
+  console.log("Raw device data:", device); // Debug log
+  
+  // Handle device ID
+  const deviceId = device.serialNo || device.deviceId || device.id || device._id || 'N/A';
+  
+  // Handle device type
+  let deviceType = 'Unknown';
+  if (device.devicetype) {
+    deviceType = device.devicetype;
+  } else if (device.type) {
+    deviceType = device.type;
+  } else if (device.deviceType) {
+    deviceType = device.deviceType;
+  }
+  
+  // Handle site - FIXED LOGIC
   let siteName = 'Unknown';
-
-// Case 1: backend ne `site` object bheja
-if (device.site?.name) {
-  siteName = device.site.name;
-}
-
-// Case 2: backend ne `siteId` populate kiya hai
-else if (device.siteId?.name) {
-  siteName = device.siteId.name;
-}
-
-// Case 3: backend ne direct site name string bheja
-else if (typeof device.site === 'string') {
-  siteName = device.site;
-}
-
-    // Handle status - API uses 'isOnline' boolean
-    const status = device.isOnline === true ? 'Online' : 'Offline';
-    
-    // Handle last active time
-    let lastActive = '—';
-    if (device.lastActive) {
-      try {
-        const dateValue = device.lastActive.$date || device.lastActive;
-        lastActive = new Date(dateValue).toLocaleString();
-      } catch (e) {
-        lastActive = '—';
+  
+  // Case 1: site is populated as an object
+  if (device.site && typeof device.site === 'object') {
+    siteName = device.site.name || device.site.siteName || 'Unknown';
+  }
+  
+  // Case 2: siteId is populated as an object
+  else if (device.siteId && typeof device.siteId === 'object') {
+    siteName = device.siteId.name || device.siteId.siteName || 'Unknown';
+  }
+  
+  // Case 3: direct string
+  else if (typeof device.site === 'string') {
+    siteName = device.site;
+  }
+  
+  // Case 4: siteName field exists
+  else if (device.siteName) {
+    siteName = device.siteName;
+  }
+  
+  // Handle status
+  let status = 'Offline';
+  if (device.isOnline === true) {
+    status = 'Online';
+  } else if (device.status === 'online' || device.status === 'Online') {
+    status = 'Online';
+  }
+  
+  // Handle last active time
+  let lastActive = '—';
+  if (device.lastActive) {
+    try {
+      // Handle MongoDB date format
+      if (device.lastActive.$date) {
+        lastActive = new Date(device.lastActive.$date).toLocaleString();
+      } else {
+        lastActive = new Date(device.lastActive).toLocaleString();
       }
+    } catch (e) {
+      console.error("Date parsing error:", e);
     }
+  } else if (device.updatedAt) {
+    try {
+      lastActive = new Date(device.updatedAt).toLocaleString();
+    } catch (e) {
+      console.error("Date parsing error:", e);
+    }
+  }
 
-    return {
-      id: deviceId,
-      type: deviceType,
-      site: siteName,
-      status: status,
-      lastActive: lastActive,
-      isEnabled: device.isEnabled !== false
-    };
-  });
+  return {
+    id: deviceId,
+    type: deviceType,
+    site: siteName,
+    status: status,
+    lastActive: lastActive,
+    isEnabled: device.isEnabled !== false,
+    rawData: device // Keep for debugging
+  };
+});
 
   // Filter devices based on search term and status filter
   const filteredDevices = normalizedDevices.filter(device => {
