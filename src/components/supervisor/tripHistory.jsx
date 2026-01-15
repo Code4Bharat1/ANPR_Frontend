@@ -260,24 +260,28 @@ const TripHistory = () => {
                 <table className="w-full">
                   <thead className="bg-gray-50 border-b border-gray-200">
                     <tr>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">TRIP ID</th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">VEHICLE</th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">VENDOR</th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">ENTRY TIME</th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">EXIT TIME</th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">DURATION</th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">STATUS</th>
-                      <th className="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase">ACTION</th>
+                      <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase">SR NO</th>
+                      {/* <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">TRIP ID</th> */}
+                      <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase">VEHICLE</th>
+                      <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase">VENDOR</th>
+                      <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase">ENTRY TIME</th>
+                      <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase">EXIT TIME</th>
+                      <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase">DURATION</th>
+                      <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase">STATUS</th>
+                      <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase">ACTION</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
-                    {currentTrips.map((trip) => (
+                    {currentTrips.map((trip, index) => (
                       <tr key={trip._id} className="hover:bg-gray-50 transition">
-                        <td className="px-6 py-4">
-                          <div className="font-semibold text-gray-900">{trip.tripId || 'N/A'}</div>
+                        <td className="px-6 py-4 text-center">
+                          <div className="font-bold text-gray-700">{indexOfFirstTrip + index + 1}</div>
                         </td>
+                        {/* <td className="px-6 py-4">
+                          <div className="font-semibold text-gray-900">{trip.tripId || 'N/A'}</div>
+                        </td> */}
                         <td className="px-6 py-4">
-                          <div className="font-bold text-gray-900">{trip.vehicleNumber || 'N/A'}</div>
+                          <div className="font-bold text-center text-gray-900">{trip.vehicleNumber || 'N/A'}</div>
                         </td>
                         <td className="px-6 py-4">
                           <div className="font-semibold text-gray-900">{trip.vendor || 'N/A'}</div>
@@ -318,13 +322,18 @@ const TripHistory = () => {
 
               {/* Mobile/Tablet Card View */}
               <div className="lg:hidden divide-y divide-gray-200">
-                {currentTrips.map((trip) => (
+                {currentTrips.map((trip, index) => (
                   <div key={trip._id} className="p-4 hover:bg-gray-50 transition">
                     {/* Trip Header */}
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex-1 min-w-0">
-                        <div className="font-bold text-gray-900 text-base sm:text-lg truncate">{trip.vehicleNumber || 'N/A'}</div>
-                        <div className="text-xs sm:text-sm text-gray-500 truncate">ID: {trip.tripId || 'N/A'}</div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
+                            #{indexOfFirstTrip + index + 1}
+                          </span>
+                          <div className="font-bold text-gray-900 text-base sm:text-lg truncate">{trip.vehicleNumber || 'N/A'}</div>
+                        </div>
+                        <div className="text-xs sm:text-sm text-gray-500 truncate mt-1">ID: {trip.tripId || 'N/A'}</div>
                       </div>
                       {getStatusBadge(trip.status)}
                     </div>

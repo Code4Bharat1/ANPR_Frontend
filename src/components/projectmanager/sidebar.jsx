@@ -17,7 +17,7 @@ const Sidebar = ({ isOpen, onClose }) => {
     { name: 'Sites', path: '/projectmanager/sites', icon: MapPin },
     { name: 'Supervisors', path: '/projectmanager/supervisors', icon: Users },
     { name: 'Vendors', path: '/projectmanager/vendors', icon: Package },
-    { name: 'Monitoring', path: '/projectmanager/monitoring', icon: Monitor },
+    // { name: 'Monitoring', path: '/projectmanager/monitoring', icon: Monitor },
     { name: 'Reports', path: '/projectmanager/reports', icon: FileText },
     { name: 'Analytics', path: '/projectmanager/analytics', icon: TrendingUp },
     // { name: 'Settings', path: '/projectmanager/settings', icon: Settings },
