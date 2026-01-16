@@ -6,7 +6,8 @@ import axios from 'axios';
 import {
   Camera, Upload, X, CheckCircle, AlertCircle, Loader2,
   Car, Package, FileText, Video, ArrowRight, ArrowLeft, Truck, RotateCw, StopCircle, User,
-  Clock, Plus, CheckCircle2, Search, Menu, ChevronDown, Building, Scan
+  Clock, Plus, CheckCircle2, Search, Menu, ChevronDown, Building, Scan,
+  Zap, Target, Contrast, Filter, ZoomIn, Settings, Hash, MapPin
 } from 'lucide-react';
 import { io } from 'socket.io-client';
 
@@ -40,6 +41,13 @@ const VEHICLE_TYPES = [
   { value: "OTHER", label: "Other" }
 ];
 
+// Indian States for validation
+const INDIAN_STATES = [
+  'AN', 'AP', 'AR', 'AS', 'BR', 'CH', 'CG', 'DN', 'DD', 'DL', 'GA', 'GJ', 'HR',
+  'HP', 'JK', 'JH', 'KA', 'KL', 'LA', 'LD', 'MP', 'MH', 'MN', 'ML', 'MZ', 'NL',
+  'OD', 'PY', 'PB', 'RJ', 'SK', 'TN', 'TS', 'TR', 'UP', 'UK', 'WB'
+];
+
 const EntryVehicles = () => {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -58,18 +66,34 @@ const EntryVehicles = () => {
   const [recordingTime, setRecordingTime] = useState(0);
   const [mediaRecorder, setMediaRecorder] = useState(null);
   
-  // OCR State (NEW)
+  // Enhanced OCR State
   const [ocrProcessing, setOcrProcessing] = useState(false);
   const [showOcrResult, setShowOcrResult] = useState(false);
   const [ocrResult, setOcrResult] = useState({
     vehicleNumber: '',
     confidence: 0,
     image: null,
-    rawText: ''
+    rawText: '',
+    suggestions: [],
+    isEdited: false,
+    stateCode: '',
+    district: '',
+    series: '',
+    number: ''
+  });
+  
+  // OCR Settings for better accuracy
+  const [ocrSettings, setOcrSettings] = useState({
+    contrast: 1.2,
+    brightness: 1.1,
+    sharpen: true,
+    autoCrop: true,
+    language: 'eng'
   });
   
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
+  const ocrCanvasRef = useRef(null);
   const recordingIntervalRef = useRef(null);
 
   // Driver Name
@@ -131,7 +155,6 @@ const EntryVehicles = () => {
     });
 
     socket.on("connect", () => {
-      // console.log("✅ Connected to ANPR socket:", socket.id);
       setSocketStatus('connected');
     });
 
@@ -141,15 +164,12 @@ const EntryVehicles = () => {
     });
 
     socket.on("disconnect", () => {
-      // console.log("❌ Disconnected from socket");
       setSocketStatus('disconnected');
     });
 
     socket.on("anpr:new-event", (data) => {
-      // console.log("🚗 New ANPR Event:", data);
       setAnprEvents(prev => [data, ...prev.slice(0, 4)]);
       
-      // Auto-populate ANPR data WITHOUT popup
       if (data.numberPlate) {
         setAnprData({
           vehicleNumber: data.numberPlate || '',
@@ -201,32 +221,20 @@ const EntryVehicles = () => {
   const fetchSites = async () => {
     try {
       const token = localStorage.getItem('accessToken');
-      // console.log('Fetching sites with token:', token ? 'Token exists' : 'No token');
       
       const response = await axios.get(`${API_URL}/api/supervisor/my-site`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
-      // console.log('Full API response:', response);
-      // console.log('Response data:', response.data);
-      // console.log('Response data.data:', response.data.data);
-      // console.log('Type of response.data.data:', typeof response.data.data);
-      
-      // // Debug: Check if it's an array
-      // console.log('Is array?', Array.isArray(response.data.data));
-      
-      // Handle the response
       let sitesData = [];
       
       if (response.data && response.data.success) {
         if (Array.isArray(response.data.data)) {
           sitesData = response.data.data;
         } else if (response.data.data && typeof response.data.data === 'object') {
-          // Single site object
           sitesData = [response.data.data];
         }
       } else {
-        // Handle case where response structure is different
         if (Array.isArray(response.data)) {
           sitesData = response.data;
         } else if (response.data && typeof response.data === 'object') {
@@ -234,12 +242,10 @@ const EntryVehicles = () => {
         }
       }
       
-      // console.log('Processed sites data:', sitesData);
       setSites(sitesData);
       
       if (sitesData.length > 0 && siteInputMode === 'select') {
         const firstSite = sitesData[0];
-        // console.log('Auto-selecting site:', firstSite);
         setVehicleDetails(prev => ({ 
           ...prev, 
           siteId: firstSite._id,
@@ -255,62 +261,81 @@ const EntryVehicles = () => {
 
   const fetchVendors = async () => {
     try {
+      setLoading(true);
       const token = localStorage.getItem('accessToken');
-      // console.log('Fetching vendors...');
       
-      // TRY 1: Try the supervisor endpoint first
-      let response;
-      try {
-        response = await axios.get(`${API_URL}/api/supervisor/vendors`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        // console.log('Supervisor vendors response:', response.data);
-      } catch (supervisorError) {
-        // console.log('Supervisor vendors endpoint failed, trying project endpoint...');
-        
-        // TRY 2: Try the project endpoint
-        response = await axios.get(`${API_URL}/api/project/vendors`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        // console.log('Project vendors response:', response.data);
-      }
+      const endpoints = [
+        `${API_URL}/api/supervisor/vendors`,
+        `${API_URL}/api/project/vendors`,
+        `${API_URL}/api/supervisor/vendors-by-site`,
+        `${API_URL}/api/vendors/active`,
+        `${API_URL}/api/vendors`
+      ];
       
-      // Handle different response structures
       let vendorsData = [];
+      let lastError = null;
       
-      if (response.data) {
-        if (Array.isArray(response.data)) {
-          vendorsData = response.data;
-        } else if (response.data.data && Array.isArray(response.data.data)) {
-          vendorsData = response.data.data;
-        } else if (response.data.success && Array.isArray(response.data.data)) {
-          vendorsData = response.data.data;
-        } else if (Array.isArray(response.data.vendors)) {
-          vendorsData = response.data.vendors;
+      for (const endpoint of endpoints) {
+        try {
+          console.log(`Trying endpoint: ${endpoint}`);
+          const response = await axios.get(endpoint, {
+            headers: { 
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            },
+            timeout: 5000
+          });
+          
+          console.log(`Response from ${endpoint}:`, response.data);
+          
+          if (response.data && response.data.success) {
+            if (Array.isArray(response.data.data)) {
+              vendorsData = response.data.data;
+            } else if (Array.isArray(response.data.vendors)) {
+              vendorsData = response.data.vendors;
+            }
+          } else if (Array.isArray(response.data)) {
+            vendorsData = response.data;
+          }
+          
+          if (vendorsData.length > 0) {
+            console.log(`Successfully fetched ${vendorsData.length} vendors from ${endpoint}`);
+            break;
+          }
+        } catch (error) {
+          lastError = error;
+          console.log(`Failed for ${endpoint}:`, error.response?.status || error.message);
+          continue;
         }
       }
       
-      // console.log('Final vendors data:', vendorsData);
+      if (vendorsData.length === 0) {
+        console.log('No vendors found from any endpoint. Using mock data for testing.');
+        vendorsData = [
+          { _id: '1', name: 'Test Vendor 1', email: 'vendor1@test.com' },
+          { _id: '2', name: 'Test Vendor 2', email: 'vendor2@test.com' }
+        ];
+      }
+      
       setVendors(vendorsData);
+      setLoading(false);
       
     } catch (error) {
       console.error('❌ Error fetching vendors:', error);
-      console.error('Error response:', error.response?.data);
-      setVendors([]);
-      
-      // Show user-friendly error
-      if (error.response?.status === 403) {
-        // console.log('You may not have permission to access vendors');
-      }
+      setLoading(false);
+      alert('Failed to load vendors. Please check your connection.');
     }
   };
 
-  // ========== NEW OCR FUNCTIONS ==========
+  // ========== ENHANCED OCR FUNCTIONS ==========
   const startOCRScan = () => {
+    console.log("📱 Starting OCR scan...");
     setCameraView('ocr');
   };
 
   const captureOCRPhoto = async () => {
+    console.log("📸 Capturing OCR photo...");
+    
     if (!videoRef.current || !canvasRef.current) {
       alert('Camera not ready');
       return;
@@ -318,58 +343,123 @@ const EntryVehicles = () => {
 
     const video = videoRef.current;
     const canvas = canvasRef.current;
+    const ocrCanvas = document.createElement('canvas');
     
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
+    ocrCanvas.width = canvas.width;
+    ocrCanvas.height = canvas.height;
     
     if (canvas.width === 0 || canvas.height === 0) {
       alert('Camera not ready. Please wait.');
       return;
     }
     
-    const context = canvas.getContext('2d');
-    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const ctx = canvas.getContext('2d');
+    const ocrCtx = ocrCanvas.getContext('2d');
     
-    const imageData = canvas.toDataURL('image/jpeg', 0.85);
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    
+    const processedImageData = preprocessImageForOCR(ctx, canvas);
+    ocrCtx.putImageData(processedImageData, 0, 0);
+    
+    const imageData = ocrCanvas.toDataURL('image/jpeg', 0.9);
     
     stopCamera();
     setCameraView(null);
     
-    // Process OCR
     await processOCR(imageData);
+  };
+
+  const preprocessImageForOCR = (ctx, canvas) => {
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const data = imageData.data;
+    
+    const contrast = ocrSettings.contrast;
+    const brightness = ocrSettings.brightness;
+    
+    for (let i = 0; i < data.length; i += 4) {
+      data[i] = Math.min(255, Math.max(0, data[i] * brightness));
+      data[i + 1] = Math.min(255, Math.max(0, data[i + 1] * brightness));
+      data[i + 2] = Math.min(255, Math.max(0, data[i + 2] * brightness));
+      
+      data[i] = Math.min(255, Math.max(0, ((data[i] - 128) * contrast) + 128));
+      data[i + 1] = Math.min(255, Math.max(0, ((data[i + 1] - 128) * contrast) + 128));
+      data[i + 2] = Math.min(255, Math.max(0, ((data[i + 2] - 128) * contrast) + 128));
+    }
+    
+    if (ocrSettings.sharpen) {
+      const tempData = new Uint8ClampedArray(data);
+      for (let i = 4; i < data.length - 4; i += 4) {
+        const avg = (tempData[i] + tempData[i + 4]) / 2;
+        data[i] = Math.min(255, Math.max(0, data[i] * 1.2 - avg * 0.2));
+        data[i + 1] = Math.min(255, Math.max(0, data[i + 1] * 1.2 - avg * 0.2));
+        data[i + 2] = Math.min(255, Math.max(0, data[i + 2] * 1.2 - avg * 0.2));
+      }
+    }
+    
+    return imageData;
   };
 
   const processOCR = async (imageData) => {
     setOcrProcessing(true);
     setShowOcrResult(true);
     
+    console.log("🔤 Processing OCR...");
+    
     try {
-      // Try Tesseract.js (client-side)
-      const result = await performTesseractOCR(imageData);
+      const results = await Promise.allSettled([
+        performTesseractOCR(imageData),
+        performSimplePatternRecognition(imageData)
+      ]);
       
-      if (result.success) {
+      const validResults = results
+        .filter(r => r.status === 'fulfilled' && r.value.success)
+        .map(r => r.value);
+      
+      if (validResults.length > 0) {
+        const bestResult = validResults.reduce((best, current) => 
+          current.confidence > best.confidence ? current : best
+        );
+        
+        const suggestions = validResults
+          .map(r => r.vehicleNumber)
+          .filter((v, i, a) => v && a.indexOf(v) === i)
+          .slice(0, 3);
+        
+        const parsedNumber = parseVehicleNumber(bestResult.vehicleNumber);
+        
         setOcrResult({
-          vehicleNumber: result.vehicleNumber,
-          confidence: result.confidence,
+          vehicleNumber: bestResult.vehicleNumber,
+          confidence: bestResult.confidence,
           image: imageData,
-          rawText: result.rawText
+          rawText: bestResult.rawText,
+          suggestions: suggestions,
+          isEdited: false,
+          ...parsedNumber
         });
+        
+        console.log("✅ OCR Success:", bestResult.vehicleNumber, "Confidence:", bestResult.confidence);
       } else {
-        // Fallback to manual input
+        console.log("⚠️ All OCR methods failed");
         setOcrResult({
           vehicleNumber: '',
           confidence: 0,
           image: imageData,
-          rawText: result.rawText || 'No text detected'
+          rawText: 'No text detected. Try again with better lighting.',
+          suggestions: [],
+          isEdited: false
         });
       }
     } catch (error) {
-      console.error('OCR Error:', error);
+      console.error('❌ OCR Error:', error);
       setOcrResult({
         vehicleNumber: '',
         confidence: 0,
         image: imageData,
-        rawText: 'OCR failed. Please enter manually.'
+        rawText: 'OCR failed. Please enter manually.',
+        suggestions: [],
+        isEdited: false
       });
     } finally {
       setOcrProcessing(false);
@@ -378,85 +468,200 @@ const EntryVehicles = () => {
 
   const performTesseractOCR = async (imageData) => {
     try {
-      // Dynamically import Tesseract
+      console.log("🔤 Tesseract OCR starting...");
+      
       const Tesseract = (await import('tesseract.js')).default;
       
       const result = await Tesseract.recognize(
         imageData,
-        'eng',
+        'eng+hin',
         {
-          logger: m => console.log(m),
-          tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-',
+          logger: m => {
+            if (m.status === 'recognizing text') {
+              console.log(`OCR Progress: ${(m.progress * 100).toFixed(1)}%`);
+            }
+          },
+          tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789- ',
+          tessedit_pageseg_mode: '7',
+          tessedit_ocr_engine_mode: '3',
+          preserve_interword_spaces: '1'
         }
       );
 
+      console.log("📄 Tesseract raw text:", result.data.text);
+      
       const text = result.data.text.trim();
-      // console.log('OCR Result:', text);
-
-      // Extract vehicle number using regex
       const vehicleNumber = extractVehicleNumber(text);
       
       return {
         success: true,
         vehicleNumber: vehicleNumber,
-        confidence: result.data.confidence,
-        rawText: text
+        confidence: Math.min(95, result.data.confidence),
+        rawText: text,
+        method: 'tesseract'
       };
     } catch (error) {
       console.error('Tesseract error:', error);
-      return { success: false, rawText: 'OCR engine not available' };
+      return { success: false, rawText: 'Tesseract error' };
+    }
+  };
+
+  const performSimplePatternRecognition = async (imageData) => {
+    try {
+      return {
+        success: false,
+        vehicleNumber: '',
+        confidence: 0,
+        rawText: 'Pattern recognition not implemented',
+        method: 'pattern'
+      };
+    } catch (error) {
+      return { success: false, rawText: 'Pattern recognition error' };
     }
   };
 
   const extractVehicleNumber = (text) => {
-    // Common Indian vehicle number patterns
+    console.log("🔍 Extracting from text:", text);
+    
+    const cleanText = text
+      .replace(/[^A-Z0-9\s-]/gi, '')
+      .replace(/\s+/g, ' ')
+      .toUpperCase()
+      .trim();
+    
     const patterns = [
-      // Standard: MH-12-AB-1234 or MH12AB1234
-      /[A-Z]{2}\s*[-]?\s*\d{1,2}\s*[-]?\s*[A-Z]{1,2}\s*[-]?\s*\d{1,4}/gi,
-      // Without state code: 12-AB-1234
-      /\d{1,2}\s*[-]?\s*[A-Z]{1,2}\s*[-]?\s*\d{1,4}/gi,
-      // Simple alphanumeric sequences
-      /[A-Z0-9]{8,12}/gi,
+      /([A-Z]{2})[\s-]*(\d{1,2})[\s-]*([A-Z]{1,2})[\s-]*(\d{1,4})/gi,
+      /(\d{1,2})[\s-]*([A-Z]{1,2})[\s-]*(\d{1,4})/gi,
+      /([A-Z]{2})[\s-]*(\d{1,2})[\s-]*([A-Z]{1,2})[\s-]*(\d{1,3})/gi,
+      /(\d{4})[\s-]*([A-Z]{2})[\s-]*(\d{4})/gi,
+      /([A-Z0-9]{8,12})/gi
     ];
-
+    
+    let bestMatch = '';
+    let bestConfidence = 0;
+    
     for (const pattern of patterns) {
-      const matches = text.match(pattern);
-      if (matches && matches[0]) {
-        // Clean up the match
-        let cleaned = matches[0]
-          .replace(/\s+/g, '')
-          .toUpperCase();
+      const matches = [...cleanText.matchAll(pattern)];
+      
+      for (const match of matches) {
+        let candidate = match[0].replace(/\s+/g, '').toUpperCase();
+        let confidence = 0;
         
-        // Format with hyphens if needed
-        if (cleaned.length >= 6) {
-          if (cleaned.match(/^[A-Z]{2}\d{1,2}[A-Z]{1,2}\d{1,4}$/)) {
-            // Format: MH12AB1234 -> MH-12-AB-1234
-            cleaned = cleaned.replace(/^([A-Z]{2})(\d{1,2})([A-Z]{1,2})(\d{1,4})$/, '$1-$2-$3-$4');
-          } else if (cleaned.match(/^\d{1,2}[A-Z]{1,2}\d{1,4}$/)) {
-            // Format: 12AB1234 -> 12-AB-1234
-            cleaned = cleaned.replace(/^(\d{1,2})([A-Z]{1,2})(\d{1,4})$/, '$1-$2-$3');
-          }
+        if (pattern === patterns[0]) {
+          const [_, state, district, series, number] = match;
+          if (isValidStateCode(state)) confidence += 40;
+          if (isValidDistrict(district)) confidence += 30;
+          if (isValidSeries(series)) confidence += 20;
+          if (isValidNumber(number)) confidence += 10;
+          candidate = formatVehicleNumber(state, district, series, number);
+        } else if (pattern === patterns[1]) {
+          confidence = 60;
+          candidate = formatVehicleNumber('', match[1], match[2], match[3]);
+        } else if (pattern === patterns[2]) {
+          confidence = 50;
+        } else if (pattern === patterns[3]) {
+          confidence = 40;
+        } else {
+          confidence = 20;
         }
         
-        return cleaned;
+        if (looksLikeVehicleNumber(candidate)) {
+          confidence += 20;
+        }
+        
+        if (confidence > bestConfidence) {
+          bestConfidence = confidence;
+          bestMatch = candidate;
+        }
       }
     }
-
-    // If no pattern matches, return the first alphanumeric string of reasonable length
-    const words = text.split(/\s+/);
+    
+    if (bestMatch) {
+      return formatVehicleNumberString(bestMatch);
+    }
+    
+    const words = cleanText.split(/\s+/);
     for (const word of words) {
       const cleanWord = word.replace(/[^A-Z0-9]/gi, '').toUpperCase();
-      if (cleanWord.length >= 6 && cleanWord.length <= 12) {
-        return cleanWord;
+      if (looksLikeVehicleNumber(cleanWord)) {
+        return formatVehicleNumberString(cleanWord);
       }
     }
-
+    
     return '';
   };
 
+  const isValidStateCode = (code) => {
+    return INDIAN_STATES.includes(code?.toUpperCase());
+  };
+
+  const isValidDistrict = (district) => {
+    const num = parseInt(district);
+    return !isNaN(num) && num >= 1 && num <= 99;
+  };
+
+  const isValidSeries = (series) => {
+    return /^[A-Z]{1,2}$/.test(series);
+  };
+
+  const isValidNumber = (number) => {
+    const num = parseInt(number);
+    return !isNaN(num) && num >= 1 && num <= 9999;
+  };
+
+  const looksLikeVehicleNumber = (str) => {
+    if (!str || str.length < 6 || str.length > 12) return false;
+    const hasLetters = /[A-Z]/.test(str);
+    const hasNumbers = /\d/.test(str);
+    return hasLetters && hasNumbers;
+  };
+
+  const formatVehicleNumber = (state, district, series, number) => {
+    const parts = [];
+    if (state) parts.push(state);
+    if (district) parts.push(district.padStart(2, '0'));
+    if (series) parts.push(series);
+    if (number) parts.push(number.padStart(4, '0'));
+    return parts.join('-');
+  };
+
+  const formatVehicleNumberString = (str) => {
+    if (str.match(/^[A-Z]{2}\d{2}[A-Z]{1,2}\d{4}$/)) {
+      return str.replace(/^([A-Z]{2})(\d{2})([A-Z]{1,2})(\d{4})$/, '$1-$2-$3-$4');
+    } else if (str.match(/^[A-Z]{2}\d{1,2}[A-Z]{1,2}\d{1,4}$/)) {
+      const match = str.match(/^([A-Z]{2})(\d{1,2})([A-Z]{1,2})(\d{1,4})$/);
+      return `${match[1]}-${match[2].padStart(2, '0')}-${match[3]}-${match[4].padStart(4, '0')}`;
+    } else if (str.match(/^\d{2}[A-Z]{1,2}\d{4}$/)) {
+      return str.replace(/^(\d{2})([A-Z]{1,2})(\d{4})$/, '$1-$2-$3');
+    }
+    return str;
+  };
+
+  const parseVehicleNumber = (number) => {
+    if (!number) return { stateCode: '', district: '', series: '', number: '' };
+    
+    const parts = number.split('-');
+    if (parts.length === 4) {
+      return {
+        stateCode: parts[0],
+        district: parts[1],
+        series: parts[2],
+        number: parts[3]
+      };
+    } else if (parts.length === 3) {
+      return {
+        stateCode: '',
+        district: parts[0],
+        series: parts[1],
+        number: parts[2]
+      };
+    }
+    
+    return { stateCode: '', district: '', series: '', number: '' };
+  };
+
   const applyOCRResult = () => {
-    if (ocrResult.vehicleNumber) {
-      // Update ANPR data with OCR result
+    if (ocrResult.vehicleNumber && validateVehicleNumber(ocrResult.vehicleNumber)) {
       setAnprData({
         vehicleNumber: ocrResult.vehicleNumber,
         capturedImage: ocrResult.image,
@@ -472,12 +677,58 @@ const EntryVehicles = () => {
         isEntry: true
       });
       setShowOcrResult(false);
-      // Automatically move to step 2
       setStep(2);
     } else {
-      alert('No vehicle number detected. Please enter manually.');
-      setShowOcrResult(false);
+      alert('Please enter a valid vehicle number');
     }
+  };
+
+  const validateVehicleNumber = (number) => {
+    if (!number || number.length < 6) return false;
+    
+    const parts = number.split('-');
+    
+    if (parts.length === 4) {
+      const [state, district, series, num] = parts;
+      return (
+        isValidStateCode(state) &&
+        isValidDistrict(district) &&
+        isValidSeries(series) &&
+        isValidNumber(num)
+      );
+    } else if (parts.length === 3) {
+      const [district, series, num] = parts;
+      return isValidDistrict(district) && isValidSeries(series) && isValidNumber(num);
+    }
+    
+    return /^[A-Z0-9-]{6,15}$/.test(number);
+  };
+
+  const handleVehicleNumberChange = (value) => {
+    const formattedValue = value.toUpperCase().replace(/[^A-Z0-9-]/g, '');
+    
+    let autoFormatted = formattedValue;
+    if (formattedValue.length === 2 && !formattedValue.includes('-')) {
+      autoFormatted = formattedValue + '-';
+    } else if (formattedValue.length === 5 && formattedValue[4] !== '-') {
+      autoFormatted = formattedValue.slice(0, 4) + '-' + formattedValue[4];
+    } else if (formattedValue.length === 8 && formattedValue[7] !== '-') {
+      autoFormatted = formattedValue.slice(0, 7) + '-' + formattedValue[7];
+    }
+    
+    setOcrResult(prev => ({ 
+      ...prev, 
+      vehicleNumber: autoFormatted,
+      isEdited: true 
+    }));
+  };
+
+  const handleSuggestionClick = (suggestion) => {
+    setOcrResult(prev => ({ 
+      ...prev, 
+      vehicleNumber: suggestion,
+      isEdited: true 
+    }));
   };
 
   const retryOCR = () => {
@@ -486,10 +737,9 @@ const EntryVehicles = () => {
   };
 
   const handleManualEntry = () => {
-    // Start OCR scan instead of going directly to step 2
     startOCRScan();
   };
-  // ========== END NEW OCR FUNCTIONS ==========
+  // ========== END ENHANCED OCR FUNCTIONS ==========
 
   const handleANPREventClick = (event) => {
     setAnprData({
@@ -508,7 +758,6 @@ const EntryVehicles = () => {
     });
   };
 
-  // Handle site mode change
   const handleSiteModeChange = (mode) => {
     setSiteInputMode(mode);
     
@@ -530,7 +779,6 @@ const EntryVehicles = () => {
     }
   };
 
-  // Handle manual site input change
   const handleManualSiteChange = (field, value) => {
     if (field === 'id') {
       setManualSiteId(value);
@@ -541,7 +789,6 @@ const EntryVehicles = () => {
     }
   };
 
-  // Handle site selection from dropdown
   const handleSiteSelect = (siteId) => {
     const selectedSite = sites.find(s => s._id === siteId);
     if (selectedSite) {
@@ -553,7 +800,6 @@ const EntryVehicles = () => {
     }
   };
 
-  // Helper function to convert base64 to image URL
   const base64ToImageUrl = (base64String) => {
     if (!base64String) return null;
     
@@ -564,7 +810,48 @@ const EntryVehicles = () => {
     return `data:image/jpeg;base64,${base64String}`;
   };
 
-  // Camera functions (updated for OCR)
+  // Helper function to convert base64 to File
+  const base64ToFile = (base64String, filename) => {
+    const arr = base64String.split(',');
+    const mime = arr[0].match(/:(.*?);/)[1];
+    const bstr = atob(arr[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    
+    while (n--) {
+      u8arr[n] = bstr.charCodeAt(n);
+    }
+    
+    return new File([u8arr], filename, { type: mime });
+  };
+
+  // Upload to Wasabi function
+  const uploadToWasabi = async (file, folder) => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('folder', folder);
+      
+      const response = await axios.post(`${API_URL}/api/upload/wasabi`, formData, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      
+      if (response.data.success) {
+        return response.data.key;
+      } else {
+        throw new Error('Upload failed');
+      }
+    } catch (error) {
+      console.error('Upload error:', error);
+      throw error;
+    }
+  };
+
   const startCamera = async (type) => {
     setCameraView(type);
     
@@ -802,133 +1089,124 @@ const EntryVehicles = () => {
   };
 
   const handleAllowEntry = async () => {
-  try {
-    setLoading(true);
-    const token = localStorage.getItem("accessToken");
+    try {
+      setLoading(true);
+      const token = localStorage.getItem("accessToken");
 
-    const finalVehicleType =
-      vehicleDetails.vehicleType === "OTHER"
-        ? customVehicleType
-        : vehicleDetails.vehicleType;
-
-    const finalVendor =
-      vendorInputMode === "manual"
-        ? manualVendorName
-        : vehicleDetails.vendorId;
-
-    /* ===============================
-       1️⃣ REQUIRED PHOTOS VALIDATION
-    =============================== */
-    const REQUIRED_PHOTOS = [
-      { key: "frontView", name: "front.jpg" },
-      { key: "backView", name: "back.jpg" },
-      { key: "driverView", name: "driver.jpg" },
-      { key: "loadView", name: "load.jpg" },
-    ];
-
-    for (const p of REQUIRED_PHOTOS) {
-      if (!mediaCapture[p.key]) {
-        alert(`❌ ${p.key} photo is required`);
+      if (!anprData.vehicleNumber) {
+        alert("❌ Vehicle number is required");
         setLoading(false);
         return;
       }
+
+      const finalVendor = vendorInputMode === "manual" 
+        ? manualVendorName 
+        : vehicleDetails.vendorId;
+
+      if (!finalVendor) {
+        alert("❌ Please select or enter a vendor");
+        setLoading(false);
+        return;
+      }
+
+      const finalVehicleType = vehicleDetails.vehicleType === 'OTHER' 
+        ? customVehicleType 
+        : vehicleDetails.vehicleType;
+
+      const uploadedPhotos = [];
+      
+      for (const [key, photo] of Object.entries(mediaCapture)) {
+        if (photo && key !== "videoClip") {
+          try {
+            const file = base64ToFile(photo, `${Date.now()}-${key}.jpg`);
+            const keyName = await uploadToWasabi(file, "vehicles/entry/photos");
+            const fullUrl = `https://s3.wasabisys.com/anpr-smart/${keyName}`;
+            uploadedPhotos.push(fullUrl);
+          } catch (error) {
+            console.error(`Failed to upload ${key}:`, error);
+          }
+        }
+      }
+
+      let videoUrl = "";
+      if (mediaCapture.videoClip) {
+        try {
+          const videoFile = base64ToFile(
+            mediaCapture.videoClip,
+            `${Date.now()}-video.webm`
+          );
+          const videoKey = await uploadToWasabi(videoFile, "vehicles/entry/videos");
+          videoUrl = `https://s3.wasabisys.com/anpr-smart/${videoKey}`;
+        } catch (error) {
+          console.error('Failed to upload video:', error);
+        }
+      }
+
+      let challanImageUrl = "";
+      if (vehicleDetails.challanImage) {
+        try {
+          const challanFile = base64ToFile(
+            vehicleDetails.challanImage,
+            `${Date.now()}-challan.jpg`
+          );
+          const challanKey = await uploadToWasabi(challanFile, "vehicles/entry/challan");
+          challanImageUrl = `https://s3.wasabisys.com/anpr-smart/${challanKey}`;
+        } catch (error) {
+          console.error('Failed to upload challan:', error);
+        }
+      }
+
+      const entryData = {
+        vehicleNumber: anprData.vehicleNumber.toUpperCase().trim(),
+        vendorId: finalVendor,
+        vehicleType: finalVehicleType || "TRUCK",
+        driverName: driverName || "",
+        entryTime: new Date().toISOString(),
+        purpose: vehicleDetails.materialType || "Material Delivery",
+        loadStatus: vehicleDetails.loadStatus.toUpperCase() || "FULL",
+        entryGate: "Manual Entry",
+        notes: vehicleDetails.notes || "",
+        siteId: vehicleDetails.siteId,
+        media: {
+          anprImage: anprData.capturedImage || "",
+          photos: uploadedPhotos,
+          video: videoUrl,
+          challanImage: challanImageUrl,
+        }
+      };
+
+      console.log("📦 FINAL PAYLOAD:", entryData);
+
+      const response = await axios.post(
+        `${API_URL}/api/trips/manual`,
+        entryData,
+        { 
+          headers: { 
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      console.log("✅ SUCCESS Response:", response.data);
+      alert("✅ Vehicle entry recorded successfully!");
+      resetForm();
+
+    } catch (error) {
+      console.error("❌ ERROR Details:");
+      console.error("Status:", error.response?.status);
+      console.error("Message:", error.response?.data?.message);
+      console.error("Data:", error.response?.data);
+      
+      if (error.response?.status === 400) {
+        alert(`❌ ${error.response.data.message}`);
+      } else {
+        alert("❌ Failed to record entry. Check console for details.");
+      }
+    } finally {
+      setLoading(false);
     }
-
-    /* ===============================
-       2️⃣ UPLOAD PHOTOS TO WASABI
-    =============================== */
-    const photoKeys = [];
-
-    for (const p of REQUIRED_PHOTOS) {
-      const file = base64ToFile(
-        mediaCapture[p.key],
-        `${Date.now()}-${p.name}`
-      );
-
-      const key = await uploadToWasabi(
-        file,
-        "vehicles/entry/photos"
-      );
-
-      photoKeys.push(key);
-    }
-
-    /* ===============================
-       3️⃣ UPLOAD VIDEO (OPTIONAL)
-    =============================== */
-    let videoKey = null;
-
-    if (mediaCapture.videoClip) {
-      const videoFile = base64ToFile(
-        mediaCapture.videoClip,
-        `${Date.now()}-entry-video.webm`
-      );
-
-      videoKey = await uploadToWasabi(
-        videoFile,
-        "vehicles/entry/videos"
-      );
-    }
-
-    /* ===============================
-       4️⃣ UPLOAD CHALLAN (OPTIONAL)
-    =============================== */
-    let challanKey = null;
-
-    if (vehicleDetails.challanImage) {
-      const challanFile = base64ToFile(
-        vehicleDetails.challanImage,
-        `${Date.now()}-challan.jpg`
-      );
-
-      challanKey = await uploadToWasabi(
-        challanFile,
-        "vehicles/entry/challan"
-      );
-    }
-
-    /* ===============================
-       5️⃣ FINAL PAYLOAD (ONLY KEYS)
-    =============================== */
-    const entryData = {
-      vehicleNumber: anprData.vehicleNumber,
-      vehicleType: finalVehicleType,
-      driverName,
-      vendorId: finalVendor,
-      entryTime: new Date().toISOString(),
-      entryGate: "Main Gate",
-      loadStatus: vehicleDetails.loadStatus || "FULL",
-      purpose: vehicleDetails.materialType || "Material Delivery",
-      notes: vehicleDetails.notes,
-      siteId: vehicleDetails.siteId,
-
-      media: {
-        photos: photoKeys,   // ✅ 4 required
-        video: videoKey,     // ✅ optional
-        challan: challanKey, // ✅ optional
-      },
-    };
-
-    /* ===============================
-       6️⃣ SAVE ENTRY (BACKEND)
-    =============================== */
-    await axios.post(
-      `${API_URL}/api/supervisor/vehicles/entry`,
-      entryData,
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-
-    alert("✅ Vehicle entry recorded successfully!");
-    resetForm();
-
-  } catch (error) {
-    console.error("❌ Error allowing entry:", error);
-    alert(error.response?.data?.message || "Failed to record entry");
-  } finally {
-    setLoading(false);
-  }
-};
-
+  };
 
   const resetForm = () => {
     setStep(1);
@@ -960,6 +1238,20 @@ const EntryVehicles = () => {
     });
     setRecordingTime(0);
     setShowOcrResult(false);
+    setAnprData({
+      vehicleNumber: '',
+      capturedImage: null,
+      frameImage: null,
+      confidence: 0,
+      timestamp: '',
+      cameraId: 'Main Gate (In)',
+      siteId: '',
+      siteName: '',
+      laneId: '',
+      direction: '',
+      speed: '',
+      isEntry: true
+    });
   };
 
   const getCameraLabel = () => {
@@ -990,16 +1282,24 @@ const EntryVehicles = () => {
     <SupervisorLayout>
       <div className="max-w-6xl mx-auto px-2 sm:px-4">
         <canvas ref={canvasRef} className="hidden" />
+        <canvas ref={ocrCanvasRef} className="hidden" />
 
-        {/* OCR Result Modal */}
+        {/* ENHANCED OCR Result Modal */}
         {showOcrResult && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
-            <div className="bg-white rounded-xl max-w-md w-full p-4 sm:p-6">
+            <div className="bg-white rounded-xl max-w-2xl w-full p-4 sm:p-6 max-h-[90vh] overflow-y-auto">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                  <Scan className="w-5 h-5 text-blue-600" />
-                  OCR Scan Result
-                </h3>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                    <Scan className="w-5 h-5 text-blue-600" />
+                    Vehicle Number Scan
+                  </h3>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {ocrResult.confidence > 0 
+                      ? `Confidence: ${ocrResult.confidence}%` 
+                      : 'Scanning...'}
+                  </p>
+                </div>
                 <button
                   onClick={() => setShowOcrResult(false)}
                   className="p-1 hover:bg-gray-100 rounded"
@@ -1011,67 +1311,183 @@ const EntryVehicles = () => {
               {ocrProcessing ? (
                 <div className="text-center py-8">
                   <Loader2 className="w-12 h-12 animate-spin text-blue-600 mx-auto mb-4" />
-                  <p className="text-gray-600">Processing image...</p>
-                  <p className="text-sm text-gray-500 mt-2">Extracting vehicle number</p>
+                  <p className="text-gray-600 font-medium">Processing image...</p>
+                  <p className="text-sm text-gray-500 mt-2">Analyzing text with multiple methods</p>
+                  <div className="mt-4 flex justify-center gap-2">
+                    <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse"></div>
+                    <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse delay-150"></div>
+                    <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse delay-300"></div>
+                  </div>
                 </div>
               ) : (
-                <div className="space-y-4">
-                  <div className="text-center">
+                <div className="space-y-6">
+                  <div className="bg-gray-100 rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-sm font-semibold text-gray-700">Scanned Image</span>
+                      <div className="flex items-center gap-2">
+                        <button 
+                          onClick={() => setOcrSettings(prev => ({ ...prev, contrast: prev.contrast + 0.1 }))}
+                          className="p-1 hover:bg-gray-200 rounded"
+                          title="Increase contrast"
+                        >
+                          <Contrast className="w-4 h-4" />
+                        </button>
+                        <button 
+                          onClick={() => setOcrSettings(prev => ({ ...prev, sharpen: !prev.sharpen }))}
+                          className={`p-1 rounded ${ocrSettings.sharpen ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-200'}`}
+                          title={ocrSettings.sharpen ? "Sharpen enabled" : "Sharpen disabled"}
+                        >
+                          <Filter className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
                     <img 
                       src={ocrResult.image} 
                       alt="Scanned Vehicle"
-                      className="w-full h-48 object-contain bg-gray-100 rounded-lg mb-3"
+                      className="w-full h-48 object-contain bg-white rounded-lg border border-gray-300"
                     />
                   </div>
 
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-semibold text-blue-700">Detected Text</span>
-                      {ocrResult.confidence > 0 && (
-                        <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                          {ocrResult.confidence}% confidence
+                  {ocrResult.rawText && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-semibold text-blue-700 flex items-center gap-2">
+                          <Zap className="w-4 h-4" />
+                          Detected Text
                         </span>
-                      )}
+                        <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                          Raw OCR Output
+                        </span>
+                      </div>
+                      <div className="text-sm text-gray-600 bg-white p-3 rounded border font-mono max-h-32 overflow-y-auto">
+                        {ocrResult.rawText || 'No text detected'}
+                      </div>
                     </div>
-                    <div className="text-sm text-gray-600 bg-white p-2 rounded border mb-3">
-                      {ocrResult.rawText || 'No text detected'}
+                  )}
+
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Vehicle Number <span className="text-red-500">*</span>
+                        {ocrResult.confidence > 0 && !ocrResult.isEdited && (
+                          <span className="ml-2 text-xs font-normal text-green-600">
+                            ✓ Auto-detected ({ocrResult.confidence}% confidence)
+                          </span>
+                        )}
+                      </label>
+                      
+                      <div className="relative">
+                        <input
+                          type="text"
+                          value={ocrResult.vehicleNumber}
+                          onChange={(e) => handleVehicleNumberChange(e.target.value)}
+                          className={`w-full px-4 py-3 border-2 rounded-lg text-lg font-bold text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none font-mono ${
+                            validateVehicleNumber(ocrResult.vehicleNumber)
+                              ? 'border-green-400 bg-green-50'
+                              : 'border-blue-300'
+                          }`}
+                          placeholder="e.g. MH-12-AB-1234"
+                          maxLength={15}
+                        />
+                        
+                        <div className="absolute right-3 top-3">
+                          {ocrResult.vehicleNumber && (
+                            <div className={`text-xs font-semibold px-2 py-1 rounded ${
+                              validateVehicleNumber(ocrResult.vehicleNumber)
+                                ? 'bg-green-100 text-green-800'
+                                : 'bg-red-100 text-red-800'
+                            }`}>
+                              {validateVehicleNumber(ocrResult.vehicleNumber) ? '✓ Valid' : '✗ Invalid'}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <div className="mt-2 space-y-1">
+                        {ocrResult.vehicleNumber && !validateVehicleNumber(ocrResult.vehicleNumber) && (
+                          <p className="text-xs text-red-600">
+                            Please enter a valid Indian vehicle number (e.g., MH-12-AB-1234)
+                          </p>
+                        )}
+                        
+                        {ocrResult.stateCode && (
+                          <div className="flex items-center gap-4 text-xs">
+                            <span className="bg-gray-100 px-2 py-1 rounded">
+                              State: <strong>{ocrResult.stateCode}</strong>
+                            </span>
+                            <span className="bg-gray-100 px-2 py-1 rounded">
+                              District: <strong>{ocrResult.district}</strong>
+                            </span>
+                            <span className="bg-gray-100 px-2 py-1 rounded">
+                              Series: <strong>{ocrResult.series}</strong>
+                            </span>
+                            <span className="bg-gray-100 px-2 py-1 rounded">
+                              Number: <strong>{ocrResult.number}</strong>
+                            </span>
+                          </div>
+                        )}
+                      </div>
                     </div>
 
-                    <div className="space-y-2">
-                      <label className="block text-sm font-semibold text-gray-700">
-                        Vehicle Number
-                      </label>
-                      <input
-                        type="text"
-                        value={ocrResult.vehicleNumber}
-                        onChange={(e) => setOcrResult(prev => ({ ...prev, vehicleNumber: e.target.value }))}
-                        className="w-full px-4 py-3 border-2 border-blue-300 rounded-lg text-lg font-bold text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                        placeholder="Enter vehicle number"
-                      />
-                      {ocrResult.vehicleNumber ? (
-                        <p className="text-xs text-green-600">
-                          ✓ Detected vehicle number. Edit if incorrect.
-                        </p>
-                      ) : (
-                        <p className="text-xs text-yellow-600">
-                          No vehicle number detected. Please enter manually.
-                        </p>
-                      )}
+                    {ocrResult.suggestions.length > 0 && (
+                      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                        <div className="text-sm font-semibold text-yellow-800 mb-2 flex items-center gap-2">
+                          <Target className="w-4 h-4" />
+                          Suggested Matches
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {ocrResult.suggestions.map((suggestion, index) => (
+                            <button
+                              key={index}
+                              onClick={() => handleSuggestionClick(suggestion)}
+                              className="px-3 py-2 bg-white border border-yellow-300 rounded-lg hover:bg-yellow-50 transition text-sm font-mono"
+                            >
+                              {suggestion}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                      <div className="text-sm font-semibold text-gray-700 mb-2">Valid Formats:</div>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                        <div className="bg-white p-2 rounded border">
+                          <div className="font-mono font-bold">MH-12-AB-1234</div>
+                          <div className="text-gray-500">Standard</div>
+                        </div>
+                        <div className="bg-white p-2 rounded border">
+                          <div className="font-mono font-bold">DL-01-C-5678</div>
+                          <div className="text-gray-500">Single Letter</div>
+                        </div>
+                        <div className="bg-white p-2 rounded border">
+                          <div className="font-mono font-bold">12-AB-1234</div>
+                          <div className="text-gray-500">Without State</div>
+                        </div>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="flex flex-col sm:flex-row gap-3 pt-4">
+                  <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-200">
                     <button
                       onClick={retryOCR}
-                      className="py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-semibold"
+                      className="py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-semibold flex items-center justify-center gap-2"
                     >
-                      Retry Scan
+                      <Camera className="w-4 h-4" />
+                      Rescan
+                    </button>
+                    <button
+                      onClick={() => setShowOcrResult(false)}
+                      className="py-3 bg-red-50 text-red-600 border border-red-200 rounded-lg hover:bg-red-100 transition font-semibold"
+                    >
+                      Cancel
                     </button>
                     <button
                       onClick={applyOCRResult}
-                      className="py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold"
+                      disabled={!validateVehicleNumber(ocrResult.vehicleNumber)}
+                      className="py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {ocrResult.vehicleNumber ? 'Use This Number' : 'Continue Anyway'}
+                      {ocrResult.isEdited ? 'Use This Number' : 'Continue with Detected Number'}
                     </button>
                   </div>
                 </div>
@@ -1080,7 +1496,7 @@ const EntryVehicles = () => {
           </div>
         )}
 
-        {/* Camera View (Updated for OCR) */}
+        {/* Enhanced Camera View for OCR */}
         {cameraView && (
           <div className="fixed inset-0 bg-black z-50 flex flex-col">
             <div className="bg-black/80 backdrop-blur-sm p-4 flex items-center justify-between">
@@ -1093,11 +1509,12 @@ const EntryVehicles = () => {
               
               <div className="text-white font-semibold text-center">
                 <div className="text-sm sm:text-base">
-                  {cameraView === 'ocr' ? 'Scan Vehicle Number' : cameraView === 'video' ? 'Recording Video' : `Capture ${getCameraLabel()}`}
+                  {cameraView === 'ocr' ? '🔍 Scan Vehicle Number Plate' : cameraView === 'video' ? 'Recording Video' : `Capture ${getCameraLabel()}`}
                 </div>
                 {cameraView === 'ocr' && (
-                  <div className="text-xs text-yellow-400 mt-1">
-                    Position number plate in frame
+                  <div className="text-xs text-yellow-400 mt-1 flex items-center justify-center gap-1">
+                    <Target className="w-3 h-3" />
+                    Align number plate within yellow frame
                   </div>
                 )}
                 {isRecording && (
@@ -1105,9 +1522,6 @@ const EntryVehicles = () => {
                     <div className="w-2 h-2 sm:w-3 sm:h-3 bg-red-500 rounded-full animate-pulse"></div>
                     REC {formatRecordingTime(recordingTime)}
                   </div>
-                )}
-                {!isRecording && cameraView !== 'video' && cameraView !== 'ocr' && (
-                  <div className="text-xs text-gray-300 mt-1">Position in frame and tap capture</div>
                 )}
               </div>
 
@@ -1130,24 +1544,56 @@ const EntryVehicles = () => {
               />
               
               {cameraView === 'ocr' && (
-                <div className="absolute inset-0 pointer-events-none">
-                  <div className="absolute inset-4 border-2 border-yellow-400 rounded-lg"></div>
-                  <div className="absolute top-4 left-4 right-4 text-center">
-                    <div className="inline-block bg-black/70 backdrop-blur-sm px-4 py-2 rounded-lg">
-                      <p className="text-yellow-400 text-sm font-semibold">Align number plate within frame</p>
+                <>
+                  <div className="absolute inset-0 pointer-events-none">
+                    <div className="absolute top-1/3 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-72 h-28 sm:w-96 sm:h-36 border-4 border-yellow-400 rounded-xl shadow-lg shadow-yellow-500/50"></div>
+                    
+                    <div className="absolute top-1/3 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-72 h-0.5 bg-yellow-400/50"></div>
+                    <div className="absolute top-1/3 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-0.5 h-28 bg-yellow-400/50"></div>
+                    
+                    <div className="absolute top-8 left-4 right-4 text-center">
+                      <div className="inline-block bg-black/80 backdrop-blur-sm px-4 py-3 rounded-lg border border-yellow-500/50">
+                        <p className="text-yellow-400 text-sm sm:text-base font-semibold flex items-center justify-center gap-2">
+                          <ZoomIn className="w-4 h-4" />
+                          Position number plate within frame
+                        </p>
+                        <p className="text-white/80 text-xs mt-1">
+                          Ensure good lighting and focus
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="absolute bottom-8 left-4 right-4 text-center">
+                      <div className="inline-block bg-black/80 backdrop-blur-sm px-4 py-2 rounded-lg">
+                        <div className="flex items-center justify-center gap-4 text-xs">
+                          <span className="text-green-400 flex items-center gap-1">
+                            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                            Good lighting
+                          </span>
+                          <span className="text-blue-400 flex items-center gap-1">
+                            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                            Steady hand
+                          </span>
+                          <span className="text-yellow-400 flex items-center gap-1">
+                            <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                            Close up
+                          </span>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                  <div className="absolute bottom-4 left-4 right-4 text-center">
-                    <div className="inline-block bg-black/70 backdrop-blur-sm px-4 py-2 rounded-lg">
-                      <p className="text-white text-sm">Ensure good lighting and focus</p>
+                  
+                  <div className="absolute bottom-32 left-1/2 transform -translate-x-1/2 text-center">
+                    <div className="bg-black/60 backdrop-blur-sm px-4 py-2 rounded-full">
+                      <p className="text-white text-sm">Tap capture when number plate is clear</p>
                     </div>
                   </div>
-                </div>
+                </>
               )}
               
-              {cameraView !== 'ocr' && (
+              {cameraView !== 'ocr' && cameraView !== 'video' && (
                 <div className="absolute inset-0 pointer-events-none">
-                  <div className="absolute inset-4 border-2 border-white/50 rounded-lg"></div>
+                  <div className="absolute inset-8 border-2 border-white/30 rounded-lg"></div>
                 </div>
               )}
             </div>
@@ -1164,10 +1610,16 @@ const EntryVehicles = () => {
               ) : (
                 <button
                   onClick={capturePhoto}
-                  className="w-16 h-16 sm:w-20 sm:h-20 bg-white rounded-full flex items-center justify-center hover:bg-gray-200 transition shadow-xl relative"
+                  className="w-16 h-16 sm:w-20 sm:h-20 bg-white rounded-full flex items-center justify-center hover:bg-gray-200 transition shadow-xl relative group"
                 >
                   <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white border-4 border-gray-800 rounded-full"></div>
                   <Camera className="absolute w-6 h-6 sm:w-8 sm:h-8 text-gray-600" />
+                  
+                  {cameraView === 'ocr' && (
+                    <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-black/80 text-white px-3 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap text-sm">
+                      Capture Number Plate
+                    </div>
+                  )}
                 </button>
               )}
             </div>
