@@ -606,54 +606,111 @@ const AdminDashboard = () => {
                 <h2 className="text-xl font-bold text-gray-900">Recent Activity</h2>
                 <p className="text-sm text-gray-600 mt-1">Live system events and movements</p>
               </div>
-              <button className="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center gap-1">
+              {/* <button className="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center gap-1">
                 View All Activity
                 <ArrowUpRight className="w-4 h-4" />
-              </button>
+              </button> */}
             </div>
 
             {dashboardData.recentActivity && dashboardData.recentActivity.length > 0 ? (
-              <div className="space-y-3">
-                {dashboardData.recentActivity.slice(0, 5).map((activity, index) => (
-                  <div 
-                    key={index} 
-                    className="flex items-start gap-4 p-3 hover:bg-gray-50 rounded-xl transition-colors group"
-                  >
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                      activity.title.includes('Entry') ? 'bg-green-100' : 
-                      activity.title.includes('Exit') ? 'bg-blue-100' : 'bg-purple-100'
-                    }`}>
-                      <Activity className={`w-5 h-5 ${
-                        activity.title.includes('Entry') ? 'text-green-600' : 
-                        activity.title.includes('Exit') ? 'text-blue-600' : 'text-purple-600'
-                      }`} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
-                        <div className="font-semibold text-gray-900 group-hover:text-blue-600">
-                          {activity.title}
-                        </div>
-                        <div className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                          {new Date(activity.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </div>
-                      </div>
-                      <div className="text-sm text-gray-600 mt-1">{activity.description}</div>
-                      <div className="flex items-center gap-2 mt-2">
-                        <div className="text-xs text-gray-500">{activity.site || 'Unknown Site'}</div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+  <div className="space-y-3">
+    {dashboardData.recentActivity.slice(0, 5).map((activity, index) => {
+      // Convert time to 12-hour format
+      const formatTime12Hour = (dateString) => {
+        try {
+          const date = new Date(dateString);
+          return date.toLocaleTimeString('en-US', {
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+          });
+        } catch (error) {
+          return 'Invalid time';
+        }
+      };
+
+      // Format date with month/day
+      const formatDate = (dateString) => {
+        try {
+          const date = new Date(dateString);
+          return date.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric'
+          });
+        } catch (error) {
+          return '';
+        }
+      };
+
+      const activityTime = formatTime12Hour(activity.time);
+      const activityDate = formatDate(activity.time);
+      const isToday = new Date(activity.time).toDateString() === new Date().toDateString();
+      
+      // Determine if it's entry or exit based on title or description
+      const isEntry = activity.title.includes('Vehicle') && activity.description.includes('entry') || 
+                     activity.title.includes('Entry') || 
+                     activity.description.toLowerCase().includes('entry');
+      const isExit = activity.title.includes('Vehicle') && activity.description.includes('exit') || 
+                    activity.title.includes('Exit') || 
+                    activity.description.toLowerCase().includes('exit');
+
+      return (
+        <div 
+          key={index} 
+          className="flex items-start gap-4 p-3 hover:bg-gray-50 rounded-xl transition-colors group"
+        >
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
+            isEntry ? 'bg-green-100' : 
+            isExit ? 'bg-blue-100' : 'bg-purple-100'
+          }`}>
+            {isEntry ? (
+              <ArrowUpRight className="w-5 h-5 text-green-600" />
+            ) : isExit ? (
+              <ArrowDownRight className="w-5 h-5 text-blue-600" />
             ) : (
-              <div className="text-center py-12">
-                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Activity className="w-8 h-8 text-gray-400" />
-                </div>
-                <p className="text-gray-500 font-medium">No recent activity detected</p>
-                <p className="text-sm text-gray-400 mt-1">System activity will appear here automatically</p>
-              </div>
+              <Activity className="w-5 h-5 text-purple-600" />
             )}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between">
+              <div className="font-semibold text-gray-900 group-hover:text-blue-600">
+                {activity.title}
+              </div>
+              <div className="flex flex-col items-end">
+                <div className="text-sm font-medium text-gray-900">
+                  {activityTime}
+                </div>
+                <div className="text-xs text-gray-500 mt-0.5">
+                  {isToday ? 'Today' : activityDate}
+                </div>
+              </div>
+            </div>
+            <div className="text-sm text-gray-600 mt-1">{activity.description}</div>
+            <div className="flex items-center gap-2 mt-2">
+              <div className={`text-xs px-2 py-0.5 rounded-full ${
+                isEntry ? 'bg-green-100 text-green-800' : 
+                isExit ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'
+              }`}>
+                {isEntry ? 'Entry' : isExit ? 'Exit' : 'Activity'}
+              </div>
+              <div className="text-xs text-gray-500">
+                • {activity.time ? new Date(activity.time).toLocaleDateString() : 'Unknown date'}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    })}
+  </div>
+) : (
+  <div className="text-center py-12">
+    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+      <Activity className="w-8 h-8 text-gray-400" />
+    </div>
+    <p className="text-gray-500 font-medium">No recent activity detected</p>
+    <p className="text-sm text-gray-400 mt-1">System activity will appear here automatically</p>
+  </div>
+)}
           </div>
         </div>
 
