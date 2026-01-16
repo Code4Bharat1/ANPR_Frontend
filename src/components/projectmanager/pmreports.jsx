@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from 'react';
-import { 
+import {
   Search, Download, FileText, Calendar, Loader, CheckCircle, AlertCircle
 } from 'lucide-react';
 import Sidebar from './sidebar';
@@ -99,11 +99,11 @@ const PMReports = () => {
 
   const calculateDuration = (entryTime, exitTime) => {
     if (!exitTime) return '-';
-    
+
     const diff = new Date(exitTime) - new Date(entryTime);
     const hours = Math.floor(diff / (1000 * 60 * 60));
     const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-    
+
     return `${hours}h ${minutes}m`;
   };
 
@@ -146,9 +146,8 @@ const PMReports = () => {
 
       {/* Alert Notification */}
       {alert && (
-        <div className={`fixed top-4 right-4 z-50 flex items-center gap-3 px-6 py-4 rounded-lg shadow-lg ${
-          alert.type === 'success' ? 'bg-green-500' : 'bg-red-500'
-        } text-white animate-slide-in`}>
+        <div className={`fixed top-4 right-4 z-50 flex items-center gap-3 px-6 py-4 rounded-lg shadow-lg ${alert.type === 'success' ? 'bg-green-500' : 'bg-red-500'
+          } text-white animate-slide-in`}>
           {alert.type === 'success' ? <CheckCircle className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
           <span className="font-medium">{alert.message}</span>
         </div>
@@ -159,7 +158,7 @@ const PMReports = () => {
 
       {/* ✅ Main Content with proper spacing */}
       <main className="lg:ml-72 max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
-        
+
         {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6">
           <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
@@ -187,7 +186,7 @@ const PMReports = () => {
               <input
                 type="date"
                 value={dateRange.start}
-                onChange={(e) => setDateRange({...dateRange, start: e.target.value})}
+                onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent outline-none"
               />
             </div>
@@ -199,7 +198,7 @@ const PMReports = () => {
               <input
                 type="date"
                 value={dateRange.end}
-                onChange={(e) => setDateRange({...dateRange, end: e.target.value})}
+                onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent outline-none"
               />
             </div>
@@ -245,7 +244,9 @@ const PMReports = () => {
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  {/* <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Trip ID</th> */}
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">
+                    S.No.
+                  </th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Vehicle</th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Vendor</th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Site</th>
@@ -255,52 +256,72 @@ const PMReports = () => {
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Status</th>
                 </tr>
               </thead>
+
               <tbody className="divide-y divide-gray-200">
                 {filteredReports.length === 0 ? (
                   <tr>
                     <td colSpan="8" className="px-6 py-12 text-center">
                       <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                       <p className="text-gray-500 text-lg font-medium">No reports found</p>
-                      <p className="text-gray-400 text-sm mt-1">Try adjusting your date range or search filters</p>
+                      <p className="text-gray-400 text-sm mt-1">
+                        Try adjusting your date range or search filters
+                      </p>
                     </td>
                   </tr>
                 ) : (
-                  filteredReports.map((report) => (
+                  filteredReports.map((report, index) => (
                     <tr key={report._id} className="hover:bg-gray-50 transition">
-                      {/* <td className="px-6 py-4 font-semibold text-indigo-600">{report.tripId}</td> */}
+
+                      {/* Serial Number */}
+                      <td className="px-6 py-4 text-sm font-semibold text-gray-700">
+                        {index + 1}
+                      </td>
+
                       <td className="px-6 py-4 font-mono text-sm text-gray-900">
                         {report.vehicleId?.vehicleNumber || 'N/A'}
                       </td>
+
                       <td className="px-6 py-4 text-sm text-gray-600">
                         {report.vendorId?.name || 'N/A'}
                       </td>
+
                       <td className="px-6 py-4 text-sm text-gray-600">
                         {report.siteId?.name || 'N/A'}
                       </td>
+
                       <td className="px-6 py-4 text-sm text-gray-600">
                         {formatDateTime(report.entryTime)}
                       </td>
+
                       <td className="px-6 py-4 text-sm text-gray-600">
                         {formatDateTime(report.exitTime)}
                       </td>
+
                       <td className="px-6 py-4 text-sm font-semibold text-gray-900">
                         {calculateDuration(report.entryTime, report.exitTime)}
                       </td>
+
                       <td className="px-6 py-4">
-                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
-                          report.status === 'completed' ? 'bg-green-100 text-green-700' : 
-                          report.status === 'active' ? 'bg-blue-100 text-blue-700' :
-                          'bg-gray-100 text-gray-700'
-                        }`}>
-                          {report.status === 'completed' ? 'Completed' :
-                           report.status === 'active' ? 'Active' :
-                           report.status}
+                        <span
+                          className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${report.status === 'completed'
+                              ? 'bg-green-100 text-green-700'
+                              : report.status === 'active'
+                                ? 'bg-blue-100 text-blue-700'
+                                : 'bg-gray-100 text-gray-700'
+                            }`}
+                        >
+                          {report.status === 'completed'
+                            ? 'Completed'
+                            : report.status === 'active'
+                              ? 'Active'
+                              : report.status}
                         </span>
                       </td>
                     </tr>
                   ))
                 )}
               </tbody>
+
             </table>
           </div>
         </div>
@@ -321,15 +342,14 @@ const PMReports = () => {
                     <div className="font-semibold text-indigo-600 mb-1">{report.tripId}</div>
                     <div className="font-mono text-sm text-gray-900">{report.vehicleId?.vehicleNumber || 'N/A'}</div>
                   </div>
-                  <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
-                    report.status === 'completed' ? 'bg-green-100 text-green-700' : 
+                  <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${report.status === 'completed' ? 'bg-green-100 text-green-700' :
                     report.status === 'active' ? 'bg-blue-100 text-blue-700' :
-                    'bg-gray-100 text-gray-700'
-                  }`}>
+                      'bg-gray-100 text-gray-700'
+                    }`}>
                     {report.status === 'completed' ? 'Completed' : report.status === 'active' ? 'Active' : report.status}
                   </span>
                 </div>
-                
+
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-gray-600">Vendor:</span>

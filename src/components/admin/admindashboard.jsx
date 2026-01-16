@@ -4,53 +4,101 @@ import {
   MapPin, Users, Camera, Activity,
   ArrowUpRight, ArrowDownRight, AlertCircle,
   TrendingUp, Database, Wifi, WifiOff, Package,
-  CheckCircle, Clock, Crown, Shield, Zap
+  CheckCircle, Clock, Crown, Shield, Zap,
+  RefreshCw, ExternalLink, BarChart3, Cpu,
+  Battery, BatteryCharging, Server, HardDrive
 } from 'lucide-react';
 import axios from 'axios';
 import Sidebar from './sidebar';
 import Header from './header';
 
-const DashboardCard = ({ icon: Icon, value, label, bgColor, iconColor, trend, subtitle }) => (
-  <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+// Dashboard Card Component with enhanced design
+const DashboardCard = ({ 
+  icon: Icon, 
+  value, 
+  label, 
+  bgColor, 
+  iconColor, 
+  trend, 
+  subtitle,
+  isLoading = false,
+  onClick 
+}) => (
+  <div 
+    className={`bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-300 hover:-translate-y-1 ${onClick ? 'cursor-pointer hover:border-blue-200' : ''}`}
+    onClick={onClick}
+  >
     <div className="flex items-start justify-between mb-4">
-      <div className={`w-12 h-12 ${bgColor} rounded-lg flex items-center justify-center`}>
+      <div className={`w-12 h-12 ${bgColor} rounded-xl flex items-center justify-center shadow-sm`}>
         <Icon className={`w-6 h-6 ${iconColor}`} />
       </div>
       {trend !== undefined && (
-        <div className={`flex items-center gap-1 text-sm font-semibold ${trend >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-          {trend >= 0 ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
+        <div className={`flex items-center gap-1 text-sm font-semibold px-2 py-1 rounded-full ${trend >= 0 ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+          {trend >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
           {Math.abs(trend)}%
         </div>
       )}
     </div>
-    <div className="text-3xl font-bold text-gray-900 mb-1">{value}</div>
-    <div className="text-gray-600 text-sm font-medium">{label}</div>
-    {subtitle && <div className="text-xs text-gray-500 mt-2">{subtitle}</div>}
+    {isLoading ? (
+      <div className="animate-pulse">
+        <div className="h-8 bg-gray-200 rounded w-3/4 mb-2"></div>
+        <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+      </div>
+    ) : (
+      <>
+        <div className="text-3xl font-bold text-gray-900 mb-1">{value}</div>
+        <div className="text-gray-600 text-sm font-medium">{label}</div>
+        {subtitle && <div className="text-xs text-gray-500 mt-2 flex items-center gap-1">
+          {subtitle.includes('healthy') && <div className="w-2 h-2 bg-green-500 rounded-full"></div>}
+          {subtitle.includes('warning') && <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>}
+          {subtitle}
+        </div>}
+      </>
+    )}
   </div>
 );
 
-const UsageBar = ({ used, limit, label }) => {
+// Enhanced Usage Bar with visual indicators
+const UsageBar = ({ used, limit, label, type = 'default' }) => {
   const percentage = limit > 0 ? (used / limit) * 100 : 0;
   const isNearLimit = percentage > 80;
+  const isOverLimit = used > limit;
   
+  const getBarColor = () => {
+    if (isOverLimit) return 'bg-red-500';
+    if (isNearLimit) return 'bg-yellow-500';
+    if (type === 'warning') return 'bg-yellow-500';
+    if (type === 'success') return 'bg-green-500';
+    return 'bg-blue-600';
+  };
+
   return (
     <div className="mb-4">
       <div className="flex justify-between items-center mb-2">
         <span className="text-sm font-medium text-gray-700">{label}</span>
-        <span className="text-sm font-semibold text-gray-900">{used} / {limit}</span>
+        <div className="flex items-center gap-2">
+          <span className={`text-sm font-semibold ${isOverLimit ? 'text-red-600' : 'text-gray-900'}`}>
+            {used} / {limit}
+          </span>
+          {isOverLimit && <AlertCircle className="w-4 h-4 text-red-500" />}
+        </div>
       </div>
-      <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+      <div className="w-full h-2.5 bg-gray-100 rounded-full overflow-hidden shadow-inner">
         <div
-          className={`h-full rounded-full transition-all ${
-            isNearLimit ? 'bg-red-500' : 'bg-blue-600'
-          }`}
+          className={`h-full rounded-full transition-all duration-500 ${getBarColor()}`}
           style={{ width: `${Math.min(percentage, 100)}%` }}
         ></div>
       </div>
+      {isOverLimit && (
+        <div className="text-xs text-red-600 mt-1 font-medium">
+          ⚠️ Limit exceeded by {used - limit} devices
+        </div>
+      )}
     </div>
   );
 };
 
+// Enhanced Package Card with more features
 const PackageCard = ({ 
   name, 
   price, 
@@ -58,63 +106,114 @@ const PackageCard = ({
   features, 
   icon: Icon,
   bgGradient,
-}) => (
-  <div className={`relative bg-white rounded-xl p-6 shadow-sm border-2 transition-all hover:shadow-lg ${
-    isCurrent ? 'border-blue-600 ring-2 ring-blue-100' : 'border-gray-200'
-  } `}>
-    {/* {recommended && (
-      <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-        <span className="bg-gradient-to-r from-amber-400 to-orange-500 text-white px-4 py-1 rounded-full text-xs font-bold shadow-lg">
-          RECOMMENDED
-        </span>
-      </div>
-    )} */}
-    {isCurrent && (
-      <div className="absolute -top-3 right-4">
-        <span className="bg-blue-600 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg flex items-center gap-1">
-          <CheckCircle className="w-3 h-3" />
-          ACTIVE
-        </span>
-      </div>
-    )}
-    
-    <div className={`w-12 h-12 bg-gradient-to-br ${bgGradient} rounded-lg flex items-center justify-center mb-4`}>
-      <Icon className="w-6 h-6 text-white" />
-    </div>
-    
-    <h3 className="text-xl font-bold text-gray-900 mb-2">{name}</h3>
-    <div className="text-3xl font-bold text-gray-900 mb-1">₹{price.toLocaleString()}</div>
-    <div className="text-sm text-gray-600 mb-6">per month</div>
-    
-    <div className="space-y-3">
-      {features.map((feature, index) => (
-        <div key={index} className="flex items-start gap-2">
-          <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
-          <span className="text-sm text-gray-700">{feature}</span>
+  type,
+  isRecommended = false,
+  onClick
+}) => {
+  const isPopular = name.includes("Pro") || name.includes("Core");
+  
+  return (
+    <div 
+      className={`relative bg-white rounded-2xl p-6 shadow-sm border-2 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 cursor-pointer ${
+        isCurrent ? 'border-blue-600 ring-4 ring-blue-100' : 
+        isPopular ? 'border-indigo-200' : 'border-gray-200'
+      }`}
+      onClick={() => onClick && onClick(type)}
+    >
+      {/* {isRecommended && (
+        <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+          <span className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-1 rounded-full text-xs font-bold shadow-lg animate-pulse">
+            ⭐ RECOMMENDED
+          </span>
         </div>
-      ))}
-    </div>
-    
-    {!isCurrent && (
-      <button className="w-full mt-6 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg transition-colors">
-        Upgrade Plan
+      )} */}
+      
+      {isCurrent && (
+        <div className="absolute -top-3 right-4">
+          <span className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg flex items-center gap-1 animate-pulse">
+            <CheckCircle className="w-3 h-3" />
+            ACTIVE
+          </span>
+        </div>
+      )}
+      
+      <div className={`w-14 h-14 bg-gradient-to-br ${bgGradient} rounded-xl flex items-center justify-center mb-4 shadow-lg`}>
+        <Icon className="w-7 h-7 text-white" />
+      </div>
+      
+      <h3 className="text-xl font-bold text-gray-900 mb-2">{name}</h3>
+      <div className="flex items-baseline gap-1 mb-4">
+        <div className="text-3xl font-bold text-gray-900">₹{price.toLocaleString()}</div>
+        <div className="text-sm text-gray-600">/month</div>
+      </div>
+      
+      <div className="space-y-3 mb-6">
+        {features.map((feature, index) => (
+          <div key={index} className="flex items-start gap-2">
+            <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
+            <span className="text-sm text-gray-700">{feature}</span>
+          </div>
+        ))}
+      </div>
+      
+      <button className={`w-full font-semibold py-3 rounded-xl transition-all duration-300 ${
+        isCurrent 
+          ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' 
+          : 'bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-xl'
+      }`}>
+        {isCurrent ? 'Current Plan' : 'Upgrade Now'}
       </button>
-    )}
-  </div>
-);
+    </div>
+  );
+};
+
+// Device Health Indicator Component
+const DeviceHealthIndicator = ({ health, size = "medium" }) => {
+  const getHealthColor = (value) => {
+    if (value >= 80) return 'text-green-500 bg-green-50';
+    if (value >= 60) return 'text-yellow-500 bg-yellow-50';
+    if (value >= 40) return 'text-orange-500 bg-orange-50';
+    return 'text-red-500 bg-red-50';
+  };
+
+  const getHealthIcon = (value) => {
+    if (value >= 80) return <BatteryCharging className="w-5 h-5" />;
+    if (value >= 60) return <Battery className="w-5 h-5" />;
+    if (value >= 40) return <Cpu className="w-5 h-5" />;
+    return <AlertCircle className="w-5 h-5" />;
+  };
+
+  return (
+    <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full ${getHealthColor(health)}`}>
+      {getHealthIcon(health)}
+      <span className="font-semibold">{health}%</span>
+    </div>
+  );
+};
 
 const AdminDashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [activeTab, setActiveTab] = useState('overview');
 
   useEffect(() => {
     fetchDashboardData();
+    
+    // Auto-refresh every 30 seconds
+    const interval = setInterval(() => {
+      fetchDashboardData(false);
+    }, 30000);
+
+    return () => clearInterval(interval);
   }, []);
 
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = async (showLoading = true) => {
     try {
-      setLoading(true);
+      if (showLoading) setLoading(true);
+      setRefreshing(true);
+      
       const token = localStorage.getItem('accessToken');
       const response = await axios.get(
         `${process.env.NEXT_PUBLIC_API_URL}/api/client-admin/dashboard`,
@@ -125,7 +224,13 @@ const AdminDashboard = () => {
       console.error('Error fetching dashboard:', err);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
+  };
+
+  const handlePackageSelect = (packageType) => {
+    console.log(`Selected package: ${packageType}`);
+    // Implement package upgrade logic here
   };
 
   const packages = [
@@ -133,7 +238,7 @@ const AdminDashboard = () => {
       name: "Lite Access",
       price: 6000,
       icon: Zap,
-      bgGradient: "from-blue-500 to-blue-600",
+      bgGradient: "from-blue-500 to-cyan-500",
       type: "LITE",
       features: [
         "1 PM + 2 Supervisors",
@@ -149,7 +254,7 @@ const AdminDashboard = () => {
       icon: Shield,
       bgGradient: "from-indigo-500 to-purple-600",
       type: "CORE",
-      recommended: true,
+      isRecommended: true,
       features: [
         "2 PM + 3 Supervisors",
         "1 Barrier + 1 ANPR",
@@ -188,12 +293,13 @@ const AdminDashboard = () => {
     }
   ];
 
-  if (loading) {
+  if (loading && !dashboardData) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600 font-medium">Loading dashboard...</p>
+          <div className="w-20 h-20 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
+          <p className="text-gray-600 font-medium text-lg">Loading your dashboard...</p>
+          <p className="text-gray-400 text-sm mt-2">Preparing insights and analytics</p>
         </div>
       </div>
     );
@@ -202,9 +308,17 @@ const AdminDashboard = () => {
   if (!dashboardData) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-          <p className="text-gray-600 font-medium">Failed to load dashboard data</p>
+        <div className="text-center max-w-md">
+          <AlertCircle className="w-20 h-20 text-red-400 mx-auto mb-6" />
+          <h3 className="text-xl font-bold text-gray-800 mb-2">Failed to load dashboard</h3>
+          <p className="text-gray-600 mb-6">We couldn't fetch your dashboard data. Please try again.</p>
+          <button 
+            onClick={() => fetchDashboardData()}
+            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-lg transition-colors flex items-center gap-2 mx-auto"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Retry Loading
+          </button>
         </div>
       </div>
     );
@@ -221,253 +335,352 @@ const AdminDashboard = () => {
     ? ((dashboardData.activeDevices / dashboardData.totalDevices) * 100).toFixed(1)
     : 0;
 
+  const daysRemaining = getDaysRemaining();
+  const isPlanExpiringSoon = daysRemaining <= 7;
+  const hasOverLimitDevices = Object.values(dashboardData.usage.devices).some((used, index) => {
+    const limits = Object.values(dashboardData.plan.limits.devices);
+    return used > (limits[index] || 0);
+  });
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       
-      <Header title="Dashboard" onMenuClick={() => setSidebarOpen(true)} />
+      <Header 
+        title="Dashboard" 
+        onMenuClick={() => setSidebarOpen(true)}
+        actions={
+          <button 
+            onClick={() => fetchDashboardData(false)}
+            disabled={refreshing}
+            className="flex items-center gap-2 bg-white hover:bg-gray-50 text-gray-700 font-medium px-4 py-2 rounded-lg border border-gray-200 transition-colors disabled:opacity-50"
+          >
+            <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+            {refreshing ? 'Refreshing...' : 'Refresh'}
+          </button>
+        }
+      />
 
       <main className="lg:ml-72 max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         
-        {/* Current Plan Status Banner */}
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl p-6 text-white mb-8 shadow-lg">
-          <div className="flex items-center justify-between flex-wrap gap-4">
+        {/* Current Plan Status Banner with warning */}
+        <div className={`rounded-2xl p-6 text-white mb-8 shadow-xl ${
+          isPlanExpiringSoon 
+            ? 'bg-gradient-to-r from-red-600 to-red-700 animate-pulse' 
+            : 'bg-gradient-to-r from-blue-600 to-indigo-700'
+        }`}>
+          <div className="flex items-center justify-between flex-wrap gap-6">
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 bg-white/20 rounded-lg flex items-center justify-center">
+              <div className="w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
                 <Package className="w-8 h-8" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold mb-1">
+                <h1 className="text-2xl font-bold mb-1 flex items-center gap-3">
                   {dashboardData.plan.packageType} Plan
+                  <DeviceHealthIndicator health={parseFloat(deviceActivityRate)} />
                 </h1>
-                <p className="text-blue-100">Your current subscription</p>
+                <p className="text-blue-100 opacity-90">Your current subscription status</p>
               </div>
             </div>
             
             <div className="flex items-center gap-6">
               <div className="text-right">
-                <div className="text-sm text-blue-100 mb-1">Time Remaining</div>
-                <div className="flex items-center gap-2">
-                  <Clock className="w-5 h-5" />
-                  <span className="text-2xl font-bold">{getDaysRemaining()} days</span>
+                <div className="text-sm text-blue-100 opacity-90 mb-1 flex items-center gap-2">
+                  <Clock className="w-4 h-4" />
+                  Time Remaining
                 </div>
-              </div>
-              {/* <button className="bg-white text-blue-600 font-semibold px-6 py-2.5 rounded-lg hover:bg-blue-50 transition-colors">
-                Manage Plan
-              </button> */}
-            </div>
-          </div>
-        </div>
-
-        {/* Usage Overview */}
-        <div className="mb-8">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">Plan Usage & Limits</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            
-            {/* User Limits */}
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <Users className="w-5 h-5 text-blue-600" />
-                User Allocation
-              </h3>
-              <UsageBar 
-                used={dashboardData.usage.pm} 
-                limit={dashboardData.plan.limits.pm} 
-                label="Project Managers" 
-              />
-              <UsageBar 
-                used={dashboardData.usage.supervisor} 
-                limit={dashboardData.plan.limits.supervisor} 
-                label="Supervisors" 
-              />
-              <div className="mt-4 pt-4 border-t border-gray-100">
-                <div className="text-sm text-gray-600">
-                  Total Users: <span className="font-semibold text-gray-900">
-                    {dashboardData.usage.pm + dashboardData.usage.supervisor} / {dashboardData.plan.limits.pm + dashboardData.plan.limits.supervisor}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Device Limits */}
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <Camera className="w-5 h-5 text-blue-600" />
-                Device Allocation
-              </h3>
-              <UsageBar 
-                used={dashboardData.usage.devices.BARRIER || 0} 
-                limit={dashboardData.plan.limits.devices.BARRIER || 0} 
-                label="Barriers" 
-              />
-              <UsageBar 
-                used={dashboardData.usage.devices.BIOMETRIC || 0} 
-                limit={dashboardData.plan.limits.devices.BIOMETRIC || 0} 
-                label="Biometrics" 
-              />
-              <UsageBar 
-                used={dashboardData.usage.devices.ANPR || 0} 
-                limit={dashboardData.plan.limits.devices.ANPR || 0} 
-                label="ANPR Cameras" 
-              />
-              <div className="mt-4 pt-4 border-t border-gray-100">
-                <div className="text-sm text-gray-600">
-                  Total Devices: <span className="font-semibold text-gray-900">
-                    {(dashboardData.usage.devices.ANPR || 0) + (dashboardData.usage.devices.BARRIER || 0) + (dashboardData.usage.devices.BIOMETRIC || 0)} / {(dashboardData.plan.limits.devices.ANPR || 0) + (dashboardData.plan.limits.devices.BARRIER || 0) + (dashboardData.plan.limits.devices.BIOMETRIC || 0)}
-                  </span>
+                <div className="flex items-center gap-3">
+                  <div className={`text-3xl font-bold ${isPlanExpiringSoon ? 'text-yellow-300' : 'text-white'}`}>
+                    {daysRemaining} days
+                  </div>
+                  {isPlanExpiringSoon && (
+                    <div className="bg-white/20 px-3 py-1 rounded-full text-sm">
+                      ⚠️ Renew Soon
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
           </div>
+          
+          {hasOverLimitDevices && (
+            <div className="mt-4 pt-4 border-t border-white/20">
+              <div className="flex items-center gap-2 text-yellow-200">
+                <AlertCircle className="w-5 h-5" />
+                <span className="font-medium">Some device limits have been exceeded</span>
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Site & User Overview */}
+        {/* Stats Overview */}
         <div className="mb-8">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">Infrastructure Overview</h2>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-gray-900">System Overview</h2>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-500">Last updated: </span>
+              <span className="text-sm font-medium text-gray-700">
+                {new Date(dashboardData.lastUpdated).toLocaleTimeString()}
+              </span>
+            </div>
+          </div>
+          
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             <DashboardCard
               icon={MapPin}
               value={dashboardData.totalSites}
-              label="Total Sites"
-              bgColor="bg-blue-50"
+              label="Active Sites"
+              bgColor="bg-gradient-to-br from-blue-50 to-blue-100"
               iconColor="text-blue-600"
+              subtitle={`${dashboardData.totalSites > 0 ? 'All operational' : 'No sites configured'}`}
+              onClick={() => console.log('Navigate to sites')}
             />
             <DashboardCard
               icon={Users}
-              value={dashboardData.totalProjectManagers}
-              label="Project Managers"
-              bgColor="bg-indigo-50"
+              value={dashboardData.totalUsers}
+              label="Total Users"
+              bgColor="bg-gradient-to-br from-indigo-50 to-indigo-100"
               iconColor="text-indigo-600"
-            />
-            <DashboardCard
-              icon={Users}
-              value={dashboardData.totalSupervisors}
-              label="Supervisors"
-              bgColor="bg-pink-50"
-              iconColor="text-pink-600"
+              subtitle={`${dashboardData.totalProjectManagers} PMs • ${dashboardData.totalSupervisors} Supervisors`}
             />
             <DashboardCard
               icon={Camera}
               value={dashboardData.totalDevices}
               label="Total Devices"
-              bgColor="bg-orange-50"
+              bgColor="bg-gradient-to-br from-orange-50 to-orange-100"
               iconColor="text-orange-600"
-            />
-          </div>
-        </div>
-
-        {/* Device Status */}
-        <div className="mb-8">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">Device Status</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">Active</h3>
-                <Wifi className="w-6 h-6 text-green-500" />
-              </div>
-              <div className="text-4xl font-bold text-green-600 mb-2">
-                {dashboardData.activeDevices}
-              </div>
-              <div className="text-sm text-gray-600">Devices online</div>
-            </div>
-
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">Inactive</h3>
-                <WifiOff className="w-6 h-6 text-red-500" />
-              </div>
-              <div className="text-4xl font-bold text-red-600 mb-2">
-                {dashboardData.inactiveDevices}
-              </div>
-              <div className="text-sm text-gray-600">Devices offline</div>
-            </div>
-
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">Health</h3>
-                <Activity className="w-6 h-6 text-blue-500" />
-              </div>
-              <div className="text-4xl font-bold text-blue-600 mb-2">
-                {deviceActivityRate}%
-              </div>
-              <div className="text-sm text-gray-600">System health</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Today's Activity */}
-        <div className="mb-8">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">Today's Activity</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-            <DashboardCard
-              icon={ArrowUpRight}
-              value={dashboardData.todayEntries}
-              label="Today's Entries"
-              bgColor="bg-emerald-50"
-              iconColor="text-emerald-600"
+              subtitle={`${dashboardData.activeDevices} online • ${dashboardData.inactiveDevices} offline`}
             />
             <DashboardCard
-              icon={ArrowDownRight}
-              value={dashboardData.todayExits}
-              label="Today's Exits"
-              bgColor="bg-cyan-50"
-              iconColor="text-cyan-600"
-            />
-            <DashboardCard
-              icon={TrendingUp}
+              icon={Activity}
               value={dashboardData.todayTotal}
-              label="Total Movements"
-              bgColor="bg-indigo-50"
-              iconColor="text-indigo-600"
+              label="Today's Activity"
+              bgColor="bg-gradient-to-br from-emerald-50 to-emerald-100"
+              iconColor="text-emerald-600"
+              subtitle={`${dashboardData.todayEntries} entries • ${dashboardData.todayExits} exits`}
+              trend={dashboardData.todayTotal > 0 ? 12 : 0}
             />
           </div>
         </div>
 
-        {/* Recent Activity */}
-        <div className="mb-8">
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+        {/* Usage Overview Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+          
+          {/* User Allocation */}
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-gray-900">Recent Activity</h2>
-              <span className="text-sm text-gray-500">Live updates</span>
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <Users className="w-5 h-5 text-blue-600" />
+                User Allocation
+              </h3>
+              <ExternalLink className="w-4 h-4 text-gray-400" />
+            </div>
+            <UsageBar 
+              used={dashboardData.usage.pm} 
+              limit={dashboardData.plan.limits.pm} 
+              label="Project Managers" 
+              type={dashboardData.usage.pm >= dashboardData.plan.limits.pm ? 'warning' : 'default'}
+            />
+            <UsageBar 
+              used={dashboardData.usage.supervisor} 
+              limit={dashboardData.plan.limits.supervisor} 
+              label="Supervisors" 
+              type={dashboardData.usage.supervisor >= dashboardData.plan.limits.supervisor ? 'warning' : 'default'}
+            />
+            <div className="mt-6 pt-6 border-t border-gray-100">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm font-medium text-gray-900">Total Users</div>
+                  <div className="text-xs text-gray-500">Combined allocation</div>
+                </div>
+                <div className="text-lg font-bold text-gray-900">
+                  {dashboardData.usage.pm + dashboardData.usage.supervisor} / {dashboardData.plan.limits.pm + dashboardData.plan.limits.supervisor}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Device Allocation */}
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <Camera className="w-5 h-5 text-blue-600" />
+                Device Allocation
+              </h3>
+              <ExternalLink className="w-4 h-4 text-gray-400" />
+            </div>
+            <UsageBar 
+              used={dashboardData.usage.devices.BARRIER || 0} 
+              limit={dashboardData.plan.limits.devices.BARRIER || 0} 
+              label="Barrier Gates" 
+            />
+            <UsageBar 
+              used={dashboardData.usage.devices.BIOMETRIC || 0} 
+              limit={dashboardData.plan.limits.devices.BIOMETRIC || 0} 
+              label="Biometric Devices" 
+            />
+            <UsageBar 
+              used={dashboardData.usage.devices.ANPR || 0} 
+              limit={dashboardData.plan.limits.devices.ANPR || 0} 
+              label="ANPR Cameras" 
+            />
+            <div className="mt-6 pt-6 border-t border-gray-100">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm font-medium text-gray-900">Total Devices</div>
+                  <div className="text-xs text-gray-500">All device types</div>
+                </div>
+                <div className="text-lg font-bold text-gray-900">
+                  {(dashboardData.usage.devices.ANPR || 0) + (dashboardData.usage.devices.BARRIER || 0) + (dashboardData.usage.devices.BIOMETRIC || 0)} / 
+                  {(dashboardData.plan.limits.devices.ANPR || 0) + (dashboardData.plan.limits.devices.BARRIER || 0) + (dashboardData.plan.limits.devices.BIOMETRIC || 0)}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Device Health Status */}
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <Activity className="w-5 h-5 text-blue-600" />
+                System Health
+              </h3>
+              <div className="flex items-center gap-2">
+                <Server className="w-4 h-4 text-gray-400" />
+                <HardDrive className="w-4 h-4 text-gray-400" />
+              </div>
+            </div>
+            
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                    <Wifi className="w-5 h-5 text-green-600" />
+                  </div>
+                  <div>
+                    <div className="font-medium text-gray-900">Active Devices</div>
+                    <div className="text-xs text-gray-500">Online and responding</div>
+                  </div>
+                </div>
+                <div className="text-2xl font-bold text-green-600">
+                  {dashboardData.activeDevices}
+                </div>
+              </div>
+              
+              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
+                    <WifiOff className="w-5 h-5 text-red-600" />
+                  </div>
+                  <div>
+                    <div className="font-medium text-gray-900">Offline Devices</div>
+                    <div className="text-xs text-gray-500">Requires attention</div>
+                  </div>
+                </div>
+                <div className="text-2xl font-bold text-red-600">
+                  {dashboardData.inactiveDevices}
+                </div>
+              </div>
+              
+              <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <BarChart3 className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <div className="font-medium text-gray-900">System Health</div>
+                    <div className="text-xs text-gray-500">Overall performance</div>
+                  </div>
+                </div>
+                <DeviceHealthIndicator health={parseFloat(deviceActivityRate)} />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Recent Activity with Enhanced Design */}
+        <div className="mb-8">
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">Recent Activity</h2>
+                <p className="text-sm text-gray-600 mt-1">Live system events and movements</p>
+              </div>
+              <button className="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center gap-1">
+                View All Activity
+                <ArrowUpRight className="w-4 h-4" />
+              </button>
             </div>
 
             {dashboardData.recentActivity && dashboardData.recentActivity.length > 0 ? (
               <div className="space-y-3">
-                {dashboardData.recentActivity.map((activity, index) => (
-                  <div key={index} className="flex items-start gap-3 py-3 border-b border-gray-100 last:border-0">
-                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <Activity className="w-5 h-5 text-blue-600" />
+                {dashboardData.recentActivity.slice(0, 5).map((activity, index) => (
+                  <div 
+                    key={index} 
+                    className="flex items-start gap-4 p-3 hover:bg-gray-50 rounded-xl transition-colors group"
+                  >
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                      activity.title.includes('Entry') ? 'bg-green-100' : 
+                      activity.title.includes('Exit') ? 'bg-blue-100' : 'bg-purple-100'
+                    }`}>
+                      <Activity className={`w-5 h-5 ${
+                        activity.title.includes('Entry') ? 'text-green-600' : 
+                        activity.title.includes('Exit') ? 'text-blue-600' : 'text-purple-600'
+                      }`} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-gray-900">{activity.title}</div>
-                      <div className="text-sm text-gray-600">{activity.description}</div>
-                      <div className="text-xs text-gray-500 mt-1">{activity.time}</div>
+                      <div className="flex items-center justify-between">
+                        <div className="font-semibold text-gray-900 group-hover:text-blue-600">
+                          {activity.title}
+                        </div>
+                        <div className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                          {new Date(activity.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </div>
+                      </div>
+                      <div className="text-sm text-gray-600 mt-1">{activity.description}</div>
+                      <div className="flex items-center gap-2 mt-2">
+                        <div className="text-xs text-gray-500">{activity.site || 'Unknown Site'}</div>
+                      </div>
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
               <div className="text-center py-12">
-                <AlertCircle className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                <p className="text-gray-500 font-medium">No recent activity</p>
-                <p className="text-sm text-gray-400 mt-1">Activity will appear here when events occur</p>
+                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Activity className="w-8 h-8 text-gray-400" />
+                </div>
+                <p className="text-gray-500 font-medium">No recent activity detected</p>
+                <p className="text-sm text-gray-400 mt-1">System activity will appear here automatically</p>
               </div>
             )}
           </div>
         </div>
 
-        {/* Available Packages */}
+        {/* Available Packages with Enhanced Design */}
         <div className="mb-8">
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Available Plans</h2>
-          <p className="text-gray-600 mb-6">Compare and upgrade your subscription</p>
+          <div className="text-center mb-8">
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Upgrade Your Plan</h2>
+            <p className="text-gray-600 max-w-2xl mx-auto">
+              Choose the perfect plan for your growing needs. All plans include 24/7 support and regular updates.
+            </p>
+          </div>
+          
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {packages.map((pkg, index) => (
               <PackageCard
                 key={index}
                 {...pkg}
                 isCurrent={pkg.type === dashboardData.plan.packageType}
+                onClick={handlePackageSelect}
               />
             ))}
+          </div>
+          
+          <div className="mt-8 text-center">
+            <p className="text-sm text-gray-500">
+              Need a custom solution? <a href="#" className="text-blue-600 hover:text-blue-700 font-medium">Contact our sales team</a>
+            </p>
           </div>
         </div>
 
