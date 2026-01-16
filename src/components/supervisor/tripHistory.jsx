@@ -23,6 +23,9 @@ const TripHistory = () => {
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedTrip, setSelectedTrip] = useState(null);
   const tripsPerPage = 10;
+  const [resolvedEntryMedia, setResolvedEntryMedia] = useState({ photos: {}, video: null });
+  const [resolvedExitMedia, setResolvedExitMedia] = useState({ photos: {}, video: null });
+
 
   useEffect(() => {
     fetchTripHistory();
@@ -32,34 +35,43 @@ const TripHistory = () => {
     applyFilters();
   }, [searchQuery, statusFilter, trips]);
 
+ useEffect(() => {
+  if (selectedTrip) {
+    resolveMedia(selectedTrip.entryMedia, setResolvedEntryMedia);
+    resolveMedia(selectedTrip.exitMedia, setResolvedExitMedia);
+  }
+}, [selectedTrip]);
+
+
+
   const fetchTripHistory = async () => {
     try {
       setLoading(true);
       setError(null);
       const token = localStorage.getItem('accessToken');
-      
-      console.log('🔍 Fetching trips with period:', dateFilter);
-      console.log('📍 API URL:', `${API_URL}/api/trips/history?period=${dateFilter}`);
-      
+
+      // console.log('🔍 Fetching trips with period:', dateFilter);
+      // console.log('📍 API URL:', `${API_URL}/api/trips/history?period=${dateFilter}`);
+
       const response = await axios.get(
         `${API_URL}/api/trips/history?period=${dateFilter}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      
-      console.log('✅ Trip history response:', response.data);
-      
+
+      // console.log('✅ Trip history response:', response.data);
+
       const data = response.data.data || response.data || [];
-      console.log('📊 Trips received:', data.length);
-      
+      // console.log('📊 Trips received:', data.length);
+
       if (data.length > 0) {
-        console.log('🔍 First trip sample:', data[0]);
+        // console.log('🔍 First trip sample:', data[0]);
       }
-      
+
       setTrips(data);
     } catch (error) {
       console.error('❌ Error fetching trip history:', error);
       console.error('Error response:', error.response?.data);
-      
+
       setError(error.response?.data?.message || 'Failed to fetch trip history. Please try again.');
       setTrips([]);
     } finally {
@@ -100,7 +112,7 @@ const TripHistory = () => {
   };
 
   const handleViewDetails = (trip) => {
-    console.log('📋 Viewing trip details:', trip);
+    // console.log('📋 Viewing trip details:', trip);
     setSelectedTrip(trip);
     setShowDetailsModal(true);
   };
@@ -112,16 +124,50 @@ const TripHistory = () => {
       inside: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Inside', icon: Clock },
       // denied: { bg: 'bg-red-100', text: 'text-red-700', label: 'Denied', icon: XCircle }
     };
-    
+
     const config = configs[status?.toLowerCase()] || configs.active;
     const Icon = config.icon;
-    
+
     return (
       <span className={`inline-flex items-center gap-1 px-2 sm:px-3 py-1 rounded-full text-xs font-semibold ${config.bg} ${config.text}`}>
         <Icon className="w-3 h-3" />
         {config.label}
       </span>
     );
+  };
+  const resolveMedia = async (media, setter) => {
+    if (!media) {
+      setter({ photos: {}, video: null });
+      return;
+    }
+
+    try {
+      const photos = {};
+      if (media.photos) {
+        for (const key in media.photos) {
+          const fileKey = media.photos[key];
+          if (fileKey) {
+            const res = await axios.get(`${API_URL}/api/uploads/get-file`, {
+              params: { key: fileKey }
+            });
+            photos[key] = res.data.url;
+          }
+        }
+      }
+
+      let video = null;
+      if (media.video) {
+        const res = await axios.get(`${API_URL}/api/uploads/get-file`, {
+          params: { key: media.video }
+        });
+        video = res.data.url;
+      }
+
+      setter({ photos, video });
+    } catch (err) {
+      console.error("❌ Media resolve failed", err);
+      setter({ photos: {}, video: null });
+    }
   };
 
   const indexOfLastTrip = currentPage * tripsPerPage;
@@ -145,13 +191,13 @@ const TripHistory = () => {
             <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-1 sm:mb-2">Access Logs</h1>
             <p className="text-sm sm:text-base text-gray-600">History of all vehicle movements</p>
           </div>
-          <button
+          {/* <button
             onClick={handleExportReport}
             className="px-4 sm:px-6 py-2.5 sm:py-3 text-sm sm:text-base bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold flex items-center justify-center gap-2"
           >
             <Download className="w-4 h-4 sm:w-5 sm:h-5" />
             Export Report
-          </button>
+          </button> */}
         </div>
 
         {/* Error Alert */}
@@ -172,7 +218,7 @@ const TripHistory = () => {
         )}
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-4 sm:mb-6">
           <div className="bg-white rounded-xl p-4 sm:p-5 border border-gray-200 shadow-sm">
             <div className="text-xs sm:text-sm text-gray-600 font-medium mb-1">Total Trips</div>
             <div className="text-2xl sm:text-3xl font-bold text-gray-900">{stats.total}</div>
@@ -204,7 +250,7 @@ const TripHistory = () => {
                 className="w-full pl-9 sm:pl-10 pr-4 py-2.5 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
               />
             </div>
-            
+
             <select
               value={dateFilter}
               onChange={(e) => setDateFilter(e.target.value)}
@@ -292,11 +338,10 @@ const TripHistory = () => {
                           </div>
                         </td>
                         <td className="px-6 py-4">
-                          <div className={`text-sm ${
-                            trip.exitTime === '--' ? 'text-blue-600 font-semibold' : 
-                            trip.exitTime === 'Invalid Date' ? 'text-red-600' : 
-                            'text-gray-900'
-                          }`}>
+                          <div className={`text-sm ${trip.exitTime === '--' ? 'text-blue-600 font-semibold' :
+                            trip.exitTime === 'Invalid Date' ? 'text-red-600' :
+                              'text-gray-900'
+                            }`}>
                             {trip.exitTime || '--'}
                           </div>
                         </td>
@@ -354,11 +399,10 @@ const TripHistory = () => {
                       </div>
                       <div>
                         <div className="text-gray-500 mb-1">Exit Time</div>
-                        <div className={`font-semibold ${
-                          trip.exitTime === '--' ? 'text-blue-600' : 
-                          trip.exitTime === 'Invalid Date' ? 'text-red-600' : 
-                          'text-gray-900'
-                        }`}>
+                        <div className={`font-semibold ${trip.exitTime === '--' ? 'text-blue-600' :
+                          trip.exitTime === 'Invalid Date' ? 'text-red-600' :
+                            'text-gray-900'
+                          }`}>
                           {trip.exitTime || '--'}
                         </div>
                       </div>
@@ -397,11 +441,11 @@ const TripHistory = () => {
                       >
                         <ChevronLeft className="w-4 h-4" />
                       </button>
-                      
+
                       <span className="px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold text-sm">
                         {currentPage}
                       </span>
-                      
+
                       <button
                         onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                         disabled={currentPage === totalPages}
@@ -425,7 +469,7 @@ const TripHistory = () => {
                       >
                         <ChevronLeft className="w-5 h-5" />
                       </button>
-                      
+
                       {[...Array(totalPages)].map((_, idx) => {
                         const pageNum = idx + 1;
                         if (
@@ -437,11 +481,10 @@ const TripHistory = () => {
                             <button
                               key={pageNum}
                               onClick={() => setCurrentPage(pageNum)}
-                              className={`px-4 py-2 rounded-lg font-semibold text-sm transition ${
-                                currentPage === pageNum
-                                  ? 'bg-blue-600 text-white'
-                                  : 'bg-white border border-gray-300 hover:bg-gray-50 text-gray-700'
-                              }`}
+                              className={`px-4 py-2 rounded-lg font-semibold text-sm transition ${currentPage === pageNum
+                                ? 'bg-blue-600 text-white'
+                                : 'bg-white border border-gray-300 hover:bg-gray-50 text-gray-700'
+                                }`}
                             >
                               {pageNum}
                             </button>
@@ -454,7 +497,7 @@ const TripHistory = () => {
                         }
                         return null;
                       })}
-                      
+
                       <button
                         onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                         disabled={currentPage === totalPages}
@@ -470,81 +513,146 @@ const TripHistory = () => {
           )}
         </div>
 
-        {/* Details Modal */}
-        {showDetailsModal && selectedTrip && (
-          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl max-h-[90vh] overflow-hidden">
-              <div className="bg-blue-600 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between rounded-t-2xl">
-                <div className="flex-1 min-w-0">
-                  <h2 className="text-lg sm:text-xl font-bold text-white">Trip Details</h2>
-                  <p className="text-blue-100 text-xs sm:text-sm truncate">{selectedTrip.tripId}</p>
-                </div>
-                <button
-                  onClick={() => setShowDetailsModal(false)}
-                  className="p-2 hover:bg-white/20 rounded-lg transition text-white flex-shrink-0 ml-2"
-                >
-                  <X className="w-5 h-5 sm:w-6 sm:h-6" />
-                </button>
-              </div>
+       {/* Details Modal */}
+{/* Details Modal */}
+{showDetailsModal && selectedTrip && (
+  <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl max-h-[90vh] overflow-hidden">
+      
+      {/* Header */}
+      <div className="bg-blue-600 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between rounded-t-2xl">
+        <div>
+          <h2 className="text-lg sm:text-xl font-bold text-white">Trip Details</h2>
+          <p className="text-blue-100 text-xs sm:text-sm">{selectedTrip.tripId}</p>
+        </div>
+        <button
+          onClick={() => setShowDetailsModal(false)}
+          className="p-2 hover:bg-white/20 rounded-lg text-white"
+        >
+          <X className="w-5 h-5" />
+        </button>
+      </div>
 
-              <div className="p-4 sm:p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-3 sm:gap-4">
-                    <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
-                      <div className="text-xs text-gray-500 mb-1">Vehicle Number</div>
-                      <div className="text-base sm:text-lg font-bold text-gray-900 truncate">{selectedTrip.vehicleNumber || 'N/A'}</div>
-                    </div>
-                    <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
-                      <div className="text-xs text-gray-500 mb-1">Status</div>
-                      <div>{getStatusBadge(selectedTrip.status)}</div>
-                    </div>
-                  </div>
+      {/* Body */}
+      <div className="p-4 sm:p-6 overflow-y-auto max-h-[calc(90vh-140px)] space-y-4">
 
-                  <div className="border border-gray-200 rounded-lg p-4 sm:p-5">
-                    <h3 className="font-bold text-gray-900 mb-3 sm:mb-4 text-sm sm:text-base">Trip Information</h3>
-                    <div className="space-y-2 sm:space-y-3 text-xs sm:text-sm">
-                      <div className="flex justify-between items-start gap-2">
-                        <span className="text-gray-600">Trip ID</span>
-                        <span className="font-semibold text-gray-900 text-right truncate">{selectedTrip.tripId || 'N/A'}</span>
-                      </div>
-                      <div className="flex justify-between items-start gap-2">
-                        <span className="text-gray-600">Vendor</span>
-                        <span className="font-semibold text-gray-900 text-right truncate">{selectedTrip.vendor || 'N/A'}</span>
-                      </div>
-                      <div className="flex justify-between items-start gap-2">
-                        <span className="text-gray-600">Driver</span>
-                        <span className="font-semibold text-gray-900 text-right truncate">{selectedTrip.driver || 'N/A'}</span>
-                      </div>
-                      <div className="flex justify-between items-start gap-2">
-                        <span className="text-gray-600">Material Type</span>
-                        <span className="font-semibold text-gray-900 text-right truncate">{selectedTrip.materialType || 'N/A'}</span>
-                      </div>
-                      <div className="flex justify-between items-start gap-2">
-                        <span className="text-gray-600">Entry Time</span>
-                        <span className="font-semibold text-gray-900 text-right">{selectedTrip.entryTime || 'N/A'}</span>
-                      </div>
-                      <div className="flex justify-between items-start gap-2">
-                        <span className="text-gray-600">Exit Time</span>
-                        <span className="font-semibold text-gray-900 text-right">{selectedTrip.exitTime || '--'}</span>
-                      </div>
-                      <div className="flex justify-between items-start gap-2">
-                        <span className="text-gray-600">Duration</span>
-                        <span className="font-semibold text-gray-900 text-right">{selectedTrip.duration || 'N/A'}</span>
-                      </div>
-                    </div>
-                  </div>
+        {/* Basic Info */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="bg-gray-50 p-3 rounded-lg">
+            <div className="text-xs text-gray-500">Vehicle Number</div>
+            <div className="font-bold">{selectedTrip.vehicleNumber}</div>
+          </div>
+          <div className="bg-gray-50 p-3 rounded-lg">
+            <div className="text-xs text-gray-500">Status</div>
+            {getStatusBadge(selectedTrip.status)}
+          </div>
+        </div>
 
-                  <button
-                    onClick={() => setShowDetailsModal(false)}
-                    className="w-full py-2.5 sm:py-3 text-sm sm:text-base bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-semibold"
-                  >
-                    Close
-                  </button>
-                </div>
-              </div>
+        {/* Trip Info */}
+        <div className="border rounded-lg p-4">
+          <h3 className="font-bold mb-3">Trip Information</h3>
+          {[
+            ['Trip ID', selectedTrip.tripId],
+            ['Vendor', selectedTrip.vendor],
+            ['Driver', selectedTrip.driver],
+            ['Material Type', selectedTrip.materialType],
+            ['Entry Time', selectedTrip.entryTime],
+            ['Exit Time', selectedTrip.exitTime || '--'],
+            ['Duration', selectedTrip.duration]
+          ].map(([label, value]) => (
+            <div key={label} className="flex justify-between text-sm mb-1">
+              <span className="text-gray-500">{label}</span>
+              <span className="font-semibold">{value || 'N/A'}</span>
             </div>
+          ))}
+        </div>
+
+        {/* ENTRY EVIDENCE */}
+        {selectedTrip.entryMedia && (
+          <div className="border rounded-lg p-4">
+            <h3 className="font-bold mb-3">Entry Evidence</h3>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+              {['frontView', 'backView', 'loadView', 'driverView'].map(key => {
+                const photo = resolvedEntryMedia?.photos?.[key];
+                return (
+                  <div key={key} className="border rounded-lg overflow-hidden">
+                    {photo ? (
+                      <img
+                        src={photo}
+                        className="h-28 w-full object-cover cursor-pointer"
+                        onClick={() => window.open(photo, '_blank')}
+                      />
+                    ) : (
+                      <div className="h-28 flex items-center justify-center text-xs text-red-500 bg-gray-100">
+                        Failed to load file
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {resolvedEntryMedia?.video && (
+              <button
+                onClick={() => window.open(resolvedEntryMedia.video, '_blank')}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold"
+              >
+                View Entry Video
+              </button>
+            )}
           </div>
         )}
+
+        {/* EXIT EVIDENCE */}
+        {selectedTrip.exitMedia && (
+          <div className="border rounded-lg p-4">
+            <h3 className="font-bold mb-3">Exit Evidence</h3>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+              {['frontView', 'backView', 'loadView', 'driverView'].map(key => {
+                const photo = resolvedExitMedia?.photos?.[key];
+                return (
+                  <div key={key} className="border rounded-lg overflow-hidden">
+                    {photo ? (
+                      <img
+                        src={photo}
+                        className="h-28 w-full object-cover cursor-pointer"
+                        onClick={() => window.open(photo, '_blank')}
+                      />
+                    ) : (
+                      <div className="h-28 flex items-center justify-center text-xs text-red-500 bg-gray-100">
+                        Failed to load file
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {resolvedExitMedia?.video && (
+              <button
+                onClick={() => window.open(resolvedExitMedia.video, '_blank')}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-semibold"
+              >
+                View Exit Video
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Close */}
+        <button
+          onClick={() => setShowDetailsModal(false)}
+          className="w-full py-2 bg-gray-100 rounded-lg font-semibold"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
       </div>
     </SupervisorLayout>
   );

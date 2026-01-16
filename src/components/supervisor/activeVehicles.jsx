@@ -6,9 +6,13 @@ import axios from 'axios';
 import {
   Search, Filter, Car, Clock, Package, Eye, ArrowRight,
   Loader2, TrendingUp, MapPin, User, Building2, X, Calendar,
-  LogOut, LogIn
+  LogOut, LogIn,
+  Camera,
+  Video
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+// Import the getDownloadUrl function
+import { getDownloadUrl } from '@/utils/wasabiUpload';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
@@ -22,6 +26,18 @@ const ActiveVehicles = () => {
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState(null);
   const [currentTime, setCurrentTime] = useState(Date.now());
+  // Add state for media loading
+  const [mediaLoading, setMediaLoading] = useState(false);
+  const [resolvedEntryMedia, setResolvedEntryMedia] = useState({
+    photos: {},
+    video: null
+  });
+
+  const [resolvedExitMedia, setResolvedExitMedia] = useState({
+    photos: {},
+    video: null
+  });
+
 
   useEffect(() => {
     fetchActiveVehicles();
@@ -49,27 +65,27 @@ const ActiveVehicles = () => {
       const response = await axios.get(`${API_URL}/api/supervisor/vehicles/active`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      
-      console.log('📥 API Response:', response.data);
-      
+
+      // console.log('📥 API Response:', response.data);
+
       const data = response.data.data || response.data || [];
       const vehiclesArray = Array.isArray(data) ? data : [];
-      
-      console.log('🚗 Vehicles received:', vehiclesArray.length);
-      
+
+      // console.log('🚗 Vehicles received:', vehiclesArray.length);
+
       // Map backend fields to frontend fields and calculate duration
       const vehiclesWithDuration = vehiclesArray.map(vehicle => {
         // Backend sends: entryTimeUTC, entryTimeIST, exitTimeUTC (if exited)
         const entryTime = vehicle.entryTimeISO || vehicle.entryTimeUTC || vehicle.entryTimeIST || vehicle.entryAt || vehicle.entryTime;
         const exitTime = vehicle.exitTimeUTC || vehicle.exitTimeIST || vehicle.exitAt || vehicle.exitTime;
-        
-        console.log('🔍 Processing vehicle:', {
-          vehicleNumber: vehicle.vehicleNumber,
-          entryTimeUTC: vehicle.entryTimeUTC,
-          entryTimeIST: vehicle.entryTimeIST,
-          hasExit: !!exitTime
-        });
-        
+
+        // console.log('🔍 Processing vehicle:', {
+        //   vehicleNumber: vehicle.vehicleNumber,
+        //   entryTimeUTC: vehicle.entryTimeUTC,
+        //   entryTimeIST: vehicle.entryTimeIST,
+        //   hasExit: !!exitTime
+        // });
+
         return {
           ...vehicle,
           // Normalize field names for component
@@ -85,8 +101,8 @@ const ActiveVehicles = () => {
           hasExited: !!exitTime
         };
       });
-      
-      console.log('✅ Processed vehicles:', vehiclesWithDuration);
+
+      // console.log('✅ Processed vehicles:', vehiclesWithDuration);
       setVehicles(vehiclesWithDuration);
     } catch (error) {
       console.error('❌ Error fetching active vehicles:', error);
@@ -100,17 +116,17 @@ const ActiveVehicles = () => {
   // Calculate duration from entry time to now or exit time
   const calculateDuration = (entryTime, exitTime = null) => {
     if (!entryTime) return 'N/A';
-    
+
     try {
       const entry = new Date(entryTime);
       const end = exitTime ? new Date(exitTime) : new Date();
       const diffMs = end - entry;
-      
+
       if (diffMs < 0) return '0h 0m';
-      
+
       const hours = Math.floor(diffMs / (1000 * 60 * 60));
       const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-      
+
       return `${hours}h ${minutes}m`;
     } catch (error) {
       console.error('Duration calculation error:', error);
@@ -121,27 +137,27 @@ const ActiveVehicles = () => {
   // Format date and time separately
   const formatDateTime = (timestamp) => {
     if (!timestamp) return { date: 'N/A', time: 'N/A', fullDateTime: 'N/A' };
-    
+
     try {
       const date = new Date(timestamp);
-      
+
       // Check if date is valid
       if (isNaN(date.getTime())) {
         return { date: 'N/A', time: 'N/A', fullDateTime: 'N/A' };
       }
-      
-      const dateStr = date.toLocaleDateString('en-IN', { 
-        day: '2-digit', 
-        month: 'short', 
-        year: 'numeric' 
+
+      const dateStr = date.toLocaleDateString('en-IN', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric'
       });
-      const timeStr = date.toLocaleTimeString('en-IN', { 
-        hour: '2-digit', 
+      const timeStr = date.toLocaleTimeString('en-IN', {
+        hour: '2-digit',
         minute: '2-digit',
-        hour12: true 
+        hour12: true
       });
       const fullDateTime = `${dateStr} ${timeStr}`;
-      
+
       return { date: dateStr, time: timeStr, fullDateTime };
     } catch (error) {
       console.error('Date formatting error:', error, timestamp);
@@ -167,10 +183,74 @@ const ActiveVehicles = () => {
     setFilteredVehicles(filtered);
   };
 
-  const handleViewDetails = (vehicle) => {
+  // Updated handleViewDetails to load media URLs
+  const handleViewDetails = async (vehicle) => {
     setSelectedVehicle(vehicle);
     setShowDetailsModal(true);
+    setMediaLoading(true);
+
+    try {
+      // ---------- ENTRY MEDIA ----------
+      const entryMedia = vehicle.entryMedia || {};
+      const entryPhotos = entryMedia.photos || {};
+      const resolvedEntryPhotos = {};
+
+      for (const key in entryPhotos) {
+        if (entryPhotos[key]) {
+          const res = await axios.get(`${API_URL}/api/uploads/get-file`, {
+            params: { key: entryPhotos[key] }
+          });
+          resolvedEntryPhotos[key] = res.data.url;
+        }
+      }
+
+      let entryVideoUrl = null;
+      if (entryMedia.video) {
+        const res = await axios.get(`${API_URL}/api/uploads/get-file`, {
+          params: { key: entryMedia.video }
+        });
+        entryVideoUrl = res.data.url;
+      }
+
+      setResolvedEntryMedia({
+        photos: resolvedEntryPhotos,
+        video: entryVideoUrl
+      });
+
+      // ---------- EXIT MEDIA ----------
+      const exitMedia = vehicle.exitMedia || {};
+      const exitPhotos = exitMedia.photos || {};
+      const resolvedExitPhotos = {};
+
+      for (const key in exitPhotos) {
+        if (exitPhotos[key]) {
+          const res = await axios.get(`${API_URL}/api/uploads/get-file`, {
+            params: { key: exitPhotos[key] }
+          });
+          resolvedExitPhotos[key] = res.data.url;
+        }
+      }
+
+      let exitVideoUrl = null;
+      if (exitMedia.video) {
+        const res = await axios.get(`${API_URL}/api/uploads/get-file`, {
+          params: { key: exitMedia.video }
+        });
+        exitVideoUrl = res.data.url;
+      }
+
+      setResolvedExitMedia({
+        photos: resolvedExitPhotos,
+        video: exitVideoUrl
+      });
+
+    } catch (err) {
+      console.error("❌ Media resolve failed", err);
+    } finally {
+      setMediaLoading(false);
+    }
   };
+
 
   const handleMarkExit = (vehicle) => {
     // Store vehicle data in sessionStorage for exit screen
@@ -190,7 +270,7 @@ const ActiveVehicles = () => {
       maintenance: { bg: 'bg-yellow-100', text: 'text-yellow-700', label: 'Maintenance' },
       exited: { bg: 'bg-gray-100', text: 'text-gray-700', label: 'Exited' }
     };
-    
+
     const config = configs[status] || configs.loading;
     return (
       <span className={`px-2 py-1 rounded text-xs font-semibold ${config.bg} ${config.text}`}>
@@ -206,6 +286,19 @@ const ActiveVehicles = () => {
   };
 
   const capacityPercentage = Math.min(Math.round((stats.total / 100) * 100), 100);
+
+  // Function to get media URL with proper error handling
+  const getMediaUrl = async (fileKey) => {
+    if (!fileKey) return null;
+
+    try {
+      const url = await getDownloadUrl(fileKey);
+      return url;
+    } catch (error) {
+      console.error('Error getting media URL:', error);
+      return null;
+    }
+  };
 
   return (
     <SupervisorLayout>
@@ -295,7 +388,7 @@ const ActiveVehicles = () => {
               <Car className="w-12 h-12 sm:w-16 sm:h-16 text-gray-300 mx-auto mb-4" />
               <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2">No vehicles found</h3>
               <p className="text-sm sm:text-base text-gray-600">
-                {vehicles.length === 0 
+                {vehicles.length === 0
                   ? 'No vehicles currently inside the premises'
                   : 'Try adjusting your search or filters'}
               </p>
@@ -344,7 +437,7 @@ const ActiveVehicles = () => {
                         vehicle.entryTimestamp,
                         vehicle.exitTimestamp
                       );
-                      
+
                       return (
                         <tr key={vehicle._id} className="hover:bg-gray-50 transition">
                           <td className="px-6 py-4">
@@ -384,9 +477,8 @@ const ActiveVehicles = () => {
                             </div>
                           </td>
                           <td className="px-6 py-4">
-                            <div className={`font-semibold ${
-                              vehicle.status === 'overstay' ? 'text-orange-600' : 'text-gray-900'
-                            }`}>
+                            <div className={`font-semibold ${vehicle.status === 'overstay' ? 'text-orange-600' : 'text-gray-900'
+                              }`}>
                               {duration}
                             </div>
                           </td>
@@ -425,7 +517,7 @@ const ActiveVehicles = () => {
                     vehicle.entryTimestamp,
                     vehicle.exitTimestamp
                   );
-                  
+
                   return (
                     <div key={vehicle._id} className="p-4 hover:bg-gray-50 transition">
                       {/* Vehicle Header */}
@@ -472,9 +564,8 @@ const ActiveVehicles = () => {
                       {/* Duration */}
                       <div className="mb-3 pb-3 border-b border-gray-100">
                         <div className="text-xs text-gray-500 mb-1">Duration Inside</div>
-                        <div className={`font-bold text-sm sm:text-base ${
-                          vehicle.status === 'overstay' ? 'text-orange-600' : 'text-gray-900'
-                        }`}>
+                        <div className={`font-bold text-sm sm:text-base ${vehicle.status === 'overstay' ? 'text-orange-600' : 'text-gray-900'
+                          }`}>
                           {duration}
                         </div>
                       </div>
@@ -505,196 +596,155 @@ const ActiveVehicles = () => {
         </div>
 
         {/* Details Modal */}
-        {showDetailsModal && selectedVehicle && (() => {
-          const entryDateTime = formatDateTime(selectedVehicle.entryTimestamp);
-          const exitDateTime = formatDateTime(selectedVehicle.exitTimestamp);
-          const duration = calculateDuration(
-            selectedVehicle.entryTimestamp,
-            selectedVehicle.exitTimestamp
-          );
-          
-          return (
-            <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-              <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl max-h-[90vh] overflow-hidden">
-                <div className="bg-blue-600 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between rounded-t-2xl">
-                  <div>
-                    <h2 className="text-lg sm:text-xl font-bold text-white">Vehicle Details</h2>
-                    <p className="text-blue-100 text-xs sm:text-sm">{selectedVehicle.vehicleNumber || 'N/A'}</p>
-                  </div>
-                  <button
-                    onClick={() => setShowDetailsModal(false)}
-                    className="p-2 hover:bg-white/20 rounded-lg transition text-white"
-                  >
-                    <X className="w-5 h-5 sm:w-6 sm:h-6" />
-                  </button>
-                </div>
+     {/* Details Modal */}
+{showDetailsModal && selectedVehicle && (() => {
+  const entryDateTime = formatDateTime(selectedVehicle.entryTimestamp);
+  const exitDateTime = formatDateTime(selectedVehicle.exitTimestamp);
+  const duration = calculateDuration(
+    selectedVehicle.entryTimestamp,
+    selectedVehicle.exitTimestamp
+  );
 
-                <div className="p-4 sm:p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
-                  {/* Vehicle Info */}
-                  <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6">
-                    <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
-                      <div className="text-xs text-gray-500 mb-1">Vehicle Number</div>
-                      <div className="text-base sm:text-lg font-bold text-gray-900">{selectedVehicle.vehicleNumber || 'N/A'}</div>
-                    </div>
-                    <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
-                      <div className="text-xs text-gray-500 mb-1">Vehicle Type</div>
-                      <div className="text-base sm:text-lg font-bold text-gray-900">{selectedVehicle.vehicleType || 'Unknown'}</div>
-                    </div>
-                  </div>
+  const entryVideo = resolvedEntryMedia.video;
 
-                  {/* Vendor & Driver */}
-                  <div className="border border-gray-200 rounded-lg p-4 sm:p-5 mb-4 sm:mb-6">
-                    <h3 className="font-bold text-gray-900 mb-3 sm:mb-4 flex items-center gap-2 text-sm sm:text-base">
-                      <Building2 className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
-                      Vendor & Driver Information
-                    </h3>
-                    <div className="space-y-2 sm:space-y-3 text-xs sm:text-sm">
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-600">Vendor / Agency</span>
-                        <span className="font-semibold text-gray-900">{selectedVehicle.vendor || 'Unknown'}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-600">Driver Name</span>
-                        <span className="font-semibold text-gray-900">{selectedVehicle.driver || 'N/A'}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-600">Driver Phone</span>
-                        <span className="font-semibold text-gray-900">{selectedVehicle.driverPhone || 'N/A'}</span>
-                      </div>
-                    </div>
-                  </div>
+  const photoFields = [
+    { key: 'frontView', label: 'Front View' },
+    { key: 'backView', label: 'Back View' },
+    { key: 'loadView', label: 'Load Area' },
+    { key: 'driverView', label: 'Driver' }
+  ];
 
-                  {/* Entry & Exit Details */}
-                  <div className="border border-gray-200 rounded-lg p-4 sm:p-5 mb-4 sm:mb-6">
-                    <h3 className="font-bold text-gray-900 mb-3 sm:mb-4 flex items-center gap-2 text-sm sm:text-base">
-                      <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
-                      Entry & Exit Details
-                    </h3>
-                    <div className="space-y-3 sm:space-y-4 text-xs sm:text-sm">
-                      {/* Entry Section */}
-                      <div className="bg-green-50 rounded-lg p-3 sm:p-4">
-                        <div className="flex items-center gap-2 mb-2 sm:mb-3">
-                          <LogIn className="w-3 h-3 sm:w-4 sm:h-4 text-green-600" />
-                          <span className="font-semibold text-green-900">Entry Information</span>
-                        </div>
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between">
-                            <span className="text-gray-600">Date</span>
-                            <span className="font-semibold text-gray-900">{entryDateTime.date}</span>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-gray-600">Time</span>
-                            <span className="font-semibold text-gray-900">{entryDateTime.time}</span>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-gray-600">Entry Gate</span>
-                            <span className="font-semibold text-gray-900">{selectedVehicle.gate || 'N/A'}</span>
-                          </div>
-                        </div>
-                      </div>
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl max-h-[90vh] overflow-hidden">
 
-                      {/* Exit Section */}
-                      <div className={`rounded-lg p-3 sm:p-4 ${
-                        selectedVehicle.exitTimestamp ? 'bg-red-50' : 'bg-gray-50'
-                      }`}>
-                        <div className="flex items-center gap-2 mb-2 sm:mb-3">
-                          <LogOut className={`w-3 h-3 sm:w-4 sm:h-4 ${
-                            selectedVehicle.exitTimestamp ? 'text-red-600' : 'text-gray-400'
-                          }`} />
-                          <span className={`font-semibold ${
-                            selectedVehicle.exitTimestamp ? 'text-red-900' : 'text-gray-600'
-                          }`}>
-                            Exit Information
-                          </span>
-                        </div>
-                        {selectedVehicle.exitTimestamp ? (
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                              <span className="text-gray-600">Date</span>
-                              <span className="font-semibold text-gray-900">{exitDateTime.date}</span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-gray-600">Time</span>
-                              <span className="font-semibold text-gray-900">{exitDateTime.time}</span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-gray-600">Exit Gate</span>
-                              <span className="font-semibold text-gray-900">{selectedVehicle.exitGate || 'N/A'}</span>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="text-center py-2">
-                            <p className="text-gray-500 italic text-xs sm:text-sm">Vehicle has not exited yet</p>
-                          </div>
-                        )}
-                      </div>
+        {/* Header */}
+        <div className="bg-blue-600 px-6 py-4 flex justify-between items-center">
+          <div>
+            <h2 className="text-xl font-bold text-white">Vehicle Details</h2>
+            <p className="text-blue-100 text-sm">{selectedVehicle.vehicleNumber}</p>
+          </div>
+          <button onClick={() => setShowDetailsModal(false)}>
+            <X className="text-white" />
+          </button>
+        </div>
 
-                      {/* Duration & Status */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 bg-blue-50 rounded-lg">
-                          <span className="text-gray-600 text-xs mb-1 sm:mb-0">Duration Inside</span>
-                          <span className={`font-bold text-sm ${
-                            selectedVehicle.status === 'overstay' ? 'text-orange-600' : 'text-blue-900'
-                          }`}>
-                            {duration}
-                          </span>
-                        </div>
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 bg-purple-50 rounded-lg">
-                          <span className="text-gray-600 text-xs mb-1 sm:mb-0">Current Status</span>
-                          {getStatusBadge(selectedVehicle.status || 'loading')}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+        <div className="p-6 overflow-y-auto max-h-[80vh] space-y-6">
 
-                  {/* Material Info */}
-                  <div className="border border-gray-200 rounded-lg p-4 sm:p-5 mb-4 sm:mb-6">
-                    <h3 className="font-bold text-gray-900 mb-3 sm:mb-4 flex items-center gap-2 text-sm sm:text-base">
-                      <Package className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600" />
-                      Material Information
-                    </h3>
-                    <div className="space-y-2 sm:space-y-3 text-xs sm:text-sm">
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-600">Material Type</span>
-                        <span className="font-semibold text-gray-900">{selectedVehicle.materialType || 'N/A'}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-600">Load Status</span>
-                        <span className="font-semibold text-gray-900">{selectedVehicle.loadStatus || 'N/A'}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-600">Purpose</span>
-                        <span className="font-semibold text-gray-900">{selectedVehicle.purpose || 'N/A'}</span>
-                      </div>
-                    </div>
-                  </div>
+          {/* Entry Info */}
+          <div className="border rounded-lg p-4">
+            <h3 className="font-bold mb-3">Entry Information</h3>
+            <div className="text-sm space-y-1">
+              <div>Date: <b>{entryDateTime.date}</b></div>
+              <div>Time: <b>{entryDateTime.time}</b></div>
+              <div>Gate: <b>{selectedVehicle.gate}</b></div>
+            </div>
+          </div>
 
-                  {/* Action Buttons */}
-                  <div className="flex flex-col sm:flex-row gap-3">
-                    <button
-                      onClick={() => setShowDetailsModal(false)}
-                      className="flex-1 py-2.5 sm:py-3 text-sm sm:text-base bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-semibold"
-                    >
-                      Close
-                    </button>
-                    {!selectedVehicle.hasExited && (
-                      <button
-                        onClick={() => {
-                          setShowDetailsModal(false);
-                          handleMarkExit(selectedVehicle);
-                        }}
-                        className="flex-1 py-2.5 sm:py-3 text-sm sm:text-base bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-semibold flex items-center justify-center gap-2"
-                      >
-                        Mark Exit
-                        <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
-                      </button>
+          {/* Entry Photos */}
+          <div className="border rounded-lg p-4">
+            <h3 className="font-bold mb-3">Entry Photos</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {photoFields.map(photo => {
+                const photoUrl = resolvedEntryMedia.photos[photo.key];
+                return (
+                  <div key={photo.key} className="border rounded overflow-hidden">
+                    {photoUrl ? (
+                      <img
+                        src={photoUrl}
+                        className="h-28 w-full object-cover cursor-pointer"
+                        onClick={() => window.open(photoUrl, '_blank')}
+                      />
+                    ) : (
+                      <div className="h-28 flex items-center justify-center text-xs text-gray-400 bg-gray-100">
+                        Not Available
+                      </div>
                     )}
                   </div>
-                </div>
-              </div>
+                );
+              })}
             </div>
-          );
-        })()}
+          </div>
+
+          {/* Entry Video */}
+          <div className="border rounded-lg p-4">
+            <h3 className="font-bold mb-3">Entry Video</h3>
+            {entryVideo ? (
+              <button
+                onClick={() => window.open(entryVideo, '_blank')}
+                className="px-4 py-2 bg-green-600 text-white rounded"
+              >
+                View Entry Video
+              </button>
+            ) : (
+              <p className="text-sm text-gray-500">No video captured</p>
+            )}
+          </div>
+
+          {/* Exit Evidence */}
+          {selectedVehicle.exitTimestamp && (
+            <div className="border rounded-lg p-4">
+              <h3 className="font-bold mb-3">Exit Evidence</h3>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                {photoFields.map(photo => {
+                  const photoUrl = resolvedExitMedia.photos[photo.key];
+                  return (
+                    <div key={photo.key} className="border rounded overflow-hidden">
+                      {photoUrl ? (
+                        <img
+                          src={photoUrl}
+                          className="h-24 w-full object-cover cursor-pointer"
+                          onClick={() => window.open(photoUrl, '_blank')}
+                        />
+                      ) : (
+                        <div className="h-24 flex items-center justify-center text-xs text-gray-400 bg-gray-100">
+                          Not Available
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {resolvedExitMedia.video && (
+                <button
+                  onClick={() => window.open(resolvedExitMedia.video, '_blank')}
+                  className="px-4 py-2 bg-red-600 text-white rounded"
+                >
+                  View Exit Video
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Actions */}
+          <div className="flex gap-3">
+            <button
+              onClick={() => setShowDetailsModal(false)}
+              className="flex-1 bg-gray-100 py-2 rounded"
+            >
+              Close
+            </button>
+            {!selectedVehicle.hasExited && (
+              <button
+                onClick={() => {
+                  setShowDetailsModal(false);
+                  handleMarkExit(selectedVehicle);
+                }}
+                className="flex-1 bg-green-600 text-white py-2 rounded"
+              >
+                Mark Exit
+              </button>
+            )}
+          </div>
+
+        </div>
+      </div>
+    </div>
+  );
+})()}
+
       </div>
     </SupervisorLayout>
   );

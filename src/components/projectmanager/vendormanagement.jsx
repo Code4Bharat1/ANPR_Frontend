@@ -77,12 +77,12 @@ const VendorManagement = () => {
       // Fetch vendors
       const vendorsRes = await axiosInstance.get('/api/project/vendors');
       setVendors(vendorsRes.data);
-      console.log(vendorsRes.data);
+      // console.log(vendorsRes.data);
 
       // Fetch sites for dropdown
       const sitesRes = await axiosInstance.get('/api/project/sites');
       setSites(sitesRes.data);
-      console.log(sitesRes.data);
+      // console.log(sitesRes.data);
       
     } catch (err) {
       console.error('Fetch error:', err);

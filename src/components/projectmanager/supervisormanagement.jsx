@@ -66,7 +66,7 @@ const SupervisorManagement = () => {
     try {
       setLoadingCurrentPM(true);
       const response = await api.get('/api/project/profile');
-      console.log('Current PM profile:', response.data);
+      // console.log('Current PM profile:', response.data);
 
       // Store the current PM data
       setCurrentProjectManager(response.data);

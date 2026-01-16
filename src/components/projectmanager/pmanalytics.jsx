@@ -74,14 +74,14 @@ const PMAnalytics = () => {
       setLoading(true);
       setError(null);
 
-      console.log('🌐 Fetching analytics for time range:', timeRange);
+      // console.log('🌐 Fetching analytics for time range:', timeRange);
       
       const response = await axiosInstance.get('/api/project/analytics', {
         params: { timeRange },
         timeout: 10000 // 10 second timeout
       });
 
-      console.log('✅ Analytics data received:', response.data);
+      // console.log('✅ Analytics data received:', response.data);
       setAnalyticsData(response.data);
     } catch (err) {
       console.error('❌ Error fetching analytics:', err);

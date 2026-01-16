@@ -279,7 +279,7 @@ const AddDeviceModal = ({ isOpen, onClose, onSubmit, loading, clients, sites }) 
 
   const handleReset = () => {
     setFormData({
-      deviceName: '', // ✅ Add this
+      deviceName: '',
       serialNumber: '',
       deviceType: 'ANPR',
       clientId: '',
@@ -303,7 +303,8 @@ const AddDeviceModal = ({ isOpen, onClose, onSubmit, loading, clients, sites }) 
 
         <form onSubmit={handleSubmit} className="p-4 md:p-6">
           <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Device Information Section */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Device Name *
@@ -318,114 +319,118 @@ const AddDeviceModal = ({ isOpen, onClose, onSubmit, loading, clients, sites }) 
                   className="w-full px-3 md:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base"
                 />
               </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Serial Number *
+                </label>
+                <input
+                  type="text"
+                  name="serialNumber"
+                  value={formData.serialNumber}
+                  onChange={handleChange}
+                  required
+                  placeholder="e.g., DEV-2024-001"
+                  className="w-full px-3 md:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Device Type *
+                </label>
+                <select
+                  name="deviceType"
+                  value={formData.deviceType}
+                  onChange={handleChange}
+                  required
+                  className="w-full px-3 md:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base"
+                >
+                  <option value="ANPR">ANPR Camera</option>
+                  <option value="BARRIER">Barrier</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Assignment Section */}
+            <div className="border-t border-gray-200 pt-4">
+              <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-4">Assignment</h3>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Serial Number *
-                  </label>
-                  <input
-                    type="text"
-                    name="serialNumber"
-                    value={formData.serialNumber}
-                    onChange={handleChange}
-                    required
-                    placeholder="e.g., DEV-2024-001"
-                    className="w-full px-3 md:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Device Type *
+                    Assign to Client *
                   </label>
                   <select
-                    name="deviceType"
-                    value={formData.deviceType}
+                    name="clientId"
+                    value={formData.clientId}
                     onChange={handleChange}
                     required
                     className="w-full px-3 md:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base"
                   >
-                    <option value="ANPR">ANPR Camera</option>
-                    <option value="BARRIER">Barrier</option>
+                    <option value="">Select Client</option>
+                    {clients.map(client => (
+                      <option key={client._id} value={client._id}>
+                        {client.companyName || client.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Assign to Site *
+                  </label>
+                  <select
+                    name="siteId"
+                    value={formData.siteId}
+                    onChange={handleChange}
+                    required
+                    className="w-full px-3 md:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base"
+                  >
+                    <option value="">Select Site</option>
+                    {sites.map(site => (
+                      <option key={site._id} value={site._id}>
+                        {site.name}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>
-
-              <div className="border-t border-gray-200 pt-4">
-                <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-4">Assignment</h3>
-
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Assign to Client *
-                    </label>
-                    <select
-                      name="clientId"
-                      value={formData.clientId}
-                      onChange={handleChange}
-                      required
-                      className="w-full px-3 md:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base"
-                    >
-                      <option value="">Select Client</option>
-                      {clients.map(client => (
-                        <option key={client._id} value={client._id}>
-                          {client.companyName || client.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Assign to Site *
-                    </label>
-                    <select
-                      name="siteId"
-                      value={formData.siteId}
-                      onChange={handleChange}
-                      required
-                      className="w-full px-3 md:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base"
-                    >
-                      <option value="">Select Site</option>
-                      {sites.map(site => (
-                        <option key={site._id} value={site._id}>
-                          {site.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  IP Address
-                </label>
-                <input
-                  type="text"
-                  name="ipAddress"
-                  value={formData.ipAddress}
-                  onChange={handleChange}
-                  placeholder="e.g., 192.168.1.100"
-                  className="w-full px-3 md:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Notes
-                </label>
-                <textarea
-                  name="notes"
-                  value={formData.notes}
-                  onChange={handleChange}
-                  rows={3}
-                  placeholder="Additional notes about the device"
-                  className="w-full px-3 md:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base"
-                />
-              </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-3 mt-6">
+            {/* IP Address */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                IP Address
+              </label>
+              <input
+                type="text"
+                name="ipAddress"
+                value={formData.ipAddress}
+                onChange={handleChange}
+                placeholder="e.g., 192.168.1.100"
+                className="w-full px-3 md:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base"
+              />
+            </div>
+
+            {/* Notes */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Notes
+              </label>
+              <textarea
+                name="notes"
+                value={formData.notes}
+                onChange={handleChange}
+                rows={3}
+                placeholder="Additional notes about the device"
+                className="w-full px-3 md:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base"
+              />
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-3 mt-6 pt-4 border-t border-gray-200">
               <button
                 type="button"
                 onClick={handleReset}
@@ -441,13 +446,12 @@ const AddDeviceModal = ({ isOpen, onClose, onSubmit, loading, clients, sites }) 
                 {loading ? 'Registering...' : 'Register Device'}
               </button>
             </div>
-            </div>  
+          </div>  
         </form>
       </div>
     </div>
   );
 };
-
 const DeviceManagement = () => {
   const [devices, setDevices] = useState([]);
   const [clients, setClients] = useState([]);
@@ -484,7 +488,7 @@ const DeviceManagement = () => {
         `${process.env.NEXT_PUBLIC_API_URL}/api/devices`,
         { headers: getAuthHeaders() }
       );
-      console.log(response);
+      // console.log(response);
 
       setDevices(Array.isArray(response.data) ? response.data : []);
       setError(null);

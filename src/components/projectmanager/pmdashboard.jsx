@@ -69,7 +69,7 @@ const PMDashboard = () => {
       );
 
       setDashboardData(response.data);
-      console.log(response.data);
+      // console.log(response.data);
     } catch (err) {
       console.error('Error fetching dashboard:', err);
     } finally {

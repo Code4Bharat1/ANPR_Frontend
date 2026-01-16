@@ -131,7 +131,7 @@ const EntryVehicles = () => {
     });
 
     socket.on("connect", () => {
-      console.log("✅ Connected to ANPR socket:", socket.id);
+      // console.log("✅ Connected to ANPR socket:", socket.id);
       setSocketStatus('connected');
     });
 
@@ -141,12 +141,12 @@ const EntryVehicles = () => {
     });
 
     socket.on("disconnect", () => {
-      console.log("❌ Disconnected from socket");
+      // console.log("❌ Disconnected from socket");
       setSocketStatus('disconnected');
     });
 
     socket.on("anpr:new-event", (data) => {
-      console.log("🚗 New ANPR Event:", data);
+      // console.log("🚗 New ANPR Event:", data);
       setAnprEvents(prev => [data, ...prev.slice(0, 4)]);
       
       // Auto-populate ANPR data WITHOUT popup
@@ -199,66 +199,64 @@ const EntryVehicles = () => {
 
   // Fetch assigned sites
   const fetchSites = async () => {
-  try {
-    const token = localStorage.getItem('accessToken');
-    console.log('Fetching sites with token:', token ? 'Token exists' : 'No token');
-    
-    const response = await axios.get(`${API_URL}/api/supervisor/my-site`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    
-    console.log('Full API response:', response);
-    console.log('Response data:', response.data);
-    console.log('Response data.data:', response.data.data);
-    console.log('Type of response.data.data:', typeof response.data.data);
-    
-    // Debug: Check if it's an array
-    console.log('Is array?', Array.isArray(response.data.data));
-    
-    // Handle the response
-    let sitesData = [];
-    
-    if (response.data && response.data.success) {
-      if (Array.isArray(response.data.data)) {
-        sitesData = response.data.data;
-      } else if (response.data.data && typeof response.data.data === 'object') {
-        // Single site object
-        sitesData = [response.data.data];
+    try {
+      const token = localStorage.getItem('accessToken');
+      // console.log('Fetching sites with token:', token ? 'Token exists' : 'No token');
+      
+      const response = await axios.get(`${API_URL}/api/supervisor/my-site`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      // console.log('Full API response:', response);
+      // console.log('Response data:', response.data);
+      // console.log('Response data.data:', response.data.data);
+      // console.log('Type of response.data.data:', typeof response.data.data);
+      
+      // // Debug: Check if it's an array
+      // console.log('Is array?', Array.isArray(response.data.data));
+      
+      // Handle the response
+      let sitesData = [];
+      
+      if (response.data && response.data.success) {
+        if (Array.isArray(response.data.data)) {
+          sitesData = response.data.data;
+        } else if (response.data.data && typeof response.data.data === 'object') {
+          // Single site object
+          sitesData = [response.data.data];
+        }
+      } else {
+        // Handle case where response structure is different
+        if (Array.isArray(response.data)) {
+          sitesData = response.data;
+        } else if (response.data && typeof response.data === 'object') {
+          sitesData = [response.data];
+        }
       }
-    } else {
-      // Handle case where response structure is different
-      if (Array.isArray(response.data)) {
-        sitesData = response.data;
-      } else if (response.data && typeof response.data === 'object') {
-        sitesData = [response.data];
+      
+      // console.log('Processed sites data:', sitesData);
+      setSites(sitesData);
+      
+      if (sitesData.length > 0 && siteInputMode === 'select') {
+        const firstSite = sitesData[0];
+        // console.log('Auto-selecting site:', firstSite);
+        setVehicleDetails(prev => ({ 
+          ...prev, 
+          siteId: firstSite._id,
+          siteName: firstSite.name
+        }));
       }
+    } catch (error) {
+      console.error('Error fetching sites:', error);
+      console.error('Error response:', error.response?.data);
+      setSites([]);
     }
-    
-    console.log('Processed sites data:', sitesData);
-    setSites(sitesData);
-    
-    if (sitesData.length > 0 && siteInputMode === 'select') {
-      const firstSite = sitesData[0];
-      console.log('Auto-selecting site:', firstSite);
-      setVehicleDetails(prev => ({ 
-        ...prev, 
-        siteId: firstSite._id,
-        siteName: firstSite.name
-      }));
-    }
-  } catch (error) {
-    console.error('Error fetching sites:', error);
-    console.error('Error response:', error.response?.data);
-    setSites([]);
-  }
-};
-
-
+  };
 
   const fetchVendors = async () => {
     try {
       const token = localStorage.getItem('accessToken');
-      console.log('Fetching vendors...');
+      // console.log('Fetching vendors...');
       
       // TRY 1: Try the supervisor endpoint first
       let response;
@@ -266,15 +264,15 @@ const EntryVehicles = () => {
         response = await axios.get(`${API_URL}/api/supervisor/vendors`, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        console.log('Supervisor vendors response:', response.data);
+        // console.log('Supervisor vendors response:', response.data);
       } catch (supervisorError) {
-        console.log('Supervisor vendors endpoint failed, trying project endpoint...');
+        // console.log('Supervisor vendors endpoint failed, trying project endpoint...');
         
         // TRY 2: Try the project endpoint
         response = await axios.get(`${API_URL}/api/project/vendors`, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        console.log('Project vendors response:', response.data);
+        // console.log('Project vendors response:', response.data);
       }
       
       // Handle different response structures
@@ -292,7 +290,7 @@ const EntryVehicles = () => {
         }
       }
       
-      console.log('Final vendors data:', vendorsData);
+      // console.log('Final vendors data:', vendorsData);
       setVendors(vendorsData);
       
     } catch (error) {
@@ -302,12 +300,10 @@ const EntryVehicles = () => {
       
       // Show user-friendly error
       if (error.response?.status === 403) {
-        console.log('You may not have permission to access vendors');
+        // console.log('You may not have permission to access vendors');
       }
     }
   };
-
-  
 
   // ========== NEW OCR FUNCTIONS ==========
   const startOCRScan = () => {
@@ -395,7 +391,7 @@ const EntryVehicles = () => {
       );
 
       const text = result.data.text.trim();
-      console.log('OCR Result:', text);
+      // console.log('OCR Result:', text);
 
       // Extract vehicle number using regex
       const vehicleNumber = extractVehicleNumber(text);
@@ -805,61 +801,135 @@ const EntryVehicles = () => {
     if (step > 1) setStep(step - 1);
   };
 
- const handleAllowEntry = async () => {
+  const handleAllowEntry = async () => {
   try {
     setLoading(true);
-    const token = localStorage.getItem('accessToken');
+    const token = localStorage.getItem("accessToken");
 
-    const finalVehicleType = vehicleDetails.vehicleType === 'OTHER' 
-      ? customVehicleType 
-      : vehicleDetails.vehicleType;
+    const finalVehicleType =
+      vehicleDetails.vehicleType === "OTHER"
+        ? customVehicleType
+        : vehicleDetails.vehicleType;
 
-    const finalVendor = vendorInputMode === 'manual' 
-      ? manualVendorName 
-      : vehicleDetails.vendorId;
+    const finalVendor =
+      vendorInputMode === "manual"
+        ? manualVendorName
+        : vehicleDetails.vendorId;
 
-    // ✅ CORRECTED: Use /trips/manual endpoint instead
+    /* ===============================
+       1️⃣ REQUIRED PHOTOS VALIDATION
+    =============================== */
+    const REQUIRED_PHOTOS = [
+      { key: "frontView", name: "front.jpg" },
+      { key: "backView", name: "back.jpg" },
+      { key: "driverView", name: "driver.jpg" },
+      { key: "loadView", name: "load.jpg" },
+    ];
+
+    for (const p of REQUIRED_PHOTOS) {
+      if (!mediaCapture[p.key]) {
+        alert(`❌ ${p.key} photo is required`);
+        setLoading(false);
+        return;
+      }
+    }
+
+    /* ===============================
+       2️⃣ UPLOAD PHOTOS TO WASABI
+    =============================== */
+    const photoKeys = [];
+
+    for (const p of REQUIRED_PHOTOS) {
+      const file = base64ToFile(
+        mediaCapture[p.key],
+        `${Date.now()}-${p.name}`
+      );
+
+      const key = await uploadToWasabi(
+        file,
+        "vehicles/entry/photos"
+      );
+
+      photoKeys.push(key);
+    }
+
+    /* ===============================
+       3️⃣ UPLOAD VIDEO (OPTIONAL)
+    =============================== */
+    let videoKey = null;
+
+    if (mediaCapture.videoClip) {
+      const videoFile = base64ToFile(
+        mediaCapture.videoClip,
+        `${Date.now()}-entry-video.webm`
+      );
+
+      videoKey = await uploadToWasabi(
+        videoFile,
+        "vehicles/entry/videos"
+      );
+    }
+
+    /* ===============================
+       4️⃣ UPLOAD CHALLAN (OPTIONAL)
+    =============================== */
+    let challanKey = null;
+
+    if (vehicleDetails.challanImage) {
+      const challanFile = base64ToFile(
+        vehicleDetails.challanImage,
+        `${Date.now()}-challan.jpg`
+      );
+
+      challanKey = await uploadToWasabi(
+        challanFile,
+        "vehicles/entry/challan"
+      );
+    }
+
+    /* ===============================
+       5️⃣ FINAL PAYLOAD (ONLY KEYS)
+    =============================== */
     const entryData = {
       vehicleNumber: anprData.vehicleNumber,
       vehicleType: finalVehicleType,
-      driverName: driverName,
+      driverName,
       vendorId: finalVendor,
       entryTime: new Date().toISOString(),
-      entryGate: 'Main Gate',
-      loadStatus: vehicleDetails.loadStatus || 'FULL',
-      purpose: vehicleDetails.materialType || 'Material Delivery',
+      entryGate: "Main Gate",
+      loadStatus: vehicleDetails.loadStatus || "FULL",
+      purpose: vehicleDetails.materialType || "Material Delivery",
       notes: vehicleDetails.notes,
       siteId: vehicleDetails.siteId,
-      // Include all media files
+
       media: {
-        anprImage: anprData.capturedImage,
-        photos: [
-          mediaCapture.frontView,
-          mediaCapture.backView,
-          mediaCapture.driverView,
-          mediaCapture.loadView
-        ].filter(Boolean),
-        video: mediaCapture.videoClip,
-        challanImage: vehicleDetails.challanImage
-      }
+        photos: photoKeys,   // ✅ 4 required
+        video: videoKey,     // ✅ optional
+        challan: challanKey, // ✅ optional
+      },
     };
 
-    // ✅ CORRECTED ENDPOINT
-    const response = await axios.post(`${API_URL}/api/supervisor/vehicles/entry`, entryData, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
+    /* ===============================
+       6️⃣ SAVE ENTRY (BACKEND)
+    =============================== */
+    await axios.post(
+      `${API_URL}/api/supervisor/vehicles/entry`,
+      entryData,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
 
-    console.log('✅ Entry response:', response.data);
-    
-    alert('✅ Vehicle entry recorded successfully!');
+    alert("✅ Vehicle entry recorded successfully!");
     resetForm();
+
   } catch (error) {
-    console.error('❌ Error allowing entry:', error);
-    alert(error.response?.data?.message || 'Failed to record entry');
+    console.error("❌ Error allowing entry:", error);
+    alert(error.response?.data?.message || "Failed to record entry");
   } finally {
     setLoading(false);
   }
 };
+
+
   const resetForm = () => {
     setStep(1);
     setDriverName('');
@@ -1104,9 +1174,6 @@ const EntryVehicles = () => {
           </div>
         )}
 
-        {/* Rest of your existing JSX remains exactly the same */}
-        {/* Only the Manual Entry button is updated */}
-        
         {/* Mobile Menu Button */}
         <div className="lg:hidden mb-4">
           <button
@@ -1360,10 +1427,7 @@ const EntryVehicles = () => {
           </div>
         )}
 
-        {/* Step 2 and Step 3 remain EXACTLY THE SAME as before */}
-        {/* ... (No changes to Step 2 and Step 3) */}
-
-         {/* Step 2: Vehicle Details with Site Selection */}
+        {/* Step 2: Vehicle Details with Site Selection */}
         {step === 2 && (
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 sm:p-6">
             <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-1">Entry Details</h3>

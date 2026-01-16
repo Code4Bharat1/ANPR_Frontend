@@ -752,7 +752,7 @@ const SiteManagement = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
 
-      console.log('✅ Sites fetched successfully:', response.data);
+      // console.log('✅ Sites fetched successfully:', response.data);
       setSites(response.data.data || []);
     } catch (err) {
       console.error('❌ Error fetching sites:', err);
@@ -772,7 +772,7 @@ const SiteManagement = () => {
   const handleAddSite = async (formData) => {
     try {
       const token = localStorage.getItem('accessToken');
-      console.log('📤 Creating site with data:', formData);
+      // console.log('📤 Creating site with data:', formData);
 
       const response = await axios.post(
         `${API_URL}/api/client-admin/sites`,
@@ -785,7 +785,7 @@ const SiteManagement = () => {
         }
       );
 
-      console.log('✅ Site created successfully:', response.data);
+      // console.log('✅ Site created successfully:', response.data);
       setSites(prevSites => [response.data, ...prevSites]);
       setShowAddModal(false);
       alert('Site created successfully! ✅');
@@ -808,7 +808,7 @@ const SiteManagement = () => {
   const handleUpdateSite = async (formData) => {
     try {
       const token = localStorage.getItem('accessToken');
-      console.log('📤 Updating site:', selectedSite._id, formData);
+      // console.log('📤 Updating site:', selectedSite._id, formData);
 
       const response = await axios.put(
         `${API_URL}/api/client-admin/sites/${selectedSite._id}`,
@@ -821,7 +821,7 @@ const SiteManagement = () => {
         }
       );
 
-      console.log('✅ Site updated successfully:', response.data);
+      // console.log('✅ Site updated successfully:', response.data);
       setSites(prevSites =>
         prevSites.map(site =>
           site._id === selectedSite._id ? response.data.data : site
@@ -856,7 +856,7 @@ const SiteManagement = () => {
     try {
       setActionLoading(true);
       const token = localStorage.getItem('accessToken');
-      console.log('🗑️ Deleting site:', selectedSite._id);
+      // console.log('🗑️ Deleting site:', selectedSite._id);
 
       const response = await axios.delete(
         `${API_URL}/api/client-admin/sites/${selectedSite._id}`,
@@ -865,7 +865,7 @@ const SiteManagement = () => {
         }
       );
 
-      console.log('✅ Site deleted successfully:', response.data);
+      // console.log('✅ Site deleted successfully:', response.data);
       setSites(prevSites => prevSites.filter(site => site._id !== selectedSite._id));
 
       setShowDeleteModal(false);

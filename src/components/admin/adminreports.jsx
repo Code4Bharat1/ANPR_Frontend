@@ -42,8 +42,8 @@ const AdminReports = () => {
       const token = localStorage.getItem('accessToken');
       const userRole = getUserRole();
       
-      console.log('📱 Fetching reports for role:', userRole);
-      console.log('📱 Date range:', dateRange);
+      // console.log('📱 Fetching reports for role:', userRole);
+      // console.log('📱 Date range:', dateRange);
 
       // Build params object
       const params = {
@@ -64,8 +64,8 @@ const AdminReports = () => {
         ? `${process.env.NEXT_PUBLIC_API_URL}/api/client-admin/trips/reports`
         : `${process.env.NEXT_PUBLIC_API_URL}/api/client-admin/reports`;
 
-      console.log('📱 API Endpoint:', apiEndpoint);
-      console.log('📱 Request params:', params);
+      // console.log('📱 API Endpoint:', apiEndpoint);
+      // console.log('📱 Request params:', params);
 
       const response = await axios.get(apiEndpoint, {
         headers: { 
@@ -75,11 +75,11 @@ const AdminReports = () => {
         params: params
       });
 
-      console.log('📱 Raw API Response:', response.data);
+      // console.log('📱 Raw API Response:', response.data);
 
       // Format trips - handle all possible field variations
       const formattedTrips = (response.data || []).map(trip => {
-        console.log('Processing trip:', trip);
+        // console.log('Processing trip:', trip);
         
         // Extract vehicle number from various possible fields
         const vehicleNumber = trip.vehicleNumber || 
@@ -115,8 +115,8 @@ const AdminReports = () => {
         };
       });
 
-      console.log('📱 Formatted trips:', formattedTrips);
-      console.log('📱 Total formatted:', formattedTrips.length);
+      // console.log('📱 Formatted trips:', formattedTrips);
+      // console.log('📱 Total formatted:', formattedTrips.length);
       
       setTrips(formattedTrips);
     } catch (err) {
@@ -187,8 +187,8 @@ const AdminReports = () => {
         ? `${process.env.NEXT_PUBLIC_API_URL}/api/client-admin/trips/export`
         : `${process.env.NEXT_PUBLIC_API_URL}/api/client-admin/reports/export`;
 
-      console.log('📤 Export endpoint:', exportEndpoint);
-      console.log('📤 Export params:', params);
+      // console.log('📤 Export endpoint:', exportEndpoint);
+      // console.log('📤 Export params:', params);
 
       const response = await axios.get(exportEndpoint, {
         headers: { 
@@ -208,7 +208,7 @@ const AdminReports = () => {
       link.remove();
       window.URL.revokeObjectURL(url);
       
-      console.log('✅ Export successful');
+      // console.log('✅ Export successful');
     } catch (err) {
       console.error('❌ Error exporting report:', err);
       alert('Failed to export report. Please try again.');

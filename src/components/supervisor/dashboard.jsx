@@ -42,25 +42,25 @@ const SupervisorDashboard = () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('accessToken');
-      
+
       const response = await axios.get(
         `${API_URL}/api/supervisor/dashboard/`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      
-      console.log(response.data);
-      
+
+      // console.log(response.data);
+
       if (response.data) {
         // Set stats from response
         if (response.data.stats) {
           setStats(response.data.stats);
         }
-        
+
         // Set site info from response
         if (response.data.siteInfo) {
           setSiteInfo(response.data.siteInfo);
         }
-        
+
         // Set recent activity from response
         if (response.data.recentActivity) {
           setRecentActivity(response.data.recentActivity);
@@ -82,7 +82,7 @@ const SupervisorDashboard = () => {
   const pieData = [
     { name: 'Inside', value: stats.vehiclesInside },
     { name: 'Pending Exit', value: stats.pendingExit },
-    { name: 'Exited Today', value: stats.todayExit },
+    // { name: 'Exited Today', value: stats.todayExit },
   ];
 
   const COLORS = ['#22c55e', '#f59e0b', '#3b82f6'];
@@ -167,7 +167,7 @@ const SupervisorDashboard = () => {
           <div className="text-xs text-red-600">{stats.deniedEntries > 0 ? 'Requires review' : 'No denials'}</div>
         </div> */}
       </div>
-<div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
 
         <div className="bg-white p-5 ">
           <h3 className="text-lg font-bold mb-4">Today Vehicle Movement</h3>
@@ -176,8 +176,13 @@ const SupervisorDashboard = () => {
               <XAxis dataKey="name" />
               <YAxis allowDecimals={false} />
               <Tooltip />
-              <Bar dataKey="value" radius={[6, 6, 0, 0]} />
+              <Bar dataKey="value" radius={[6, 6, 0, 0]}>
+                {barData.map((_, index) => (
+                  <Cell key={index} fill={COLORS[index]} />
+                ))}
+              </Bar>
             </BarChart>
+
           </ResponsiveContainer>
         </div>
 
@@ -199,9 +204,9 @@ const SupervisorDashboard = () => {
               <Tooltip />
             </PieChart>
           </ResponsiveContainer>
-        
-</div>
-          </div>
+
+        </div>
+      </div>
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Recent Gate Activity */}
@@ -216,7 +221,7 @@ const SupervisorDashboard = () => {
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>
-          
+
           <div className="p-5">
             {recentActivity.length > 0 ? (
               <div className="space-y-4">
@@ -226,30 +231,27 @@ const SupervisorDashboard = () => {
                     className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition"
                   >
                     <div className="flex items-center gap-4">
-                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                        activity.status === 'allowed'
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${activity.status === 'allowed'
                           ? activity.type === 'entry'
                             ? 'bg-green-100'
                             : 'bg-blue-100'
                           : 'bg-red-100'
-                      }`}>
+                        }`}>
                         {activity.type === 'entry' ? (
-                          <LogIn className={`w-5 h-5 ${
-                            activity.status === 'allowed' ? 'text-green-600' : 'text-red-600'
-                          }`} />
+                          <LogIn className={`w-5 h-5 ${activity.status === 'allowed' ? 'text-green-600' : 'text-red-600'
+                            }`} />
                         ) : (
                           <ExitIcon className="w-5 h-5 text-blue-600" />
                         )}
                       </div>
-                      
+
                       <div>
                         <div className="flex items-center gap-2">
                           <span className="font-bold text-gray-900">{activity.vehicleNumber}</span>
-                          <span className={`px-2 py-0.5 rounded text-xs font-semibold ${
-                            activity.status === 'allowed'
+                          <span className={`px-2 py-0.5 rounded text-xs font-semibold ${activity.status === 'allowed'
                               ? 'bg-green-100 text-green-700'
                               : 'bg-red-100 text-red-700'
-                          }`}>
+                            }`}>
                             {activity.status === 'allowed' ? 'Allowed' : 'Denied'}
                           </span>
                         </div>
@@ -259,7 +261,7 @@ const SupervisorDashboard = () => {
                         </div>
                       </div>
                     </div>
-                    
+
                     <div className="text-right">
                       <div className="text-sm font-semibold text-gray-900">{activity.time}</div>
                     </div>
@@ -286,7 +288,7 @@ const SupervisorDashboard = () => {
                 <h3 className="text-white font-bold text-lg">{siteInfo.name || 'No Site Assigned'}</h3>
               </div>
             </div>
-            
+
             <div className="p-5 space-y-3">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-gray-600">Site Name</span>
@@ -302,11 +304,10 @@ const SupervisorDashboard = () => {
               </div> */}
               <div className="flex items-center justify-between text-sm">
                 <span className="text-gray-600">Status</span>
-                <span className={`px-2 py-1 rounded text-xs font-semibold ${
-                  siteInfo.status === 'Active' 
-                    ? 'bg-green-100 text-green-700' 
+                <span className={`px-2 py-1 rounded text-xs font-semibold ${siteInfo.status === 'Active'
+                    ? 'bg-green-100 text-green-700'
                     : 'bg-gray-100 text-gray-700'
-                }`}>
+                  }`}>
                   {siteInfo.status || 'N/A'}
                 </span>
               </div>
@@ -317,7 +318,7 @@ const SupervisorDashboard = () => {
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
             <h3 className="text-lg font-bold text-gray-900 mb-4">Active Vehicles</h3>
             <div className="text-sm text-gray-600 mb-3">Inside: {stats.vehiclesInside || 0} vehicles</div>
-            
+
             <button
               onClick={() => router.push('/supervisor/active-vehicles')}
               className="w-full mt-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold text-sm"

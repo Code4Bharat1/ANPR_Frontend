@@ -31,7 +31,7 @@ const DeviceMonitoring = () => {
           },
         }
       );
-      console.log(response.data);
+      // console.log(response.data);
       
 
       setDevices(response.data);
@@ -44,7 +44,7 @@ const DeviceMonitoring = () => {
 
   // Normalize devices to handle different API response structures
  const normalizedDevices = devices.map(device => {
-  console.log("Raw device data:", device); // Debug log
+  // console.log("Raw device data:", device); // Debug log
   
   // Handle device ID
   const deviceId = device.serialNo || device.deviceId || device.id || device._id || 'N/A';
