@@ -1348,7 +1348,7 @@ const EntryVehicles = () => {
                     />
                   </div>
 
-                  {ocrResult.rawText && (
+                  {/* {ocrResult.rawText && (
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-sm font-semibold text-blue-700 flex items-center gap-2">
@@ -1363,7 +1363,7 @@ const EntryVehicles = () => {
                         {ocrResult.rawText || 'No text detected'}
                       </div>
                     </div>
-                  )}
+                  )} */}
 
                   <div className="space-y-4">
                     <div>
@@ -1404,13 +1404,13 @@ const EntryVehicles = () => {
                       </div>
                       
                       <div className="mt-2 space-y-1">
-                        {ocrResult.vehicleNumber && !validateVehicleNumber(ocrResult.vehicleNumber) && (
+                        {/* {ocrResult.vehicleNumber && !validateVehicleNumber(ocrResult.vehicleNumber) && (
                           <p className="text-xs text-red-600">
                             Please enter a valid Indian vehicle number (e.g., MH-12-AB-1234)
                           </p>
-                        )}
+                        )} */}
                         
-                        {ocrResult.stateCode && (
+                        {/* {ocrResult.stateCode && (
                           <div className="flex items-center gap-4 text-xs">
                             <span className="bg-gray-100 px-2 py-1 rounded">
                               State: <strong>{ocrResult.stateCode}</strong>
@@ -1425,7 +1425,7 @@ const EntryVehicles = () => {
                               Number: <strong>{ocrResult.number}</strong>
                             </span>
                           </div>
-                        )}
+                        )} */}
                       </div>
                     </div>
 
