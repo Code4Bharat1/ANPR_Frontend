@@ -648,34 +648,43 @@ const EntryVehicles = () => {
  // Utility functions for direct Wasabi upload
 const uploadToWasabiDirect = async (file, folder = "vehicles/entry") => {
   try {
-    const formData = new FormData();
     const fileName = `${folder}/${Date.now()}-${Math.random().toString(36).substring(7)}-${file.name}`;
-    
-    formData.append('file', file);
-    formData.append('fileName', fileName);
+    const fileType = file.type;
 
+    console.log('📤 Getting signed URL for:', fileName);
+
+    // STEP 1: Signed URL lo (JSON request)
     const token = localStorage.getItem("accessToken");
-    const response = await axios.post(
-      `${API_URL}/api/uploads/upload-url`,
-      formData,
+    const urlResponse = await axios.post(
+      `${API_URL}/api/upload/upload-url`,
+      { fileName, fileType },  // ✅ JSON payload
       {
         headers: {
           'Authorization': `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data'
+          'Content-Type': 'application/json'  // ✅ JSON header
         }
       }
     );
 
-    if (response.data.success) {
-      // Assuming your API returns the full URL
-      return response.data.url || response.data.data?.url;
-    }
-    throw new Error('Upload failed');
+    console.log('✅ Signed URL received:', urlResponse.data);
+
+    // STEP 2: Direct Wasabi upload (PUT request)
+    await axios.put(urlResponse.data.uploadURL, file, {
+      headers: {
+        'Content-Type': fileType
+      }
+    });
+
+    console.log('✅ File uploaded to Wasabi:', urlResponse.data.fileKey);
+    return urlResponse.data.fileKey;  // File key return karo
+
   } catch (error) {
-    console.error('Upload error:', error);
+    console.error('❌ Upload error:', error.response?.data || error.message);
     throw error;
   }
 };
+
+
 
 const handleAllowEntry = async () => {
   try {
@@ -787,7 +796,7 @@ const handleAllowEntry = async () => {
 
     // Send to your vehicle entry API
     const response = await axios.post(
-      `${API_URL}/api/supervisor/vehicle/entry`,
+      `${API_URL}/api/supervisor/vehicles/entry`,
       entryData,
       { 
         headers: { 
