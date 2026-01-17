@@ -50,7 +50,7 @@ api.interceptors.response.use(
     // ❗ Prevent infinite loop
     if (
       error.response?.status === 401 &&
-      originalRequest.url === "/auth/refresh"
+      originalRequest.url === "/api/auth/refresh"
     ) {
       clearAccessToken();
 
@@ -73,7 +73,7 @@ api.interceptors.response.use(
 
       try {
         // ✅ CORRECT ENDPOINT
-        const res = await api.post("/auth/refresh");
+        const res = await api.post("/api/auth/refresh");
 
         const newAccessToken = res.data.accessToken;
         setAccessToken(newAccessToken);

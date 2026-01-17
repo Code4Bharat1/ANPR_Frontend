@@ -308,23 +308,29 @@ const UserManagement = () => {
   };
 
   const handleToggleStatus = async (userId, currentStatus) => {
-    try {
-      const endpoint = activeTab === 'Project Managers'
-        ? `/api/client-admin/pm/${userId}/status`
-        : `/api/client-admin/supervisor/${userId}/status`;
+  try {
+    const endpoint = activeTab === 'Project Managers'
+      ? `/api/client-admin/pm/${userId}/status`
+      : `/api/client-admin/supervisor/${userId}/status`;
 
-      await api.patch(endpoint, {
-        status: currentStatus === 'Active' ? 'Inactive' : 'Active'
-      });
+    const newStatus = currentStatus === 'Active' ? 'Inactive' : 'Active';
 
-      alert('Status updated successfully!');
-      await fetchUsers();
+    console.log('Toggling status:', { userId, currentStatus, newStatus }); // ✅ Debug log
 
-    } catch (err) {
-      console.error('Error updating status:', err);
-      alert(err.response?.data?.message || 'Failed to update status');
-    }
-  };
+    const response = await api.patch(endpoint, { status: newStatus });
+
+    console.log('Response:', response.data); // ✅ Check what backend returns
+
+    // ✅ Refresh the user list BEFORE showing alert
+    await fetchUsers();
+    
+    alert('Status updated successfully!');
+
+  } catch (err) {
+    console.error('Error updating status:', err);
+    alert(err.response?.data?.message || 'Failed to update status');
+  }
+};
 
   const filteredUsers = Array.isArray(users) ? users.filter(user => {
     const matchesSearch = user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
