@@ -58,7 +58,7 @@ export const uploadToWasabi = async (file, folder = '') => {
     
     // Get pre-signed URL from backend
     const urlResponse = await axios.post(
-      `${API_URL}/api/upload/upload-url`,
+      `${API_URL}/api/uploads/upload-url`,
       {
         fileName: fullFileName,
         fileType: file.type
@@ -98,7 +98,7 @@ export const getDownloadUrl = async (fileKey) => {
     
     const token = localStorage.getItem('accessToken');
     
-    const response = await axios.get(`${API_URL}/api/upload/get-file`, {
+    const response = await axios.get(`${API_URL}/api/uploads/get-file`, {
       params: { key: fileKey },
       headers: { 
         Authorization: `Bearer ${token}`,

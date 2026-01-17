@@ -268,119 +268,136 @@ const ExitVehicles = () => {
     setCurrentView('process');
   };
 
-  // Updated handleAllowExit with Wasabi upload
-  const handleAllowExit = async () => {
-    // Step 1: Validate return material type if loaded
-    if (exitData.exitLoadStatus === 'loaded' && !exitData.returnMaterialType.trim()) {
-      alert('Please enter return material type');
+ // Updated handleAllowExit with Wasabi upload
+const handleAllowExit = async () => {
+  // Step 1: Validate return material type if loaded
+  if (
+    exitData.exitLoadStatus === "loaded" &&
+    !exitData.returnMaterialType.trim()
+  ) {
+    alert("Please enter return material type");
+    return;
+  }
+
+  // Step 2: Validate all 4 mandatory photos
+  const REQUIRED_PHOTOS = [
+    { key: "frontView", name: "Front View" },
+    { key: "backView", name: "Back View" },
+    { key: "loadView", name: "Load View" },
+    { key: "driverView", name: "Driver View" },
+  ];
+
+  const missingPhotos = REQUIRED_PHOTOS.filter(
+    (p) => !exitData.exitMedia?.[p.key]
+  );
+
+  if (missingPhotos.length > 0) {
+    alert(
+      `Please capture all mandatory photos:\n${missingPhotos
+        .map((p) => `• ${p.name}`)
+        .join("\n")}`
+    );
+    return;
+  }
+
+  // ✅ STEP 3: SAFE & SIMPLE vehicleId normalization
+  const vehicleId = selectedVehicle?._id
+    ? String(selectedVehicle._id)
+    : null;
+
+  if (!vehicleId) {
+    alert("Invalid vehicle selected");
+    return;
+  }
+
+  try {
+    setLoading(true);
+
+    const token = localStorage.getItem("accessToken");
+    if (!token) {
+      alert("Authentication token missing");
       return;
     }
 
-    // Step 2: Validate all 4 mandatory photos
-    const REQUIRED_PHOTOS = [
-      { key: "frontView", name: "Front View" },
-      { key: "backView", name: "Back View" },
-      { key: "loadView", name: "Load View" },
-      { key: "driverView", name: "Driver View" },
-    ];
+    // Step 4: Upload mandatory photos
+    const uploadedPhotoKeys = {};
 
-    const missingPhotos = REQUIRED_PHOTOS.filter(p => !exitData.exitMedia[p.key]);
-    if (missingPhotos.length > 0) {
-      alert(`Please capture all mandatory photos:\n${missingPhotos.map(p => `• ${p.name}`).join('\n')}`);
-      return;
-    }
-
-    try {
-      setLoading(true);
-      const token = localStorage.getItem('accessToken');
-
-      // Step 3: Upload all 4 photos to Wasabi
-      const uploadedPhotoKeys = {};
-
-      for (const photo of REQUIRED_PHOTOS) {
-        try {
-          // Convert base64 to File
-          const file = base64ToFile(
-            exitData.exitMedia[photo.key],
-            `${Date.now()}-${photo.key}.jpg`
-          );
-
-          // Upload to Wasabi
-          const fileKey = await uploadToWasabi(
-            file,
-            `vehicles/${selectedVehicle.vehicleNumber}/exit/photos`
-          );
-
-          uploadedPhotoKeys[photo.key] = fileKey;
-          // console.log(`${photo.name} uploaded:`, fileKey);
-
-        } catch (photoError) {
-          console.error(`Failed to upload ${photo.name}:`, photoError);
-          alert(`Failed to upload ${photo.name}. Please try again.`);
-          return;
-        }
-      }
-
-      // Step 4: Upload optional video if exists
-      let videoKey = null;
-      if (exitData.exitMedia.videoClip) {
-        try {
-          const videoFile = base64ToFile(
-            exitData.exitMedia.videoClip,
-            `${Date.now()}-exit-video.webm`
-          );
-
-          videoKey = await uploadToWasabi(
-            videoFile,
-            `vehicles/${selectedVehicle.vehicleNumber}/exit/videos`
-          );
-          // console.log('Video uploaded:', videoKey);
-        } catch (videoError) {
-          console.warn('Video upload failed:', videoError);
-          // Continue without video since it's optional
-        }
-      }
-
-      // Step 5: Prepare final payload
-      const exitPayload = {
-        vehicleId: selectedVehicle._id,
-        vehicleNumber: selectedVehicle.vehicleNumber,
-        exitTime: new Date().toISOString(),
-        exitLoadStatus: exitData.exitLoadStatus,
-        returnMaterialType: exitData.returnMaterialType || '',
-        papersVerified: exitData.papersVerified,
-        physicalInspection: exitData.physicalInspection,
-        materialMatched: exitData.materialMatched,
-        exitNotes: exitData.exitNotes || '',
-        exitMedia: {
-          photos: uploadedPhotoKeys, // Object with file keys for all 4 photos
-          video: videoKey,           // Video file key or null
-        },
-      };
-
-      // Step 6: Send to backend
-      const response = await axios.post(
-        `${API_URL}/api/supervisor/vehicles/exit`,
-        exitPayload,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        }
+    for (const photo of REQUIRED_PHOTOS) {
+      const file = base64ToFile(
+        exitData.exitMedia[photo.key],
+        `${Date.now()}-${photo.key}.jpg`
       );
 
-      alert(`✅ Vehicle exit allowed successfully!`);
-      handleBackToList();
-      fetchActiveVehicles();
+      const fileKey = await uploadToWasabi(
+        file,
+        `vehicles/${selectedVehicle.vehicleNumber}/exit/photos`
+      );
 
-    } catch (error) {
-      console.error('Exit error:', error);
-      alert(error.response?.data?.message || 'Failed to process exit');
-    } finally {
-      setLoading(false);
+      uploadedPhotoKeys[photo.key] = fileKey;
     }
-  };
+
+    // Step 5: Upload optional video
+    let videoKey = "";
+    if (exitData.exitMedia?.videoClip) {
+      try {
+        const videoFile = base64ToFile(
+          exitData.exitMedia.videoClip,
+          `${Date.now()}-exit-video.webm`
+        );
+
+        videoKey = await uploadToWasabi(
+          videoFile,
+          `vehicles/${selectedVehicle.vehicleNumber}/exit/videos`
+        );
+      } catch (err) {
+        console.warn("Video upload failed, continuing without video", err);
+      }
+    }
+
+    // Step 6: Final payload
+    const exitPayload = {
+      vehicleId, // ✅ always correct string
+      vehicleNumber: selectedVehicle.vehicleNumber,
+      exitTime: new Date().toISOString(),
+      exitLoadStatus: exitData.exitLoadStatus,
+      returnMaterialType: exitData.returnMaterialType || "",
+      papersVerified: exitData.papersVerified,
+      physicalInspection: exitData.physicalInspection,
+      materialMatched: exitData.materialMatched,
+      exitNotes: exitData.exitNotes || "",
+      exitMedia: {
+        photos: uploadedPhotoKeys,
+        video: videoKey,
+      },
+    };
+
+    // Debug (safe to remove later)
+    console.log("🚪 EXIT PAYLOAD:", exitPayload);
+
+    // Step 7: Send to backend
+    await axios.post(
+      `${API_URL}/api/supervisor/vehicles/exit`,
+      exitPayload,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    alert("✅ Vehicle exit allowed successfully!");
+    handleBackToList();
+    fetchActiveVehicles();
+
+  } catch (error) {
+    console.error("❌ Exit error:", error);
+    alert(error.response?.data?.message || "Failed to process exit");
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const getStatusBadge = (status) => {
     const configs = {
