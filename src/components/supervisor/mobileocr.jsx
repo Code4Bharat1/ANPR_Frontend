@@ -327,7 +327,8 @@ const OcrScan = () => {
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
     
     // Advanced preprocessing for distance
-    const processedImageData = preprocessImageForDistanceOCR(ctx, canvas);
+    const processedImageData = await processDistanceImage(ctx, canvas);
+
     ctx.putImageData(processedImageData, 0, 0);
     
     const imageData = canvas.toDataURL('image/jpeg', 0.9);
@@ -650,45 +651,71 @@ const applyAdaptiveBinarization = (data, width, height) => {
   return result;
 };
 
-// ENHANCED: Tesseract processing with optimized parameters for distance
-const processWithTesseract = async (canvas) => {
+const processOCR = async (imageBase64) => {
+  setOcrProcessing(true);
+
   try {
-    const Tesseract = (await import('tesseract.js')).default;
-    
-    const result = await Tesseract.recognize(
-      canvas,
-      'eng',
-      {
-        logger: m => console.log('Tesseract:', m.status),
-        // CRITICAL: Optimized for distance OCR
-        tessedit_pageseg_mode: '6', // Assume uniform block of text
-        tessedit_ocr_engine_mode: '1', // Neural nets LSTM only
-        tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',
-        // Enhanced for small/distant text
-        user_defined_dpi: '600', // Higher DPI for better accuracy
-        textord_min_linesize: '1.5',
-        textord_heavy_nr: '1',
-        edges_max_children_per_outline: '100',
-        // Character detection improvements
-        classify_bln_numeric_mode: '1',
-        tessedit_min_orientation_margin: '0.5',
-        // Multi-scale detection
-        textord_noise_sizelimit: '0.5',
-        textord_noise_normratio: '1.5'
+    const blob = await (await fetch(imageBase64)).blob();
+    const formData = new FormData();
+    formData.append("upload", blob);
+
+    const res = await fetch("/api/ocr", {
+      method: "POST",
+      body: formData,
+    });
+
+    const data = await res.json();
+    const result = data.results?.[0];
+
+    // ✅ USE API RESULT ONLY IF CONFIDENT
+    if (result && result.score >= 0.7) {
+      setVehicleNumber(result.plate.toUpperCase());
+      setOcrResult({
+        vehicleNumber: result.plate.toUpperCase(),
+        confidence: Math.round(result.score * 100),
+        image: imageBase64,
+        method: "api"
+      });
+    } 
+    // 🔁 FALLBACK TO TESSERACT
+    else {
+      console.warn("Low confidence API result, using Tesseract fallback");
+
+      const canvas = canvasRef.current;
+      const tess = await processWithTesseract(canvas);
+
+      if (tess.success && tess.text) {
+        setVehicleNumber(tess.text);
+        setOcrResult({
+          vehicleNumber: tess.text,
+          confidence: Math.round(tess.confidence || 50),
+          image: imageBase64,
+          method: "tesseract"
+        });
+      } else {
+        alert("Number plate not detected. Please scan again.");
       }
-    );
-    
-    return {
-      success: true,
-      text: extractVehicleNumber(result.data.text),
-      confidence: result.data.confidence,
-      method: 'tesseract'
-    };
-  } catch (error) {
-    console.error('Tesseract error:', error);
-    return { success: false, method: 'tesseract' };
+    }
+  } catch (err) {
+    console.error("OCR Error:", err);
+    alert("OCR failed. Try again.");
   }
+
+  setOcrProcessing(false);
 };
+const handleVehicleNumberChange = (value) => {
+  const formatted = value
+    .toUpperCase()
+    .replace(/[^A-Z0-9-]/g, '');
+
+  setVehicleNumber(formatted);
+
+  setOcrResult(prev => ({
+    ...prev,
+    isEdited: true
+  }));
+};
+
 
 // IMPROVED: Vehicle number extraction with better pattern matching
 const extractVehicleNumber = (text) => {
