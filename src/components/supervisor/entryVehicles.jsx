@@ -645,126 +645,179 @@ const EntryVehicles = () => {
     if (step > 1) setStep(step - 1);
   };
 
-  const handleAllowEntry = async () => {
-    try {
-      setLoading(true);
-      const token = localStorage.getItem("accessToken");
+ // Utility functions for direct Wasabi upload
+const uploadToWasabiDirect = async (file, folder = "vehicles/entry") => {
+  try {
+    const formData = new FormData();
+    const fileName = `${folder}/${Date.now()}-${Math.random().toString(36).substring(7)}-${file.name}`;
+    
+    formData.append('file', file);
+    formData.append('fileName', fileName);
 
-      if (!anprData.vehicleNumber) {
-        alert("❌ Vehicle number is required");
-        setLoading(false);
-        return;
-      }
-
-      const finalVendor = vendorInputMode === "manual" 
-        ? manualVendorName 
-        : vehicleDetails.vendorId;
-
-      if (!finalVendor) {
-        alert("❌ Please select or enter a vendor");
-        setLoading(false);
-        return;
-      }
-
-      const finalVehicleType = vehicleDetails.vehicleType === 'OTHER' 
-        ? customVehicleType 
-        : vehicleDetails.vehicleType;
-
-      const uploadedPhotos = [];
-      
-      for (const [key, photo] of Object.entries(mediaCapture)) {
-        if (photo && key !== "videoClip") {
-          try {
-            const file = base64ToFile(photo, `${Date.now()}-${key}.jpg`);
-            const keyName = await uploadToWasabi(file, "vehicles/entry/photos");
-            const fullUrl = `https://s3.wasabisys.com/anpr-smart/${keyName}`;
-            uploadedPhotos.push(fullUrl);
-          } catch (error) {
-            console.error(`Failed to upload ${key}:`, error);
-          }
+    const token = localStorage.getItem("accessToken");
+    const response = await axios.post(
+      `${API_URL}/api/uploads/upload-url`,
+      formData,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
         }
       }
+    );
 
-      let videoUrl = "";
-      if (mediaCapture.videoClip) {
-        try {
-          const videoFile = base64ToFile(
-            mediaCapture.videoClip,
-            `${Date.now()}-video.webm`
-          );
-          const videoKey = await uploadToWasabi(videoFile, "vehicles/entry/videos");
-          videoUrl = `https://s3.wasabisys.com/anpr-smart/${videoKey}`;
-        } catch (error) {
-          console.error('Failed to upload video:', error);
-        }
-      }
-
-      let challanImageUrl = "";
-      if (vehicleDetails.challanImage) {
-        try {
-          const challanFile = base64ToFile(
-            vehicleDetails.challanImage,
-            `${Date.now()}-challan.jpg`
-          );
-          const challanKey = await uploadToWasabi(challanFile, "vehicles/entry/challan");
-          challanImageUrl = `https://s3.wasabisys.com/anpr-smart/${challanKey}`;
-        } catch (error) {
-          console.error('Failed to upload challan:', error);
-        }
-      }
-
-      const entryData = {
-        vehicleNumber: anprData.vehicleNumber.toUpperCase().trim(),
-        vendorId: finalVendor,
-        vehicleType: finalVehicleType || "TRUCK",
-        driverName: driverName || "",
-        entryTime: new Date().toISOString(),
-        purpose: vehicleDetails.materialType || "Material Delivery",
-        loadStatus: vehicleDetails.loadStatus.toUpperCase() || "FULL",
-        entryGate: "Manual Entry",
-        notes: vehicleDetails.notes || "",
-        siteId: vehicleDetails.siteId,
-        media: {
-          anprImage: anprData.capturedImage || "",
-          photos: uploadedPhotos,
-          video: videoUrl,
-          challanImage: challanImageUrl,
-        }
-      };
-
-      console.log("📦 FINAL PAYLOAD:", entryData);
-
-      const response = await axios.post(
-        `${API_URL}/api/supervisor/vehicle/entry`,
-        entryData,
-        { 
-          headers: { 
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        }
-      );
-
-      console.log("✅ SUCCESS Response:", response.data);
-      alert("✅ Vehicle entry recorded successfully!");
-      resetForm();
-
-    } catch (error) {
-      console.error("❌ ERROR Details:");
-      console.error("Status:", error.response?.status);
-      console.error("Message:", error.response?.data?.message);
-      console.error("Data:", error.response?.data);
-      
-      if (error.response?.status === 400) {
-        alert(`❌ ${error.response.data.message}`);
-      } else {
-        alert("❌ Failed to record entry. Check console for details.");
-      }
-    } finally {
-      setLoading(false);
+    if (response.data.success) {
+      // Assuming your API returns the full URL
+      return response.data.url || response.data.data?.url;
     }
-  };
+    throw new Error('Upload failed');
+  } catch (error) {
+    console.error('Upload error:', error);
+    throw error;
+  }
+};
 
+const handleAllowEntry = async () => {
+  try {
+    setLoading(true);
+    const token = localStorage.getItem("accessToken");
+
+    if (!anprData.vehicleNumber) {
+      alert("❌ Vehicle number is required");
+      setLoading(false);
+      return;
+    }
+
+    // Vendor logic remains same
+    const finalVendor = vendorInputMode === "manual" 
+      ? manualVendorName 
+      : vehicleDetails.vendorId;
+
+    if (!finalVendor || finalVendor.trim() === "") {
+      const proceedWithoutVendor = window.confirm(
+        "⚠️ No vendor selected. Would you like to continue without vendor information?\n\n" +
+        "Note: You can add vendor details later if needed."
+      );
+      
+      if (!proceedWithoutVendor) {
+        setLoading(false);
+        return;
+      }
+    }
+
+    const finalVehicleType = vehicleDetails.vehicleType === 'OTHER' 
+      ? customVehicleType 
+      : vehicleDetails.vehicleType;
+
+    // ✅ UPDATED: Use your existing upload endpoint
+    const uploadedPhotos = [];
+    
+    // Upload all photos
+    for (const [key, photo] of Object.entries(mediaCapture)) {
+      if (photo && key !== "videoClip") {
+        try {
+          const file = base64ToFile(photo, `${Date.now()}-${key}.jpg`);
+          const uploadedUrl = await uploadToWasabiDirect(file, "vehicles/entry/photos");
+          if (uploadedUrl) {
+            uploadedPhotos.push(uploadedUrl);
+            console.log(`✅ ${key} uploaded:`, uploadedUrl);
+          }
+        } catch (error) {
+          console.error(`Failed to upload ${key}:`, error);
+          // Continue with other uploads even if one fails
+        }
+      }
+    }
+
+    // Upload video
+    let videoUrl = "";
+    if (mediaCapture.videoClip) {
+      try {
+        const videoFile = base64ToFile(
+          mediaCapture.videoClip,
+          `${Date.now()}-video.webm`
+        );
+        videoUrl = await uploadToWasabiDirect(videoFile, "vehicles/entry/videos");
+        console.log("✅ Video uploaded:", videoUrl);
+      } catch (error) {
+        console.error('Failed to upload video:', error);
+      }
+    }
+
+    // Upload challan image
+    let challanImageUrl = "";
+    if (vehicleDetails.challanImage) {
+      try {
+        const challanFile = base64ToFile(
+          vehicleDetails.challanImage,
+          `${Date.now()}-challan.jpg`
+        );
+        challanImageUrl = await uploadToWasabiDirect(challanFile, "vehicles/entry/challan");
+        console.log("✅ Challan uploaded:", challanImageUrl);
+      } catch (error) {
+        console.error('Failed to upload challan:', error);
+      }
+    }
+
+    // Prepare entry data
+    const entryData = {
+      vehicleNumber: anprData.vehicleNumber.toUpperCase().trim(),
+      vehicleType: finalVehicleType || "TRUCK",
+      driverName: driverName || "",
+      entryTime: new Date().toISOString(),
+      purpose: vehicleDetails.materialType || "Material Delivery",
+      loadStatus: vehicleDetails.loadStatus.toUpperCase() || "FULL",
+      entryGate: "Manual Entry",
+      notes: vehicleDetails.notes || "",
+      siteId: vehicleDetails.siteId,
+      media: {
+        anprImage: anprData.capturedImage || "",
+        photos: uploadedPhotos,
+        video: videoUrl,
+        challanImage: challanImageUrl,
+      }
+    };
+
+    // Add vendor if available
+    if (finalVendor && finalVendor.trim() !== "") {
+      entryData.vendorId = finalVendor;
+    }
+
+    console.log("📦 FINAL PAYLOAD:", entryData);
+
+    // Send to your vehicle entry API
+    const response = await axios.post(
+      `${API_URL}/api/supervisor/vehicle/entry`,
+      entryData,
+      { 
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    console.log("✅ SUCCESS Response:", response.data);
+    alert("✅ Vehicle entry recorded successfully!");
+    resetForm();
+
+  } catch (error) {
+    console.error("❌ ERROR Details:");
+    console.error("Status:", error.response?.status);
+    console.error("Message:", error.response?.data?.message);
+    console.error("Data:", error.response?.data);
+    
+    if (error.response?.status === 400) {
+      alert(`❌ ${error.response.data.message}`);
+    } else if (error.response?.status === 409) {
+      alert(`⚠️ ${error.response.data.message}`);
+    } else {
+      alert("❌ Failed to record entry. Check console for details.");
+    }
+  } finally {
+    setLoading(false);
+  }
+};
   const resetForm = () => {
     setStep(1);
     setDriverName('');
