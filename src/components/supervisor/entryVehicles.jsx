@@ -394,7 +394,7 @@ const EntryVehicles = () => {
       formData.append('file', file);
       formData.append('folder', folder);
       
-      const response = await axios.post(`${API_URL}/api/upload/wasabi`, formData, {
+      const response = await axios.post(`${API_URL}/api/upload/upload-url`, formData, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'multipart/form-data'
@@ -735,7 +735,7 @@ const EntryVehicles = () => {
       console.log("📦 FINAL PAYLOAD:", entryData);
 
       const response = await axios.post(
-        `${API_URL}/api/trips/manual`,
+        `${API_URL}/api/supervisor/vehicle/entry`,
         entryData,
         { 
           headers: { 
