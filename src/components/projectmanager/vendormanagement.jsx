@@ -80,7 +80,7 @@ const VendorManagement = () => {
       // console.log(vendorsRes.data);
 
       // Fetch sites for dropdown
-      const sitesRes = await axiosInstance.get('/api/project/sites');
+      const sitesRes = await axiosInstance.get('/api/project/my-sites');
       setSites(sitesRes.data);
       // console.log(sitesRes.data);
       
