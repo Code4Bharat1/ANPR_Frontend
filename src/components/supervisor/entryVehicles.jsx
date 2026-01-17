@@ -6,10 +6,11 @@ import axios from 'axios';
 import {
   Camera, Upload, X, CheckCircle, AlertCircle, Loader2,
   Car, Package, FileText, Video, ArrowRight, ArrowLeft, Truck, RotateCw, StopCircle, User,
-  Clock, Plus, CheckCircle2, Search, Menu, ChevronDown, Building, Scan,
-  Zap, Target, Contrast, Filter, ZoomIn, Settings, Hash, MapPin
+  Clock, Plus, CheckCircle2, Search, Menu, ChevronDown, Building,
+  Target, Contrast, Filter, ZoomIn, Settings, Hash, MapPin
 } from 'lucide-react';
 import { io } from 'socket.io-client';
+import { useRouter } from 'next/navigation';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 const SOCKET_URL = 'https://webhooks.nexcorealliance.com';
@@ -41,14 +42,8 @@ const VEHICLE_TYPES = [
   { value: "OTHER", label: "Other" }
 ];
 
-// Indian States for validation
-const INDIAN_STATES = [
-  'AN', 'AP', 'AR', 'AS', 'BR', 'CH', 'CG', 'DN', 'DD', 'DL', 'GA', 'GJ', 'HR',
-  'HP', 'JK', 'JH', 'KA', 'KL', 'LA', 'LD', 'MP', 'MH', 'MN', 'ML', 'MZ', 'NL',
-  'OD', 'PY', 'PB', 'RJ', 'SK', 'TN', 'TS', 'TR', 'UP', 'UK', 'WB'
-];
-
 const EntryVehicles = () => {
+  const router = useRouter();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [vendors, setVendors] = useState([]);
@@ -66,34 +61,8 @@ const EntryVehicles = () => {
   const [recordingTime, setRecordingTime] = useState(0);
   const [mediaRecorder, setMediaRecorder] = useState(null);
   
-  // Enhanced OCR State
-  const [ocrProcessing, setOcrProcessing] = useState(false);
-  const [showOcrResult, setShowOcrResult] = useState(false);
-  const [ocrResult, setOcrResult] = useState({
-    vehicleNumber: '',
-    confidence: 0,
-    image: null,
-    rawText: '',
-    suggestions: [],
-    isEdited: false,
-    stateCode: '',
-    district: '',
-    series: '',
-    number: ''
-  });
-  
-  // OCR Settings for better accuracy
-  const [ocrSettings, setOcrSettings] = useState({
-    contrast: 1.2,
-    brightness: 1.1,
-    sharpen: true,
-    autoCrop: true,
-    language: 'eng'
-  });
-  
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
-  const ocrCanvasRef = useRef(null);
   const recordingIntervalRef = useRef(null);
 
   // Driver Name
@@ -327,419 +296,10 @@ const EntryVehicles = () => {
     }
   };
 
-  // ========== ENHANCED OCR FUNCTIONS ==========
-  const startOCRScan = () => {
-    console.log("📱 Starting OCR scan...");
-    setCameraView('ocr');
-  };
-
-  const captureOCRPhoto = async () => {
-    console.log("📸 Capturing OCR photo...");
-    
-    if (!videoRef.current || !canvasRef.current) {
-      alert('Camera not ready');
-      return;
-    }
-
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    const ocrCanvas = document.createElement('canvas');
-    
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    ocrCanvas.width = canvas.width;
-    ocrCanvas.height = canvas.height;
-    
-    if (canvas.width === 0 || canvas.height === 0) {
-      alert('Camera not ready. Please wait.');
-      return;
-    }
-    
-    const ctx = canvas.getContext('2d');
-    const ocrCtx = ocrCanvas.getContext('2d');
-    
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    
-    const processedImageData = preprocessImageForOCR(ctx, canvas);
-    ocrCtx.putImageData(processedImageData, 0, 0);
-    
-    const imageData = ocrCanvas.toDataURL('image/jpeg', 0.9);
-    
-    stopCamera();
-    setCameraView(null);
-    
-    await processOCR(imageData);
-  };
-
-  const preprocessImageForOCR = (ctx, canvas) => {
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    const data = imageData.data;
-    
-    const contrast = ocrSettings.contrast;
-    const brightness = ocrSettings.brightness;
-    
-    for (let i = 0; i < data.length; i += 4) {
-      data[i] = Math.min(255, Math.max(0, data[i] * brightness));
-      data[i + 1] = Math.min(255, Math.max(0, data[i + 1] * brightness));
-      data[i + 2] = Math.min(255, Math.max(0, data[i + 2] * brightness));
-      
-      data[i] = Math.min(255, Math.max(0, ((data[i] - 128) * contrast) + 128));
-      data[i + 1] = Math.min(255, Math.max(0, ((data[i + 1] - 128) * contrast) + 128));
-      data[i + 2] = Math.min(255, Math.max(0, ((data[i + 2] - 128) * contrast) + 128));
-    }
-    
-    if (ocrSettings.sharpen) {
-      const tempData = new Uint8ClampedArray(data);
-      for (let i = 4; i < data.length - 4; i += 4) {
-        const avg = (tempData[i] + tempData[i + 4]) / 2;
-        data[i] = Math.min(255, Math.max(0, data[i] * 1.2 - avg * 0.2));
-        data[i + 1] = Math.min(255, Math.max(0, data[i + 1] * 1.2 - avg * 0.2));
-        data[i + 2] = Math.min(255, Math.max(0, data[i + 2] * 1.2 - avg * 0.2));
-      }
-    }
-    
-    return imageData;
-  };
-
-  const processOCR = async (imageData) => {
-    setOcrProcessing(true);
-    setShowOcrResult(true);
-    
-    console.log("🔤 Processing OCR...");
-    
-    try {
-      const results = await Promise.allSettled([
-        performTesseractOCR(imageData),
-        performSimplePatternRecognition(imageData)
-      ]);
-      
-      const validResults = results
-        .filter(r => r.status === 'fulfilled' && r.value.success)
-        .map(r => r.value);
-      
-      if (validResults.length > 0) {
-        const bestResult = validResults.reduce((best, current) => 
-          current.confidence > best.confidence ? current : best
-        );
-        
-        const suggestions = validResults
-          .map(r => r.vehicleNumber)
-          .filter((v, i, a) => v && a.indexOf(v) === i)
-          .slice(0, 3);
-        
-        const parsedNumber = parseVehicleNumber(bestResult.vehicleNumber);
-        
-        setOcrResult({
-          vehicleNumber: bestResult.vehicleNumber,
-          confidence: bestResult.confidence,
-          image: imageData,
-          rawText: bestResult.rawText,
-          suggestions: suggestions,
-          isEdited: false,
-          ...parsedNumber
-        });
-        
-        console.log("✅ OCR Success:", bestResult.vehicleNumber, "Confidence:", bestResult.confidence);
-      } else {
-        console.log("⚠️ All OCR methods failed");
-        setOcrResult({
-          vehicleNumber: '',
-          confidence: 0,
-          image: imageData,
-          rawText: 'No text detected. Try again with better lighting.',
-          suggestions: [],
-          isEdited: false
-        });
-      }
-    } catch (error) {
-      console.error('❌ OCR Error:', error);
-      setOcrResult({
-        vehicleNumber: '',
-        confidence: 0,
-        image: imageData,
-        rawText: 'OCR failed. Please enter manually.',
-        suggestions: [],
-        isEdited: false
-      });
-    } finally {
-      setOcrProcessing(false);
-    }
-  };
-
-  const performTesseractOCR = async (imageData) => {
-    try {
-      console.log("🔤 Tesseract OCR starting...");
-      
-      const Tesseract = (await import('tesseract.js')).default;
-      
-      const result = await Tesseract.recognize(
-        imageData,
-        'eng+hin',
-        {
-          logger: m => {
-            if (m.status === 'recognizing text') {
-              console.log(`OCR Progress: ${(m.progress * 100).toFixed(1)}%`);
-            }
-          },
-          tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789- ',
-          tessedit_pageseg_mode: '7',
-          tessedit_ocr_engine_mode: '3',
-          preserve_interword_spaces: '1'
-        }
-      );
-
-      console.log("📄 Tesseract raw text:", result.data.text);
-      
-      const text = result.data.text.trim();
-      const vehicleNumber = extractVehicleNumber(text);
-      
-      return {
-        success: true,
-        vehicleNumber: vehicleNumber,
-        confidence: Math.min(95, result.data.confidence),
-        rawText: text,
-        method: 'tesseract'
-      };
-    } catch (error) {
-      console.error('Tesseract error:', error);
-      return { success: false, rawText: 'Tesseract error' };
-    }
-  };
-
-  const performSimplePatternRecognition = async (imageData) => {
-    try {
-      return {
-        success: false,
-        vehicleNumber: '',
-        confidence: 0,
-        rawText: 'Pattern recognition not implemented',
-        method: 'pattern'
-      };
-    } catch (error) {
-      return { success: false, rawText: 'Pattern recognition error' };
-    }
-  };
-
-  const extractVehicleNumber = (text) => {
-    console.log("🔍 Extracting from text:", text);
-    
-    const cleanText = text
-      .replace(/[^A-Z0-9\s-]/gi, '')
-      .replace(/\s+/g, ' ')
-      .toUpperCase()
-      .trim();
-    
-    const patterns = [
-      /([A-Z]{2})[\s-]*(\d{1,2})[\s-]*([A-Z]{1,2})[\s-]*(\d{1,4})/gi,
-      /(\d{1,2})[\s-]*([A-Z]{1,2})[\s-]*(\d{1,4})/gi,
-      /([A-Z]{2})[\s-]*(\d{1,2})[\s-]*([A-Z]{1,2})[\s-]*(\d{1,3})/gi,
-      /(\d{4})[\s-]*([A-Z]{2})[\s-]*(\d{4})/gi,
-      /([A-Z0-9]{8,12})/gi
-    ];
-    
-    let bestMatch = '';
-    let bestConfidence = 0;
-    
-    for (const pattern of patterns) {
-      const matches = [...cleanText.matchAll(pattern)];
-      
-      for (const match of matches) {
-        let candidate = match[0].replace(/\s+/g, '').toUpperCase();
-        let confidence = 0;
-        
-        if (pattern === patterns[0]) {
-          const [_, state, district, series, number] = match;
-          if (isValidStateCode(state)) confidence += 40;
-          if (isValidDistrict(district)) confidence += 30;
-          if (isValidSeries(series)) confidence += 20;
-          if (isValidNumber(number)) confidence += 10;
-          candidate = formatVehicleNumber(state, district, series, number);
-        } else if (pattern === patterns[1]) {
-          confidence = 60;
-          candidate = formatVehicleNumber('', match[1], match[2], match[3]);
-        } else if (pattern === patterns[2]) {
-          confidence = 50;
-        } else if (pattern === patterns[3]) {
-          confidence = 40;
-        } else {
-          confidence = 20;
-        }
-        
-        if (looksLikeVehicleNumber(candidate)) {
-          confidence += 20;
-        }
-        
-        if (confidence > bestConfidence) {
-          bestConfidence = confidence;
-          bestMatch = candidate;
-        }
-      }
-    }
-    
-    if (bestMatch) {
-      return formatVehicleNumberString(bestMatch);
-    }
-    
-    const words = cleanText.split(/\s+/);
-    for (const word of words) {
-      const cleanWord = word.replace(/[^A-Z0-9]/gi, '').toUpperCase();
-      if (looksLikeVehicleNumber(cleanWord)) {
-        return formatVehicleNumberString(cleanWord);
-      }
-    }
-    
-    return '';
-  };
-
-  const isValidStateCode = (code) => {
-    return INDIAN_STATES.includes(code?.toUpperCase());
-  };
-
-  const isValidDistrict = (district) => {
-    const num = parseInt(district);
-    return !isNaN(num) && num >= 1 && num <= 99;
-  };
-
-  const isValidSeries = (series) => {
-    return /^[A-Z]{1,2}$/.test(series);
-  };
-
-  const isValidNumber = (number) => {
-    const num = parseInt(number);
-    return !isNaN(num) && num >= 1 && num <= 9999;
-  };
-
-  const looksLikeVehicleNumber = (str) => {
-    if (!str || str.length < 6 || str.length > 12) return false;
-    const hasLetters = /[A-Z]/.test(str);
-    const hasNumbers = /\d/.test(str);
-    return hasLetters && hasNumbers;
-  };
-
-  const formatVehicleNumber = (state, district, series, number) => {
-    const parts = [];
-    if (state) parts.push(state);
-    if (district) parts.push(district.padStart(2, '0'));
-    if (series) parts.push(series);
-    if (number) parts.push(number.padStart(4, '0'));
-    return parts.join('-');
-  };
-
-  const formatVehicleNumberString = (str) => {
-    if (str.match(/^[A-Z]{2}\d{2}[A-Z]{1,2}\d{4}$/)) {
-      return str.replace(/^([A-Z]{2})(\d{2})([A-Z]{1,2})(\d{4})$/, '$1-$2-$3-$4');
-    } else if (str.match(/^[A-Z]{2}\d{1,2}[A-Z]{1,2}\d{1,4}$/)) {
-      const match = str.match(/^([A-Z]{2})(\d{1,2})([A-Z]{1,2})(\d{1,4})$/);
-      return `${match[1]}-${match[2].padStart(2, '0')}-${match[3]}-${match[4].padStart(4, '0')}`;
-    } else if (str.match(/^\d{2}[A-Z]{1,2}\d{4}$/)) {
-      return str.replace(/^(\d{2})([A-Z]{1,2})(\d{4})$/, '$1-$2-$3');
-    }
-    return str;
-  };
-
-  const parseVehicleNumber = (number) => {
-    if (!number) return { stateCode: '', district: '', series: '', number: '' };
-    
-    const parts = number.split('-');
-    if (parts.length === 4) {
-      return {
-        stateCode: parts[0],
-        district: parts[1],
-        series: parts[2],
-        number: parts[3]
-      };
-    } else if (parts.length === 3) {
-      return {
-        stateCode: '',
-        district: parts[0],
-        series: parts[1],
-        number: parts[2]
-      };
-    }
-    
-    return { stateCode: '', district: '', series: '', number: '' };
-  };
-
-  const applyOCRResult = () => {
-    if (ocrResult.vehicleNumber && validateVehicleNumber(ocrResult.vehicleNumber)) {
-      setAnprData({
-        vehicleNumber: ocrResult.vehicleNumber,
-        capturedImage: ocrResult.image,
-        frameImage: ocrResult.image,
-        confidence: ocrResult.confidence,
-        timestamp: new Date().toLocaleString(),
-        cameraId: 'Mobile OCR',
-        siteId: '',
-        siteName: '',
-        laneId: '',
-        direction: '',
-        speed: '',
-        isEntry: true
-      });
-      setShowOcrResult(false);
-      setStep(2);
-    } else {
-      alert('Please enter a valid vehicle number');
-    }
-  };
-
-  const validateVehicleNumber = (number) => {
-    if (!number || number.length < 6) return false;
-    
-    const parts = number.split('-');
-    
-    if (parts.length === 4) {
-      const [state, district, series, num] = parts;
-      return (
-        isValidStateCode(state) &&
-        isValidDistrict(district) &&
-        isValidSeries(series) &&
-        isValidNumber(num)
-      );
-    } else if (parts.length === 3) {
-      const [district, series, num] = parts;
-      return isValidDistrict(district) && isValidSeries(series) && isValidNumber(num);
-    }
-    
-    return /^[A-Z0-9-]{6,15}$/.test(number);
-  };
-
-  const handleVehicleNumberChange = (value) => {
-    const formattedValue = value.toUpperCase().replace(/[^A-Z0-9-]/g, '');
-    
-    let autoFormatted = formattedValue;
-    if (formattedValue.length === 2 && !formattedValue.includes('-')) {
-      autoFormatted = formattedValue + '-';
-    } else if (formattedValue.length === 5 && formattedValue[4] !== '-') {
-      autoFormatted = formattedValue.slice(0, 4) + '-' + formattedValue[4];
-    } else if (formattedValue.length === 8 && formattedValue[7] !== '-') {
-      autoFormatted = formattedValue.slice(0, 7) + '-' + formattedValue[7];
-    }
-    
-    setOcrResult(prev => ({ 
-      ...prev, 
-      vehicleNumber: autoFormatted,
-      isEdited: true 
-    }));
-  };
-
-  const handleSuggestionClick = (suggestion) => {
-    setOcrResult(prev => ({ 
-      ...prev, 
-      vehicleNumber: suggestion,
-      isEdited: true 
-    }));
-  };
-
-  const retryOCR = () => {
-    setShowOcrResult(false);
-    startOCRScan();
-  };
-
+  // Manual entry via OCR page
   const handleManualEntry = () => {
-    startOCRScan();
+    router.push('/supervisor/entry-vehicles/ocr');
   };
-  // ========== END ENHANCED OCR FUNCTIONS ==========
 
   const handleANPREventClick = (event) => {
     setAnprData({
@@ -964,9 +524,6 @@ const EntryVehicles = () => {
       setVehicleDetails(prev => ({ ...prev, challanImage: imageData }));
     } else if (['frontView', 'backView', 'driverView', 'loadView'].includes(cameraView)) {
       setMediaCapture(prev => ({ ...prev, [cameraView]: imageData }));
-    } else if (cameraView === 'ocr') {
-      captureOCRPhoto();
-      return;
     }
 
     stopCamera();
@@ -1237,7 +794,6 @@ const EntryVehicles = () => {
       videoClip: null
     });
     setRecordingTime(0);
-    setShowOcrResult(false);
     setAnprData({
       vehicleNumber: '',
       capturedImage: null,
@@ -1261,8 +817,7 @@ const EntryVehicles = () => {
       'backView': 'Back View',
       'driverView': 'Driver/Cabin',
       'loadView': 'Material/Load',
-      'video': 'Video Recording',
-      'ocr': 'Scan Vehicle Number'
+      'video': 'Video Recording'
     };
     return labels[cameraView] || 'Photo';
   };
@@ -1282,221 +837,8 @@ const EntryVehicles = () => {
     <SupervisorLayout>
       <div className="max-w-6xl mx-auto px-2 sm:px-4">
         <canvas ref={canvasRef} className="hidden" />
-        <canvas ref={ocrCanvasRef} className="hidden" />
 
-        {/* ENHANCED OCR Result Modal */}
-        {showOcrResult && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
-            <div className="bg-white rounded-xl max-w-2xl w-full p-4 sm:p-6 max-h-[90vh] overflow-y-auto">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                    <Scan className="w-5 h-5 text-blue-600" />
-                    Vehicle Number Scan
-                  </h3>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {ocrResult.confidence > 0 
-                      ? `Confidence: ${ocrResult.confidence}%` 
-                      : 'Scanning...'}
-                  </p>
-                </div>
-                <button
-                  onClick={() => setShowOcrResult(false)}
-                  className="p-1 hover:bg-gray-100 rounded"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              {ocrProcessing ? (
-                <div className="text-center py-8">
-                  <Loader2 className="w-12 h-12 animate-spin text-blue-600 mx-auto mb-4" />
-                  <p className="text-gray-600 font-medium">Processing image...</p>
-                  <p className="text-sm text-gray-500 mt-2">Analyzing text with multiple methods</p>
-                  <div className="mt-4 flex justify-center gap-2">
-                    <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse"></div>
-                    <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse delay-150"></div>
-                    <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse delay-300"></div>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-6">
-                  <div className="bg-gray-100 rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-sm font-semibold text-gray-700">Scanned Image</span>
-                      <div className="flex items-center gap-2">
-                        <button 
-                          onClick={() => setOcrSettings(prev => ({ ...prev, contrast: prev.contrast + 0.1 }))}
-                          className="p-1 hover:bg-gray-200 rounded"
-                          title="Increase contrast"
-                        >
-                          <Contrast className="w-4 h-4" />
-                        </button>
-                        <button 
-                          onClick={() => setOcrSettings(prev => ({ ...prev, sharpen: !prev.sharpen }))}
-                          className={`p-1 rounded ${ocrSettings.sharpen ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-200'}`}
-                          title={ocrSettings.sharpen ? "Sharpen enabled" : "Sharpen disabled"}
-                        >
-                          <Filter className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                    <img 
-                      src={ocrResult.image} 
-                      alt="Scanned Vehicle"
-                      className="w-full h-48 object-contain bg-white rounded-lg border border-gray-300"
-                    />
-                  </div>
-
-                  {/* {ocrResult.rawText && (
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-semibold text-blue-700 flex items-center gap-2">
-                          <Zap className="w-4 h-4" />
-                          Detected Text
-                        </span>
-                        <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                          Raw OCR Output
-                        </span>
-                      </div>
-                      <div className="text-sm text-gray-600 bg-white p-3 rounded border font-mono max-h-32 overflow-y-auto">
-                        {ocrResult.rawText || 'No text detected'}
-                      </div>
-                    </div>
-                  )} */}
-
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Vehicle Number <span className="text-red-500">*</span>
-                        {ocrResult.confidence > 0 && !ocrResult.isEdited && (
-                          <span className="ml-2 text-xs font-normal text-green-600">
-                            ✓ Auto-detected ({ocrResult.confidence}% confidence)
-                          </span>
-                        )}
-                      </label>
-                      
-                      <div className="relative">
-                        <input
-                          type="text"
-                          value={ocrResult.vehicleNumber}
-                          onChange={(e) => handleVehicleNumberChange(e.target.value)}
-                          className={`w-full px-4 py-3 border-2 rounded-lg text-lg font-bold text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none font-mono ${
-                            validateVehicleNumber(ocrResult.vehicleNumber)
-                              ? 'border-green-400 bg-green-50'
-                              : 'border-blue-300'
-                          }`}
-                          placeholder="e.g. MH-12-AB-1234"
-                          maxLength={15}
-                        />
-                        
-                        <div className="absolute right-3 top-3">
-                          {ocrResult.vehicleNumber && (
-                            <div className={`text-xs font-semibold px-2 py-1 rounded ${
-                              validateVehicleNumber(ocrResult.vehicleNumber)
-                                ? 'bg-green-100 text-green-800'
-                                : 'bg-red-100 text-red-800'
-                            }`}>
-                              {validateVehicleNumber(ocrResult.vehicleNumber) ? '✓ Valid' : '✗ Invalid'}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      
-                      <div className="mt-2 space-y-1">
-                        {/* {ocrResult.vehicleNumber && !validateVehicleNumber(ocrResult.vehicleNumber) && (
-                          <p className="text-xs text-red-600">
-                            Please enter a valid Indian vehicle number (e.g., MH-12-AB-1234)
-                          </p>
-                        )} */}
-                        
-                        {/* {ocrResult.stateCode && (
-                          <div className="flex items-center gap-4 text-xs">
-                            <span className="bg-gray-100 px-2 py-1 rounded">
-                              State: <strong>{ocrResult.stateCode}</strong>
-                            </span>
-                            <span className="bg-gray-100 px-2 py-1 rounded">
-                              District: <strong>{ocrResult.district}</strong>
-                            </span>
-                            <span className="bg-gray-100 px-2 py-1 rounded">
-                              Series: <strong>{ocrResult.series}</strong>
-                            </span>
-                            <span className="bg-gray-100 px-2 py-1 rounded">
-                              Number: <strong>{ocrResult.number}</strong>
-                            </span>
-                          </div>
-                        )} */}
-                      </div>
-                    </div>
-
-                    {ocrResult.suggestions.length > 0 && (
-                      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                        <div className="text-sm font-semibold text-yellow-800 mb-2 flex items-center gap-2">
-                          <Target className="w-4 h-4" />
-                          Suggested Matches
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                          {ocrResult.suggestions.map((suggestion, index) => (
-                            <button
-                              key={index}
-                              onClick={() => handleSuggestionClick(suggestion)}
-                              className="px-3 py-2 bg-white border border-yellow-300 rounded-lg hover:bg-yellow-50 transition text-sm font-mono"
-                            >
-                              {suggestion}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                      <div className="text-sm font-semibold text-gray-700 mb-2">Valid Formats:</div>
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
-                        <div className="bg-white p-2 rounded border">
-                          <div className="font-mono font-bold">MH-12-AB-1234</div>
-                          <div className="text-gray-500">Standard</div>
-                        </div>
-                        <div className="bg-white p-2 rounded border">
-                          <div className="font-mono font-bold">DL-01-C-5678</div>
-                          <div className="text-gray-500">Single Letter</div>
-                        </div>
-                        <div className="bg-white p-2 rounded border">
-                          <div className="font-mono font-bold">12-AB-1234</div>
-                          <div className="text-gray-500">Without State</div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-200">
-                    <button
-                      onClick={retryOCR}
-                      className="py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-semibold flex items-center justify-center gap-2"
-                    >
-                      <Camera className="w-4 h-4" />
-                      Rescan
-                    </button>
-                    <button
-                      onClick={() => setShowOcrResult(false)}
-                      className="py-3 bg-red-50 text-red-600 border border-red-200 rounded-lg hover:bg-red-100 transition font-semibold"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={applyOCRResult}
-                      disabled={!validateVehicleNumber(ocrResult.vehicleNumber)}
-                      className="py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {ocrResult.isEdited ? 'Use This Number' : 'Continue with Detected Number'}
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Enhanced Camera View for OCR */}
+        {/* Camera View */}
         {cameraView && (
           <div className="fixed inset-0 bg-black z-50 flex flex-col">
             <div className="bg-black/80 backdrop-blur-sm p-4 flex items-center justify-between">
@@ -1509,14 +851,8 @@ const EntryVehicles = () => {
               
               <div className="text-white font-semibold text-center">
                 <div className="text-sm sm:text-base">
-                  {cameraView === 'ocr' ? '🔍 Scan Vehicle Number Plate' : cameraView === 'video' ? 'Recording Video' : `Capture ${getCameraLabel()}`}
+                  {cameraView === 'video' ? 'Recording Video' : `Capture ${getCameraLabel()}`}
                 </div>
-                {cameraView === 'ocr' && (
-                  <div className="text-xs text-yellow-400 mt-1 flex items-center justify-center gap-1">
-                    <Target className="w-3 h-3" />
-                    Align number plate within yellow frame
-                  </div>
-                )}
                 {isRecording && (
                   <div className="text-xs text-red-400 mt-1 flex items-center justify-center gap-2">
                     <div className="w-2 h-2 sm:w-3 sm:h-3 bg-red-500 rounded-full animate-pulse"></div>
@@ -1543,55 +879,7 @@ const EntryVehicles = () => {
                 style={{ transform: facingMode === 'user' ? 'scaleX(-1)' : 'none' }}
               />
               
-              {cameraView === 'ocr' && (
-                <>
-                  <div className="absolute inset-0 pointer-events-none">
-                    <div className="absolute top-1/3 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-72 h-28 sm:w-96 sm:h-36 border-4 border-yellow-400 rounded-xl shadow-lg shadow-yellow-500/50"></div>
-                    
-                    <div className="absolute top-1/3 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-72 h-0.5 bg-yellow-400/50"></div>
-                    <div className="absolute top-1/3 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-0.5 h-28 bg-yellow-400/50"></div>
-                    
-                    <div className="absolute top-8 left-4 right-4 text-center">
-                      <div className="inline-block bg-black/80 backdrop-blur-sm px-4 py-3 rounded-lg border border-yellow-500/50">
-                        <p className="text-yellow-400 text-sm sm:text-base font-semibold flex items-center justify-center gap-2">
-                          <ZoomIn className="w-4 h-4" />
-                          Position number plate within frame
-                        </p>
-                        <p className="text-white/80 text-xs mt-1">
-                          Ensure good lighting and focus
-                        </p>
-                      </div>
-                    </div>
-                    
-                    <div className="absolute bottom-8 left-4 right-4 text-center">
-                      <div className="inline-block bg-black/80 backdrop-blur-sm px-4 py-2 rounded-lg">
-                        <div className="flex items-center justify-center gap-4 text-xs">
-                          <span className="text-green-400 flex items-center gap-1">
-                            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                            Good lighting
-                          </span>
-                          <span className="text-blue-400 flex items-center gap-1">
-                            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                            Steady hand
-                          </span>
-                          <span className="text-yellow-400 flex items-center gap-1">
-                            <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                            Close up
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="absolute bottom-32 left-1/2 transform -translate-x-1/2 text-center">
-                    <div className="bg-black/60 backdrop-blur-sm px-4 py-2 rounded-full">
-                      <p className="text-white text-sm">Tap capture when number plate is clear</p>
-                    </div>
-                  </div>
-                </>
-              )}
-              
-              {cameraView !== 'ocr' && cameraView !== 'video' && (
+              {cameraView !== 'video' && (
                 <div className="absolute inset-0 pointer-events-none">
                   <div className="absolute inset-8 border-2 border-white/30 rounded-lg"></div>
                 </div>
@@ -1610,16 +898,10 @@ const EntryVehicles = () => {
               ) : (
                 <button
                   onClick={capturePhoto}
-                  className="w-16 h-16 sm:w-20 sm:h-20 bg-white rounded-full flex items-center justify-center hover:bg-gray-200 transition shadow-xl relative group"
+                  className="w-16 h-16 sm:w-20 sm:h-20 bg-white rounded-full flex items-center justify-center hover:bg-gray-200 transition shadow-xl"
                 >
                   <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white border-4 border-gray-800 rounded-full"></div>
                   <Camera className="absolute w-6 h-6 sm:w-8 sm:h-8 text-gray-600" />
-                  
-                  {cameraView === 'ocr' && (
-                    <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-black/80 text-white px-3 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap text-sm">
-                      Capture Number Plate
-                    </div>
-                  )}
                 </button>
               )}
             </div>
@@ -1698,14 +980,14 @@ const EntryVehicles = () => {
                       {socketStatus}
                     </span>
                   </div>
-                  {/* Updated Manual Entry Button */}
+                  {/* Manual Entry Button */}
                   <button
                     onClick={handleManualEntry}
                     className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-3 sm:px-4 py-2 rounded-lg transition-colors text-sm sm:text-base"
                   >
-                    <Scan className="w-4 h-4" />
-                    <span className="hidden sm:inline">Scan Vehicle</span>
-                    <span className="sm:hidden">Scan</span>
+                    <Target className="w-4 h-4" />
+                    <span className="hidden sm:inline">Manual Entry</span>
+                    <span className="sm:hidden">Manual</span>
                   </button>
                 </div>
               </div>
@@ -1865,13 +1147,13 @@ const EntryVehicles = () => {
                     <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
                   </button>
 
-                  {/* Updated Manual Entry Button */}
+                  {/* Manual Entry Button */}
                   <button
                     onClick={handleManualEntry}
                     className="w-full py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-semibold text-xs sm:text-sm flex items-center justify-center gap-2"
                   >
-                    <Scan className="w-4 h-4" />
-                    Scan Vehicle Number
+                    <Target className="w-4 h-4" />
+                    Manual Vehicle Entry
                   </button>
                 </div>
               </div>
@@ -2396,7 +1678,6 @@ const EntryVehicles = () => {
             </div>
           </div>
         )}
-        
       </div>
     </SupervisorLayout>
   );
