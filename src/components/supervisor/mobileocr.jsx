@@ -337,139 +337,131 @@ const OcrScan = () => {
   // ENHANCED OCR PROCESSING FUNCTIONS
   // =====================================================
 
+const processOCR = async (imageDataUrl) => {
+  console.log("🚀 Starting OCR...");
+  setOcrProcessing(true);
+  setError(null);
 
-  const processOCR = async (imageDataUrl) => {
-    console.log("🚀 Starting OCR...");
-    setOcrProcessing(true);
-    setError(null);
+  const API_URL =
+    process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
-    const API_URL =
-      process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+  try {
+    // ✅ PURE base64 only
+    const pureBase64 = imageDataUrl.split(",")[1];
 
-    try {
-      // ✅ Extract PURE base64 (IMPORTANT)
-      const pureBase64 = imageDataUrl.split(",")[1];
+    // ================= API OCR WITH RETRY =================
+    let apiResult = null;
 
-      // ===== TRY BACKEND API FIRST =====
+    for (let attempt = 1; attempt <= 2; attempt++) {
       try {
-        const { data, status } = await axios.post(
+        console.log(`🔁 OCR API attempt ${attempt}`);
+
+        const { data } = await axios.post(
           `${API_URL}/api/plate/read`,
+          { image_base64: pureBase64 },
           {
-            image_base64: pureBase64,
-          },
-          {
-            headers: {
-              "Content-Type": "application/json",
-            },
-            timeout: 15000,
+            headers: { "Content-Type": "application/json" },
+            timeout: 30000, // ⬅️ Render-safe
           }
         );
 
-        console.log("API status:", status);
-        console.log("API data:", data);
-
-        // ✅ Correct success condition
-        if (status === 200 && data?.plate) {
-          const cleanedText = extractVehicleNumber(
-            data.plate
-          );
-
-          console.log("✅ API OCR success:", cleanedText);
-
-          setVehicleNumber(cleanedText);
-          setOcrResult({
-            vehicleNumber: cleanedText,
-            confidence: data.score
-              ? Math.round(data.score * 100)
-              : 90,
-            image: imageDataUrl,
-            rawText: data.plate,
-            suggestions: [],
-            isEdited: false,
-            method: "api",
-          });
-
-          setOcrProcessing(false);
-          return;
+        if (data?.plate) {
+          apiResult = data;
+          break;
         }
-      } catch (apiErr) {
+      } catch (err) {
+        const isTimeout = err.code === "ECONNABORTED";
         console.warn(
-          "⚠️ API OCR failed, switching to Tesseract",
-          apiErr?.response?.data || apiErr.message
+          `⚠️ API attempt ${attempt} failed`,
+          isTimeout ? "Timeout" : err.message
         );
+
+        if (attempt === 2 && !isTimeout) {
+          throw err; // real error → stop
+        }
       }
+    }
 
-      // ===== FALLBACK: TESSERACT =====
-      const results = [];
-      const canvas = canvasRef.current;
+    // ================= API SUCCESS =================
+    if (apiResult?.plate) {
+      const cleanedText = extractVehicleNumber(apiResult.plate);
 
-      const standard = await processWithTesseract(
-        canvas,
-        "standard"
-      );
-      if (standard.success && standard.confidence > 50)
-        results.push(standard);
-
-      const aggressive = await processWithTesseract(
-        canvas,
-        "aggressive"
-      );
-      if (aggressive.success && aggressive.confidence > 50)
-        results.push(aggressive);
-
-      const rotated = await processWithTesseract(
-        canvas,
-        "rotated"
-      );
-      if (rotated.success && rotated.confidence > 50)
-        results.push(rotated);
-
-      if (results.length === 0) {
-        throw new Error(
-          "❌ Could not detect number plate. Improve lighting or distance."
-        );
-      }
-
-      // ===== SELECT BEST RESULT =====
-      results.sort((a, b) => {
-        const aValid = validateVehicleNumberPattern(a.text);
-        const bValid = validateVehicleNumberPattern(b.text);
-
-        if (aValid && !bValid) return -1;
-        if (!aValid && bValid) return 1;
-        return b.confidence - a.confidence;
-      });
-
-      const best = results[0];
-      const cleanedText = extractVehicleNumber(best.text);
-
-      console.log(
-        "🎯 Best Tesseract:",
-        cleanedText,
-        best.confidence
-      );
+      console.log("✅ API OCR success:", cleanedText);
 
       setVehicleNumber(cleanedText);
       setOcrResult({
         vehicleNumber: cleanedText,
-        confidence: Math.round(best.confidence),
+        confidence: apiResult.score
+          ? Math.round(apiResult.score * 100)
+          : 90,
         image: imageDataUrl,
-        method: best.method,
-        rawText: best.text,
-        allResults: results,
+        rawText: apiResult.plate,
+        suggestions: [],
         isEdited: false,
+        method: "api",
       });
-    } catch (err) {
-      console.error("❌ OCR Error:", err);
-      setError(
-        err?.response?.data?.error ||
-        err.message ||
-        "OCR processing failed"
-      );
-    } finally {
-      setOcrProcessing(false);
+
+      return; // ⛔ STOP HERE
     }
-  };
+
+    console.warn("⚠️ API OCR unavailable, using Tesseract");
+
+    // ================= FALLBACK: TESSERACT =================
+    const results = [];
+    const canvas = canvasRef.current;
+
+    const modes = ["standard", "aggressive", "rotated"];
+
+    for (const mode of modes) {
+      const result = await processWithTesseract(canvas, mode);
+      if (result.success && result.confidence > 50) {
+        results.push(result);
+        console.log(`✅ ${mode} OCR:`, result.text);
+      }
+    }
+
+    if (results.length === 0) {
+      throw new Error(
+        "❌ Could not detect number plate. Improve lighting, distance, or angle."
+      );
+    }
+
+    // ================= PICK BEST RESULT =================
+    results.sort((a, b) => {
+      const aValid = validateVehicleNumberPattern(a.text);
+      const bValid = validateVehicleNumberPattern(b.text);
+      if (aValid && !bValid) return -1;
+      if (!aValid && bValid) return 1;
+      return b.confidence - a.confidence;
+    });
+
+    const best = results[0];
+    const cleanedText = extractVehicleNumber(best.text);
+
+    console.log("🎯 Best Tesseract:", cleanedText);
+
+    setVehicleNumber(cleanedText);
+    setOcrResult({
+      vehicleNumber: cleanedText,
+      confidence: Math.round(best.confidence),
+      image: imageDataUrl,
+      method: best.method,
+      rawText: best.text,
+      allResults: results,
+      isEdited: false,
+    });
+  } catch (err) {
+    console.error("❌ OCR Error:", err);
+
+    setError(
+      err?.response?.data?.error ||
+        err.message ||
+        "OCR processing failed. Please try again."
+    );
+  } finally {
+    setOcrProcessing(false);
+  }
+};
 
 
   // Tesseract processing functions (kept from original)
