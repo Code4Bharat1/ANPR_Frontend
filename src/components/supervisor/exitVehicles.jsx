@@ -268,9 +268,8 @@ const ExitVehicles = () => {
     setCurrentView('process');
   };
 
- // Updated handleAllowExit with Wasabi upload
-const handleAllowExit = async () => {
-  // Step 1: Validate return material type if loaded
+  // Updated handleAllowExit with Wasabi upload
+  const handleAllowExit = async () => {
   if (
     exitData.exitLoadStatus === "loaded" &&
     !exitData.returnMaterialType.trim()
@@ -279,7 +278,6 @@ const handleAllowExit = async () => {
     return;
   }
 
-  // Step 2: Validate all 4 mandatory photos
   const REQUIRED_PHOTOS = [
     { key: "frontView", name: "Front View" },
     { key: "backView", name: "Back View" },
@@ -300,9 +298,9 @@ const handleAllowExit = async () => {
     return;
   }
 
-  // ✅ STEP 3: SAFE & SIMPLE vehicleId normalization
-  const vehicleId = selectedVehicle?._id
-    ? String(selectedVehicle._id)
+  // ✅ FIXED HERE
+  const vehicleId = selectedVehicle?.vehicleId
+    ? String(selectedVehicle.vehicleId)
     : null;
 
   if (!vehicleId) {
@@ -319,7 +317,6 @@ const handleAllowExit = async () => {
       return;
     }
 
-    // Step 4: Upload mandatory photos
     const uploadedPhotoKeys = {};
 
     for (const photo of REQUIRED_PHOTOS) {
@@ -336,7 +333,6 @@ const handleAllowExit = async () => {
       uploadedPhotoKeys[photo.key] = fileKey;
     }
 
-    // Step 5: Upload optional video
     let videoKey = "";
     if (exitData.exitMedia?.videoClip) {
       try {
@@ -350,13 +346,12 @@ const handleAllowExit = async () => {
           `vehicles/${selectedVehicle.vehicleNumber}/exit/videos`
         );
       } catch (err) {
-        console.warn("Video upload failed, continuing without video", err);
+        console.warn("Video upload failed", err);
       }
     }
 
-    // Step 6: Final payload
     const exitPayload = {
-      vehicleId, // ✅ always correct string
+      vehicleId, // ✅ Vehicle._id
       vehicleNumber: selectedVehicle.vehicleNumber,
       exitTime: new Date().toISOString(),
       exitLoadStatus: exitData.exitLoadStatus,
@@ -371,10 +366,8 @@ const handleAllowExit = async () => {
       },
     };
 
-    // Debug (safe to remove later)
     console.log("🚪 EXIT PAYLOAD:", exitPayload);
 
-    // Step 7: Send to backend
     await axios.post(
       `${API_URL}/api/supervisor/vehicles/exit`,
       exitPayload,
@@ -397,6 +390,7 @@ const handleAllowExit = async () => {
     setLoading(false);
   }
 };
+
 
 
   const getStatusBadge = (status) => {
