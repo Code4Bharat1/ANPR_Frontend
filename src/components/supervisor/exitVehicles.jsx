@@ -360,7 +360,7 @@ const handleAllowExit = async () => {
       },
     };
 
-    await axios.post(
+    const res = await axios.post(
       `${API_URL}/api/supervisor/vehicles/exit`,
       exitPayload,
       {
@@ -370,6 +370,8 @@ const handleAllowExit = async () => {
         },
       }
     );
+
+    console.log(res);
 
     alert("✅ Vehicle exit allowed successfully!");
     handleBackToList();

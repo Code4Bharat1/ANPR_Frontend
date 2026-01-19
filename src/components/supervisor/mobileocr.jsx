@@ -1464,7 +1464,7 @@ const OcrScan = () => {
       alert("✅ Vehicle entry recorded successfully via OCR!");
 
       resetForm();
-      router.push("/supervisor/entry-vehicles");
+      router.push("/supervisor/active-vehicles");
     } catch (error) {
       console.error("❌ ERROR Details:", error.response?.data);
 
