@@ -386,31 +386,31 @@ const EntryVehicles = () => {
   };
 
   // Upload to Wasabi function
-  const uploadToWasabi = async (file, folder) => {
-    try {
-      const token = localStorage.getItem('accessToken');
+  // const uploadToWasabi = async (file, folder) => {
+  //   try {
+  //     const token = localStorage.getItem('accessToken');
       
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('folder', folder);
+  //     const formData = new FormData();
+  //     formData.append('file', file);
+  //     formData.append('folder', folder);
       
-      const response = await axios.post(`${API_URL}/api/upload/upload-url`, formData, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data'
-        }
-      });
+  //     const response = await axios.post(`${API_URL}/api/upload/upload-url`, formData, {
+  //       headers: {
+  //         'Authorization': `Bearer ${token}`,
+  //         'Content-Type': 'multipart/form-data'
+  //       }
+  //     });
       
-      if (response.data.success) {
-        return response.data.key;
-      } else {
-        throw new Error('Upload failed');
-      }
-    } catch (error) {
-      console.error('Upload error:', error);
-      throw error;
-    }
-  };
+  //     if (response.data.success) {
+  //       return response.data.key;
+  //     } else {
+  //       throw new Error('Upload failed');
+  //     }
+  //   } catch (error) {
+  //     console.error('Upload error:', error);
+  //     throw error;
+  //   }
+  // };
 
   const startCamera = async (type) => {
     setCameraView(type);
@@ -658,7 +658,7 @@ const uploadToWasabiDirect = async (file, folder = "vehicles/entry") => {
     // STEP 1: Get signed URL
     const token = localStorage.getItem("accessToken");
     const urlResponse = await axios.post(
-      `${API_URL}/api/upload/upload-url`,
+      `${API_URL}/api/uploads/upload-url`,
       { fileName, fileType },
       {
         headers: {
