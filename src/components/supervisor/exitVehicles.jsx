@@ -267,9 +267,7 @@ const ExitVehicles = () => {
     stopCamera();
     setCurrentView('process');
   };
-
-  // Updated handleAllowExit with Wasabi upload
-  const handleAllowExit = async () => {
+const handleAllowExit = async () => {
   if (
     exitData.exitLoadStatus === "loaded" &&
     !exitData.returnMaterialType.trim()
@@ -298,11 +296,8 @@ const ExitVehicles = () => {
     return;
   }
 
-  // ✅ FIXED HERE
-  const vehicleId = selectedVehicle?.vehicleId
-    ? String(selectedVehicle.vehicleId)
-    : null;
-
+  // ✅ CORRECT vehicleId
+  const vehicleId = selectedVehicle?._id;
   if (!vehicleId) {
     alert("Invalid vehicle selected");
     return;
@@ -351,8 +346,7 @@ const ExitVehicles = () => {
     }
 
     const exitPayload = {
-      vehicleId, // ✅ Vehicle._id
-      vehicleNumber: selectedVehicle.vehicleNumber,
+      vehicleId,
       exitTime: new Date().toISOString(),
       exitLoadStatus: exitData.exitLoadStatus,
       returnMaterialType: exitData.returnMaterialType || "",
@@ -365,8 +359,6 @@ const ExitVehicles = () => {
         video: videoKey,
       },
     };
-
-    // console.log("🚪 EXIT PAYLOAD:", exitPayload);
 
     await axios.post(
       `${API_URL}/api/supervisor/vehicles/exit`,
