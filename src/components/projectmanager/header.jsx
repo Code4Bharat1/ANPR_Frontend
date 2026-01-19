@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Bell, Menu, ChevronDown, User, Settings, LogOut } from 'lucide-react';
+import { Bell, Menu, ChevronDown, User, LogOut } from 'lucide-react';
 
 const Header = ({ title, onMenuClick }) => {
   const router = useRouter();
@@ -62,10 +62,10 @@ const Header = ({ title, onMenuClick }) => {
     router.push('/projectmanager/profile');
   };
 
-  const handleSettings = () => {
-    setShowUserMenu(false);
-    router.push('/projectmanager/settings');
-  };
+  // const handleSettings = () => {
+  //   setShowUserMenu(false);
+  //   router.push('/projectmanager/settings');
+  // };
 
   return (
     <header className="bg-white border-b border-gray-200 sticky top-0 z-30 lg:ml-72">
@@ -117,13 +117,13 @@ const Header = ({ title, onMenuClick }) => {
                   My Profile
                 </button>
                 
-                <button
+                {/* <button
                   onClick={handleSettings}
                   className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition"
                 >
                   <Settings className="w-4 h-4" />
                   Settings
-                </button>
+                </button> */}
                 
                 <div className="border-t border-gray-100 my-2"></div>
                 
