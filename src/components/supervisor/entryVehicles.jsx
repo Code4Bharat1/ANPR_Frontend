@@ -280,10 +280,10 @@ const EntryVehicles = () => {
       
       if (vendorsData.length === 0) {
         // console.log('No vendors found from any endpoint. Using mock data for testing.');
-        vendorsData = [
-          { _id: '1', name: 'Test Vendor 1', email: 'vendor1@test.com' },
-          { _id: '2', name: 'Test Vendor 2', email: 'vendor2@test.com' }
-        ];
+        // vendorsData = [
+        //   { _id: '1', name: 'Test Vendor 1', email: 'vendor1@test.com' },
+        //   { _id: '2', name: 'Test Vendor 2', email: 'vendor2@test.com' }
+        // ];
       }
       
       setVendors(vendorsData);
