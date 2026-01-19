@@ -352,7 +352,7 @@ const OcrScan = () => {
       // ================= API OCR WITH RETRY =================
       let apiResult = null;
 
-      for (let attempt = 1; attempt <= 100; attempt++) {
+      for (let attempt = 1; attempt <= 2; attempt++) {
         try {
           // console.log(`🔁 OCR API attempt ${attempt}`);
 
@@ -376,7 +376,7 @@ const OcrScan = () => {
             isTimeout ? "Timeout" : err.message
           );
 
-          if (attempt === 100 && !isTimeout) {
+          if (attempt === 2 && !isTimeout) {
             throw err; // real error → stop
           }
         }
