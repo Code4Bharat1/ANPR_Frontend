@@ -41,7 +41,7 @@ export default function MobileOCR() {
 
   // Camera start with proper error handling
   const startCamera = async () => {
-    console.log('🎥 Starting camera...');
+    // console.log('🎥 Starting camera...');
     
     try {
       setError(null);
@@ -59,7 +59,7 @@ export default function MobileOCR() {
         throw new Error('Video element failed to render. Please try again.');
       }
       
-      console.log('✅ Video element ready');
+      // console.log('✅ Video element ready');
       
       const constraints = {
         video: { 
@@ -69,9 +69,9 @@ export default function MobileOCR() {
         }
       };
 
-      console.log('📱 Requesting camera access...');
+      // console.log('📱 Requesting camera access...');
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      console.log('✅ Camera stream obtained');
+      // console.log('✅ Camera stream obtained');
       
       streamRef.current = stream;
       videoRef.current.srcObject = stream;
@@ -80,16 +80,16 @@ export default function MobileOCR() {
       videoRef.current.muted = true;
       
       videoRef.current.onloadedmetadata = async () => {
-        console.log('📹 Video metadata loaded');
+        // console.log('📹 Video metadata loaded');
         try {
           await videoRef.current.play();
-          console.log('▶️ Video playing successfully');
+          // console.log('▶️ Video playing successfully');
         } catch (playError) {
           console.error('Play error:', playError);
           videoRef.current.muted = true;
           try {
             await videoRef.current.play();
-            console.log('▶️ Video playing (muted retry)');
+            // console.log('▶️ Video playing (muted retry)');
           } catch (retryError) {
             throw new Error('Could not start video playback');
           }
@@ -100,7 +100,7 @@ export default function MobileOCR() {
         if (videoRef.current && videoRef.current.paused) {
           try {
             await videoRef.current.play();
-            console.log('▶️ Video playing (delayed)');
+            // console.log('▶️ Video playing (delayed)');
           } catch (err) {
             console.warn('Delayed play attempt failed:', err);
           }
@@ -132,12 +132,12 @@ export default function MobileOCR() {
   };
 
   const stopCamera = () => {
-    console.log('🛑 Stopping camera...');
+    // console.log('🛑 Stopping camera...');
     
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => {
         track.stop();
-        console.log('Track stopped:', track.kind);
+        // console.log('Track stopped:', track.kind);
       });
       streamRef.current = null;
     }
@@ -150,7 +150,7 @@ export default function MobileOCR() {
   };
 
   const capturePhoto = () => {
-    console.log('📸 Capturing photo...');
+    // console.log('📸 Capturing photo...');
     
     const video = videoRef.current;
     const canvas = canvasRef.current;
@@ -173,13 +173,13 @@ export default function MobileOCR() {
       return;
     }
     
-    console.log(`Image size: ${canvas.width}x${canvas.height}`);
+    // console.log(`Image size: ${canvas.width}x${canvas.height}`);
     
     const context = canvas.getContext("2d");
     context.drawImage(video, 0, 0);
     
     const imageDataUrl = canvas.toDataURL("image/jpeg", 0.95);
-    console.log('✅ Image captured');
+    // console.log('✅ Image captured');
     
     setCapturedImage(imageDataUrl);
     stopCamera();
@@ -193,7 +193,7 @@ export default function MobileOCR() {
     const file = e.target.files[0];
     if (!file) return;
     
-    console.log('📁 File selected:', file.name);
+    // console.log('📁 File selected:', file.name);
     
     const reader = new FileReader();
     reader.onloadend = () => {
@@ -204,7 +204,7 @@ export default function MobileOCR() {
   };
 
   const processOCR = async (imageDataUrl) => {
-    console.log('🔄 Processing OCR...');
+    // console.log('🔄 Processing OCR...');
     setLoading(true);
     setError(null);
     
@@ -217,9 +217,9 @@ export default function MobileOCR() {
         body: JSON.stringify({ image_base64: imageDataUrl }),
       });
       
-      console.log('API Response status:', response.status);
+      // console.log('API Response status:', response.status);
       const data = await response.json();
-      console.log('API Response data:', data);
+      // console.log('API Response data:', data);
       
       if (!response.ok) {
         throw new Error(data.error || `API Error: ${response.status}`);
@@ -233,7 +233,7 @@ export default function MobileOCR() {
         throw new Error(data.message || "No plate detected");
       }
       
-      console.log('✅ OCR Success:', data.plate);
+      // console.log('✅ OCR Success:', data.plate);
       setResult(data);
       setVehicleNumber(data.plate || '');
       
@@ -246,7 +246,7 @@ export default function MobileOCR() {
   };
 
   const retakePhoto = () => {
-    console.log('🔄 Retaking photo...');
+    // console.log('🔄 Retaking photo...');
     setCapturedImage(null);
     setResult(null);
     setError(null);
@@ -307,7 +307,7 @@ export default function MobileOCR() {
         }
       };
 
-      console.log("📦 OCR Entry Payload:", entryData);
+      // console.log("📦 OCR Entry Payload:", entryData);
 
       const response = await fetch(
         `${API_URL}/api/supervisor/mobile/trips/manual`,
@@ -322,7 +322,7 @@ export default function MobileOCR() {
       );
 
       const data = await response.json();
-      console.log("✅ SUCCESS Response:", data);
+      // console.log("✅ SUCCESS Response:", data);
       
       if (response.ok) {
         alert("✅ Vehicle entry recorded successfully via OCR!");
@@ -361,7 +361,7 @@ export default function MobileOCR() {
   };
 
   const startMediaCapture = async (mediaType) => {
-    console.log('📸 Starting media capture for:', mediaType);
+    // console.log('📸 Starting media capture for:', mediaType);
     setCameraActive(true);
     
     await new Promise(resolve => setTimeout(resolve, 150));

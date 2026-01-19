@@ -152,7 +152,7 @@ const OcrScan = () => {
   // =====================================================
 
   const startCamera = async () => {
-    console.log('🎥 Starting camera...');
+    // console.log('🎥 Starting camera...');
     setCameraView('ocr');
 
     try {
@@ -171,7 +171,7 @@ const OcrScan = () => {
         throw new Error('Video element failed to render. Please try again.');
       }
 
-      console.log('✅ Video element ready');
+      // console.log('✅ Video element ready');
 
       const constraints = {
         video: {
@@ -181,9 +181,9 @@ const OcrScan = () => {
         }
       };
 
-      console.log('📱 Requesting camera access...');
+      // console.log('📱 Requesting camera access...');
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      console.log('✅ Camera stream obtained');
+      // console.log('✅ Camera stream obtained');
 
       streamRef.current = stream;
       videoRef.current.srcObject = stream;
@@ -192,16 +192,16 @@ const OcrScan = () => {
       videoRef.current.muted = true;
 
       videoRef.current.onloadedmetadata = async () => {
-        console.log('📹 Video metadata loaded');
+        // console.log('📹 Video metadata loaded');
         try {
           await videoRef.current.play();
-          console.log('▶️ Video playing successfully');
+          // console.log('▶️ Video playing successfully');
         } catch (playError) {
           console.error('Play error:', playError);
           videoRef.current.muted = true;
           try {
             await videoRef.current.play();
-            console.log('▶️ Video playing (muted retry)');
+            // console.log('▶️ Video playing (muted retry)');
           } catch (retryError) {
             throw new Error('Could not start video playback');
           }
@@ -212,7 +212,7 @@ const OcrScan = () => {
         if (videoRef.current && videoRef.current.paused) {
           try {
             await videoRef.current.play();
-            console.log('▶️ Video playing (delayed)');
+            // console.log('▶️ Video playing (delayed)');
           } catch (err) {
             console.warn('Delayed play attempt failed:', err);
           }
@@ -245,12 +245,12 @@ const OcrScan = () => {
   };
 
   const stopCamera = () => {
-    console.log('🛑 Stopping camera...');
+    // console.log('🛑 Stopping camera...');
 
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => {
         track.stop();
-        console.log('Track stopped:', track.kind);
+        // console.log('Track stopped:', track.kind);
       });
       streamRef.current = null;
     }
@@ -275,7 +275,7 @@ const OcrScan = () => {
   };
 
   const capturePhoto = () => {
-    console.log('📸 Capturing photo...');
+    // console.log('📸 Capturing photo...');
 
     const video = videoRef.current;
     const canvas = canvasRef.current;
@@ -298,13 +298,13 @@ const OcrScan = () => {
       return;
     }
 
-    console.log(`Image size: ${canvas.width}x${canvas.height}`);
+    // console.log(`Image size: ${canvas.width}x${canvas.height}`);
 
     const context = canvas.getContext("2d");
     context.drawImage(video, 0, 0);
 
     const imageDataUrl = canvas.toDataURL("image/jpeg", 0.95);
-    console.log('✅ Image captured');
+    // console.log('✅ Image captured');
 
     setCapturedImage(imageDataUrl);
     stopCamera();
@@ -322,7 +322,7 @@ const OcrScan = () => {
     const file = e.target.files[0];
     if (!file) return;
 
-    console.log('📁 File selected:', file.name);
+    // console.log('📁 File selected:', file.name);
 
     const reader = new FileReader();
     reader.onloadend = () => {
@@ -338,7 +338,7 @@ const OcrScan = () => {
   // =====================================================
 
 const processOCR = async (imageDataUrl) => {
-  console.log("🚀 Starting OCR...");
+  // console.log("🚀 Starting OCR...");
   setOcrProcessing(true);
   setError(null);
 
@@ -352,9 +352,9 @@ const processOCR = async (imageDataUrl) => {
     // ================= API OCR WITH RETRY =================
     let apiResult = null;
 
-    for (let attempt = 1; attempt <= 2; attempt++) {
+    for (let attempt = 1; attempt <= 20; attempt++) {
       try {
-        console.log(`🔁 OCR API attempt ${attempt}`);
+        // console.log(`🔁 OCR API attempt ${attempt}`);
 
         const { data } = await axios.post(
           `${API_URL}/api/plate/read`,
@@ -386,7 +386,7 @@ const processOCR = async (imageDataUrl) => {
     if (apiResult?.plate) {
       const cleanedText = extractVehicleNumber(apiResult.plate);
 
-      console.log("✅ API OCR success:", cleanedText);
+      // console.log("✅ API OCR success:", cleanedText);
 
       setVehicleNumber(cleanedText);
       setOcrResult({
@@ -416,7 +416,7 @@ const processOCR = async (imageDataUrl) => {
       const result = await processWithTesseract(canvas, mode);
       if (result.success && result.confidence > 50) {
         results.push(result);
-        console.log(`✅ ${mode} OCR:`, result.text);
+        // console.log(`✅ ${mode} OCR:`, result.text);
       }
     }
 
@@ -438,7 +438,7 @@ const processOCR = async (imageDataUrl) => {
     const best = results[0];
     const cleanedText = extractVehicleNumber(best.text);
 
-    console.log("🎯 Best Tesseract:", cleanedText);
+    // console.log("🎯 Best Tesseract:", cleanedText);
 
     setVehicleNumber(cleanedText);
     setOcrResult({
@@ -467,7 +467,7 @@ const processOCR = async (imageDataUrl) => {
   // Tesseract processing functions (kept from original)
   const processWithTesseract = async (canvas, mode = 'standard') => {
     try {
-      console.log(`🔄 Running Tesseract in ${mode} mode...`);
+      // console.log(`🔄 Running Tesseract in ${mode} mode...`);
 
       const tempCanvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
@@ -497,7 +497,7 @@ const processOCR = async (imageDataUrl) => {
         {
           logger: m => {
             if (m.status === 'recognizing text') {
-              console.log(`Progress: ${Math.round(m.progress * 100)}%`);
+              // console.log(`Progress: ${Math.round(m.progress * 100)}%`);
             }
           },
           tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',
@@ -587,7 +587,7 @@ const processOCR = async (imageDataUrl) => {
     }
 
     if (bestAngle !== 0) {
-      console.log(`🔄 Correcting rotation by ${bestAngle}°`);
+      // console.log(`🔄 Correcting rotation by ${bestAngle}°`);
       const corrected = rotateImage(data, width, height, bestAngle);
       return new ImageData(corrected, width, height);
     }
@@ -734,7 +734,7 @@ const processOCR = async (imageDataUrl) => {
   const extractVehicleNumber = (text) => {
     if (!text) return '';
 
-    console.log('🔍 Raw OCR text:', text);
+    // console.log('🔍 Raw OCR text:', text);
 
     // First convert to uppercase
     let clean = text.toUpperCase().trim();
@@ -792,7 +792,7 @@ const processOCR = async (imageDataUrl) => {
     // Remove all non-alphanumeric characters (keep hyphens for formatting)
     clean = clean.replace(/[^A-Z0-9]/g, '');
 
-    console.log('🧹 Cleaned:', clean);
+    // console.log('🧹 Cleaned:', clean);
 
     // Indian vehicle number patterns
     const patterns = [
@@ -833,18 +833,18 @@ const processOCR = async (imageDataUrl) => {
       const match = clean.match(regex);
       if (match) {
         const result = format(match);
-        console.log('✅ Pattern matched:', result);
+        // console.log('✅ Pattern matched:', result);
         return result;
       }
     }
 
     // If no pattern matches, try intelligent parsing
-    console.log('⚠️ No exact match, trying intelligent parsing...');
+    // console.log('⚠️ No exact match, trying intelligent parsing...');
 
     // Extract state code (first 2 letters)
     const stateMatch = clean.match(/^([A-Z]{2})/i);
     if (!stateMatch) {
-      console.log('❌ No state code found');
+      // console.log('❌ No state code found');
       // Try to find known state codes in the text
       for (const state of INDIAN_STATES) {
         if (clean.includes(state)) {
@@ -856,7 +856,7 @@ const processOCR = async (imageDataUrl) => {
             if (numbers && numbers.length > 0) {
               const allNumbers = numbers.join('');
               const result = `${state}-${allNumbers.slice(0, 6)}`;
-              console.log('✅ Reconstructed from state:', result);
+              // console.log('✅ Reconstructed from state:', result);
               return result;
             }
           }
@@ -871,7 +871,7 @@ const processOCR = async (imageDataUrl) => {
     // Extract district code (usually 2 digits)
     const districtMatch = remaining.match(/^(\d{1,2})/);
     if (!districtMatch) {
-      console.log('❌ No district code found');
+      // console.log('❌ No district code found');
       return `${stateCodeFinal}-${remaining}`;
     }
 
@@ -900,7 +900,7 @@ const processOCR = async (imageDataUrl) => {
           const result = series
             ? `${stateCodeFinal}-${districtCode}-${series}-${number}`
             : `${stateCodeFinal}-${districtCode}-${number}`;
-          console.log('✅ Extracted with combined numbers:', result);
+          // console.log('✅ Extracted with combined numbers:', result);
           return result;
         }
       }
@@ -914,7 +914,7 @@ const processOCR = async (imageDataUrl) => {
       ? `${stateCodeFinal}-${districtCode}-${series}-${number}`
       : `${stateCodeFinal}-${districtCode}-${number}`;
 
-    console.log('✅ Intelligent parsing result:', result);
+    // console.log('✅ Intelligent parsing result:', result);
     return result;
   };
 
@@ -1196,7 +1196,7 @@ const processOCR = async (imageDataUrl) => {
         }
       };
 
-      console.log("📦 OCR Entry Payload:", entryData);
+      // console.log("📦 OCR Entry Payload:", entryData);
 
       const response = await axios.post(
         `${API_URL}/api/supervisor/mobile/trips/manual`,
@@ -1209,7 +1209,7 @@ const processOCR = async (imageDataUrl) => {
         }
       );
 
-      console.log("✅ SUCCESS Response:", response.data);
+      // console.log("✅ SUCCESS Response:", response.data);
       alert("✅ Vehicle entry recorded successfully via OCR!");
 
       resetForm();

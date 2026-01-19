@@ -315,11 +315,11 @@ const UserManagement = () => {
 
     const newStatus = currentStatus === 'Active' ? 'Inactive' : 'Active';
 
-    console.log('Toggling status:', { userId, currentStatus, newStatus }); // ✅ Debug log
+    // console.log('Toggling status:', { userId, currentStatus, newStatus }); // ✅ Debug log
 
     const response = await api.patch(endpoint, { status: newStatus });
 
-    console.log('Response:', response.data); // ✅ Check what backend returns
+    // console.log('Response:', response.data); // ✅ Check what backend returns
 
     // ✅ Refresh the user list BEFORE showing alert
     await fetchUsers();

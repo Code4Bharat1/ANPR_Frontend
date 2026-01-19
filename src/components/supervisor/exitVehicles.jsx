@@ -366,7 +366,7 @@ const ExitVehicles = () => {
       },
     };
 
-    console.log("🚪 EXIT PAYLOAD:", exitPayload);
+    // console.log("🚪 EXIT PAYLOAD:", exitPayload);
 
     await axios.post(
       `${API_URL}/api/supervisor/vehicles/exit`,

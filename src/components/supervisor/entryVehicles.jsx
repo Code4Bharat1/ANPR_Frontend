@@ -246,7 +246,7 @@ const EntryVehicles = () => {
       
       for (const endpoint of endpoints) {
         try {
-          console.log(`Trying endpoint: ${endpoint}`);
+          // console.log(`Trying endpoint: ${endpoint}`);
           const response = await axios.get(endpoint, {
             headers: { 
               Authorization: `Bearer ${token}`,
@@ -255,7 +255,7 @@ const EntryVehicles = () => {
             timeout: 5000
           });
           
-          console.log(`Response from ${endpoint}:`, response.data);
+          // console.log(`Response from ${endpoint}:`, response.data);
           
           if (response.data && response.data.success) {
             if (Array.isArray(response.data.data)) {
@@ -268,18 +268,18 @@ const EntryVehicles = () => {
           }
           
           if (vendorsData.length > 0) {
-            console.log(`Successfully fetched ${vendorsData.length} vendors from ${endpoint}`);
+            // console.log(`Successfully fetched ${vendorsData.length} vendors from ${endpoint}`);
             break;
           }
         } catch (error) {
           lastError = error;
-          console.log(`Failed for ${endpoint}:`, error.response?.status || error.message);
+          // console.log(`Failed for ${endpoint}:`, error.response?.status || error.message);
           continue;
         }
       }
       
       if (vendorsData.length === 0) {
-        console.log('No vendors found from any endpoint. Using mock data for testing.');
+        // console.log('No vendors found from any endpoint. Using mock data for testing.');
         vendorsData = [
           { _id: '1', name: 'Test Vendor 1', email: 'vendor1@test.com' },
           { _id: '2', name: 'Test Vendor 2', email: 'vendor2@test.com' }
@@ -646,45 +646,58 @@ const EntryVehicles = () => {
   };
 
  // Utility functions for direct Wasabi upload
+// Make sure your uploadToWasabiDirect function looks like this:
+
 const uploadToWasabiDirect = async (file, folder = "vehicles/entry") => {
   try {
     const fileName = `${folder}/${Date.now()}-${Math.random().toString(36).substring(7)}-${file.name}`;
     const fileType = file.type;
 
-    console.log('📤 Getting signed URL for:', fileName);
+    // console.log('📤 Getting signed URL for:', fileName);
 
-    // STEP 1: Signed URL lo (JSON request)
+    // STEP 1: Get signed URL
     const token = localStorage.getItem("accessToken");
     const urlResponse = await axios.post(
       `${API_URL}/api/upload/upload-url`,
-      { fileName, fileType },  // ✅ JSON payload
+      { fileName, fileType },
       {
         headers: {
           'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'  // ✅ JSON header
+          'Content-Type': 'application/json'
         }
       }
     );
 
-    console.log('✅ Signed URL received:', urlResponse.data);
+    // console.log('✅ Signed URL received');
+    // console.log('   fileKey:', urlResponse.data.fileKey);  // 🔥 CHECK THIS
 
-    // STEP 2: Direct Wasabi upload (PUT request)
+    // STEP 2: Upload to Wasabi
     await axios.put(urlResponse.data.uploadURL, file, {
       headers: {
         'Content-Type': fileType
       }
     });
 
-    console.log('✅ File uploaded to Wasabi:', urlResponse.data.fileKey);
-    return urlResponse.data.fileKey;  // File key return karo
+    // console.log('✅ File uploaded to Wasabi');
+    
+    // 🔥 CRITICAL: Return the FILE KEY, not the upload URL
+    const fileKey = urlResponse.data.fileKey;
+    
+    // 🔥 VERIFY: File key should look like a path
+    if (!fileKey || !fileKey.includes('/')) {
+      console.error('❌ INVALID FILE KEY:', fileKey);
+      console.error('   Expected format: vehicles/entry/photos/123-front.jpg');
+      throw new Error('Invalid file key returned from server');
+    }
+    
+    // console.log('✅ Returning file key:', fileKey);
+    return fileKey;  // 🔥 This should be like "vehicles/entry/photos/123-front.jpg"
 
   } catch (error) {
     console.error('❌ Upload error:', error.response?.data || error.message);
     throw error;
   }
 };
-
-
 
 const handleAllowEntry = async () => {
   try {
@@ -697,7 +710,7 @@ const handleAllowEntry = async () => {
       return;
     }
 
-    // Vendor logic remains same
+    // Vendor logic
     const finalVendor = vendorInputMode === "manual" 
       ? manualVendorName 
       : vehicleDetails.vendorId;
@@ -718,57 +731,92 @@ const handleAllowEntry = async () => {
       ? customVehicleType 
       : vehicleDetails.vehicleType;
 
-    // ✅ UPDATED: Use your existing upload endpoint
-    const uploadedPhotos = [];
+    // console.log('\n🔍 DEBUG: mediaCapture keys:', Object.keys(mediaCapture));
+
+    // 🔥 FIX: Create proper photo object with Wasabi keys
+    const uploadedPhotos = {
+      frontView: null,
+      backView: null,
+      loadView: null,
+      driverView: null
+    };
     
-    // Upload all photos
-    for (const [key, photo] of Object.entries(mediaCapture)) {
-      if (photo && key !== "videoClip") {
-        try {
-          const file = base64ToFile(photo, `${Date.now()}-${key}.jpg`);
-          const uploadedUrl = await uploadToWasabiDirect(file, "vehicles/entry/photos");
-          if (uploadedUrl) {
-            uploadedPhotos.push(uploadedUrl);
-            console.log(`✅ ${key} uploaded:`, uploadedUrl);
+    // 🔥 Define how to map your mediaCapture keys to standard photo keys
+    // UPDATE THIS MAP based on your actual mediaCapture structure
+    const photoKeyMapping = {
+      // Format: 'yourMediaCaptureKey': 'standardPhotoKey'
+      'frontView': 'frontView',
+      'backView': 'backView',
+      'loadView': 'loadView',
+      'driverView': 'driverView',
+      // If your keys are different, update like this:
+      // 'photo1': 'frontView',
+      // 'photo2': 'backView',
+      // 'photo3': 'loadView',
+      // 'photo4': 'driverView',
+    };
+    
+    // console.log('📤 Starting photo uploads...');
+    
+    // Upload photos with proper mapping
+    for (const [mediaCaptureKey, photo] of Object.entries(mediaCapture)) {
+      if (photo && mediaCaptureKey !== "videoClip" && typeof photo === 'string') {
+        const standardKey = photoKeyMapping[mediaCaptureKey];
+        
+        if (standardKey) {
+          try {
+            // console.log(`📸 Uploading ${mediaCaptureKey} → ${standardKey}`);
+            const file = base64ToFile(photo, `${Date.now()}-${mediaCaptureKey}.jpg`);
+            const wasabiFileKey = await uploadToWasabiDirect(file, "vehicles/entry/photos");
+            
+            if (wasabiFileKey) {
+              uploadedPhotos[standardKey] = wasabiFileKey;
+              // console.log(`✅ ${standardKey} uploaded:`, wasabiFileKey);
+            }
+          } catch (error) {
+            console.error(`❌ Failed to upload ${mediaCaptureKey}:`, error);
           }
-        } catch (error) {
-          console.error(`Failed to upload ${key}:`, error);
-          // Continue with other uploads even if one fails
+        } else {
+          console.warn(`⚠️ No mapping found for key: ${mediaCaptureKey}`);
         }
       }
     }
 
+    // console.log('📊 Final uploadedPhotos:', uploadedPhotos);
+
     // Upload video
-    let videoUrl = "";
+    let videoUrl = null;
     if (mediaCapture.videoClip) {
       try {
+        // console.log('📹 Uploading video...');
         const videoFile = base64ToFile(
           mediaCapture.videoClip,
           `${Date.now()}-video.webm`
         );
         videoUrl = await uploadToWasabiDirect(videoFile, "vehicles/entry/videos");
-        console.log("✅ Video uploaded:", videoUrl);
+        // console.log("✅ Video uploaded:", videoUrl);
       } catch (error) {
-        console.error('Failed to upload video:', error);
+        console.error('❌ Failed to upload video:', error);
       }
     }
 
     // Upload challan image
-    let challanImageUrl = "";
+    let challanImageUrl = null;
     if (vehicleDetails.challanImage) {
       try {
+        // console.log('📄 Uploading challan...');
         const challanFile = base64ToFile(
           vehicleDetails.challanImage,
           `${Date.now()}-challan.jpg`
         );
         challanImageUrl = await uploadToWasabiDirect(challanFile, "vehicles/entry/challan");
-        console.log("✅ Challan uploaded:", challanImageUrl);
+        // console.log("✅ Challan uploaded:", challanImageUrl);
       } catch (error) {
-        console.error('Failed to upload challan:', error);
+        console.error('❌ Failed to upload challan:', error);
       }
     }
 
-    // Prepare entry data
+    // 🔥 CRITICAL: Prepare entry data with WASABI FILE KEYS, not base64
     const entryData = {
       vehicleNumber: anprData.vehicleNumber.toUpperCase().trim(),
       vehicleType: finalVehicleType || "TRUCK",
@@ -780,8 +828,8 @@ const handleAllowEntry = async () => {
       notes: vehicleDetails.notes || "",
       siteId: vehicleDetails.siteId,
       media: {
-        anprImage: anprData.capturedImage || "",
-        photos: uploadedPhotos,
+        anprImage: anprData.capturedImage || null,
+        photos: uploadedPhotos,  // 🔥 These should be Wasabi keys
         video: videoUrl,
         challanImage: challanImageUrl,
       }
@@ -792,7 +840,24 @@ const handleAllowEntry = async () => {
       entryData.vendorId = finalVendor;
     }
 
-    console.log("📦 FINAL PAYLOAD:", entryData);
+    // console.log("\n📦 FINAL PAYLOAD:");
+    // console.log("vehicleNumber:", entryData.vehicleNumber);
+    // console.log("media.photos:", entryData.media.photos);
+    // console.log("media.video:", entryData.media.video);
+    // console.log("media.challanImage:", entryData.media.challanImage);
+
+    // 🔥 VERIFY: Check that photo keys look like file paths
+    Object.entries(entryData.media.photos).forEach(([key, value]) => {
+      if (value) {
+        if (!value.includes('/')) {
+          console.error(`❌ WRONG FORMAT for ${key}:`, value);
+          console.error('   Expected: vehicles/entry/photos/123-front.jpg');
+          console.error('   Got:', value);
+        } else {
+          // console.log(`✅ ${key} format correct:`, value);
+        }
+      }
+    });
 
     // Send to your vehicle entry API
     const response = await axios.post(
@@ -806,15 +871,15 @@ const handleAllowEntry = async () => {
       }
     );
 
-    console.log("✅ SUCCESS Response:", response.data);
+    // console.log("\n✅ SUCCESS Response:", response.data);
     alert("✅ Vehicle entry recorded successfully!");
     resetForm();
 
   } catch (error) {
-    console.error("❌ ERROR Details:");
+    console.error("\n❌ ERROR Details:");
     console.error("Status:", error.response?.status);
     console.error("Message:", error.response?.data?.message);
-    console.error("Data:", error.response?.data);
+    console.error("Full error:", error.response?.data);
     
     if (error.response?.status === 400) {
       alert(`❌ ${error.response.data.message}`);
@@ -827,6 +892,9 @@ const handleAllowEntry = async () => {
     setLoading(false);
   }
 };
+
+
+
   const resetForm = () => {
     setStep(1);
     setDriverName('');

@@ -45,45 +45,52 @@ const ActiveVehicles = () => {
     applyFilters();
   }, [searchQuery, filterStatus, vehicles]);
 
-  const fetchActiveVehicles = async () => {
-    try {
-      setRefreshing(true);
-      const token = localStorage.getItem('accessToken');
-      const response = await axios.get(`${API_URL}/api/supervisor/vehicles/active`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+ // In your activeVehicles.jsx component
 
-      const data = response.data.data || response.data || [];
-      const vehiclesArray = Array.isArray(data) ? data : [];
+const fetchActiveVehicles = async () => {
+  try {
+    setRefreshing(true);
+    const token = localStorage.getItem('accessToken');
+    
+    // 🔥 Make sure this endpoint returns trips with entryMedia
+    const response = await axios.get(`${API_URL}/api/supervisor/vehicles/active`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
 
-      const vehiclesWithDuration = vehiclesArray.map(vehicle => {
-        const entryTime = vehicle.entryTimeISO || vehicle.entryTimeUTC || vehicle.entryTimeIST || vehicle.entryAt || vehicle.entryTime;
-        const exitTime = vehicle.exitTimeUTC || vehicle.exitTimeIST || vehicle.exitAt || vehicle.exitTime;
+    const data = response.data.data || response.data || [];
+    const vehiclesArray = Array.isArray(data) ? data : [];
 
-        return {
-          ...vehicle,
-          entryTimestamp: entryTime,
-          entryTime: entryTime,
-          exitTimestamp: exitTime,
-          exitTime: exitTime,
-          gate: vehicle.entryGate || vehicle.gate || 'Main Gate',
-          exitGate: vehicle.exitGate || 'N/A',
-          materialType: vehicle.loadStatus || vehicle.materialType || 'N/A',
-          calculatedDuration: calculateDuration(entryTime, exitTime),
-          hasExited: !!exitTime
-        };
-      });
+    console.log('📥 Fetched vehicles:', vehiclesArray.length);
+    console.log('📸 Sample vehicle media:', vehiclesArray[0]?.entryMedia);
 
-      setVehicles(vehiclesWithDuration);
-    } catch (error) {
-      console.error('❌ Error fetching active vehicles:', error);
-      setVehicles([]);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
+    const vehiclesWithDuration = vehiclesArray.map(vehicle => {
+      const entryTime = vehicle.entryAt || vehicle.entryTime;
+      const exitTime = vehicle.exitAt || vehicle.exitTime;
 
+      return {
+        ...vehicle,
+        entryTimestamp: entryTime,
+        entryTime: entryTime,
+        exitTimestamp: exitTime,
+        exitTime: exitTime,
+        gate: vehicle.entryGate || 'Main Gate',
+        exitGate: vehicle.exitGate || 'N/A',
+        materialType: vehicle.loadStatus || vehicle.purpose || 'N/A',
+        calculatedDuration: calculateDuration(entryTime, exitTime),
+        hasExited: !!exitTime
+      };
+    });
+
+    console.log('✅ Vehicles with duration:', vehiclesWithDuration.length);
+    setVehicles(vehiclesWithDuration);
+  } catch (error) {
+    console.error('❌ Error fetching active vehicles:', error);
+    setVehicles([]);
+  } finally {
+    setLoading(false);
+    setRefreshing(false);
+  }
+};
   const calculateDuration = (entryTime, exitTime = null) => {
     if (!entryTime) return 'N/A';
     try {
@@ -127,87 +134,131 @@ const ActiveVehicles = () => {
     setFilteredVehicles(filtered);
   };
 
-  const handleViewDetails = async (vehicle) => {
-    setSelectedVehicle(vehicle);
-    setShowDetailsModal(true);
-    setMediaLoading(true);
+ // Replace the handleViewDetails function with this debug version
+
+const handleViewDetails = async (vehicle) => {
+  console.log('🚗 Opening details for vehicle:', vehicle.vehicleNumber);
+  console.log('📦 Entry Media Object:', vehicle.entryMedia);
+  console.log('📦 Exit Media Object:', vehicle.exitMedia);
+  
+  setSelectedVehicle(vehicle);
+  setShowDetailsModal(true);
+  setMediaLoading(true);
+  
+  try {
+    const token = localStorage.getItem('accessToken');
     
-    try {
-      const token = localStorage.getItem('accessToken');
-      
-      // Entry media
-      const entryMedia = vehicle.entryMedia || {};
-      const entryPhotos = entryMedia.photos || {};
-      const resolvedEntryPhotos = {};
-      
-      for (const key in entryPhotos) {
-        if (entryPhotos[key]) {
-          try {
-            const res = await axios.get(`${API_URL}/api/uploads/get-file`, {
-              params: { key: entryPhotos[key] },
-              headers: { Authorization: `Bearer ${token}` }
-            });
-            resolvedEntryPhotos[key] = res.data.url;
-          } catch (err) {
-            console.warn(`Failed to load ${key} photo:`, err);
-          }
-        }
-      }
-      
-      let entryVideoUrl = null;
-      if (entryMedia.video) {
+    // Entry media
+    const entryMedia = vehicle.entryMedia || {};
+    const entryPhotos = entryMedia.photos || {};
+    const resolvedEntryPhotos = {};
+    
+    console.log('🔍 Entry Photos Keys:', Object.keys(entryPhotos));
+    
+    for (const key in entryPhotos) {
+      if (entryPhotos[key]) {
         try {
-          const res = await axios.get(`${API_URL}/api/uploads/get-file`, {
-            params: { key: entryMedia.video },
+          const fileKey = entryPhotos[key];
+          console.log(`📸 Fetching ${key}:`, fileKey);
+          
+          const url = `${API_URL}/api/uploads/get-file`;
+          console.log(`🌐 Request URL:`, url);
+          console.log(`🔑 File Key:`, fileKey);
+          
+          const res = await axios.get(url, {
+            params: { key: fileKey },
             headers: { Authorization: `Bearer ${token}` }
           });
-          entryVideoUrl = res.data.url;
+          
+          console.log(`✅ ${key} loaded:`, res.data.url);
+          resolvedEntryPhotos[key] = res.data.url;
         } catch (err) {
-          console.warn('Failed to load entry video:', err);
-        }
-      }
-      
-      setResolvedEntryMedia({ photos: resolvedEntryPhotos, video: entryVideoUrl });
-      
-      // Exit media
-      const exitMedia = vehicle.exitMedia || {};
-      const exitPhotos = exitMedia.photos || {};
-      const resolvedExitPhotos = {};
-      
-      for (const key in exitPhotos) {
-        if (exitPhotos[key]) {
-          try {
-            const res = await axios.get(`${API_URL}/api/uploads/get-file`, {
-              params: { key: exitPhotos[key] },
-              headers: { Authorization: `Bearer ${token}` }
-            });
-            resolvedExitPhotos[key] = res.data.url;
-          } catch (err) {
-            console.warn(`Failed to load exit ${key} photo:`, err);
-          }
-        }
-      }
-      
-      let exitVideoUrl = null;
-      if (exitMedia.video) {
-        try {
-          const res = await axios.get(`${API_URL}/api/uploads/get-file`, {
-            params: { key: exitMedia.video },
-            headers: { Authorization: `Bearer ${token}` }
+          console.error(`❌ Failed to load ${key}:`, err.response?.data || err.message);
+          console.error('Error details:', {
+            status: err.response?.status,
+            statusText: err.response?.statusText,
+            url: err.config?.url,
+            params: err.config?.params
           });
-          exitVideoUrl = res.data.url;
-        } catch (err) {
-          console.warn('Failed to load exit video:', err);
         }
       }
-      
-      setResolvedExitMedia({ photos: resolvedExitPhotos, video: exitVideoUrl });
-    } catch (err) {
-      console.error('Media resolve failed:', err);
-    } finally {
-      setMediaLoading(false);
     }
-  };
+    
+    let entryVideoUrl = null;
+    if (entryMedia.video) {
+      try {
+        console.log('🎥 Fetching entry video:', entryMedia.video);
+        const res = await axios.get(`${API_URL}/api/uploads/get-file`, {
+          params: { key: entryMedia.video },
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        entryVideoUrl = res.data.url;
+        console.log('✅ Entry video loaded:', entryVideoUrl);
+      } catch (err) {
+        console.error('❌ Failed to load entry video:', err.response?.data || err.message);
+      }
+    }
+    
+    setResolvedEntryMedia({ photos: resolvedEntryPhotos, video: entryVideoUrl });
+    console.log('🎨 Resolved Entry Media:', { photos: resolvedEntryPhotos, video: entryVideoUrl });
+    
+    // Exit media
+    const exitMedia = vehicle.exitMedia || {};
+    const exitPhotos = exitMedia.photos || {};
+    const resolvedExitPhotos = {};
+    
+    console.log('🔍 Exit Photos Keys:', Object.keys(exitPhotos));
+    
+    for (const key in exitPhotos) {
+      if (exitPhotos[key]) {
+        try {
+          console.log(`📸 Fetching exit ${key}:`, exitPhotos[key]);
+          const res = await axios.get(`${API_URL}/api/uploads/get-file`, {
+            params: { key: exitPhotos[key] },
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          resolvedExitPhotos[key] = res.data.url;
+          console.log(`✅ Exit ${key} loaded`);
+        } catch (err) {
+          console.error(`❌ Failed to load exit ${key}:`, err.response?.data || err.message);
+        }
+      }
+    }
+    
+    let exitVideoUrl = null;
+    if (exitMedia.video) {
+      try {
+        console.log('🎥 Fetching exit video:', exitMedia.video);
+        const res = await axios.get(`${API_URL}/api/uploads/get-file`, {
+          params: { key: exitMedia.video },
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        exitVideoUrl = res.data.url;
+        console.log('✅ Exit video loaded');
+      } catch (err) {
+        console.error('❌ Failed to load exit video:', err.response?.data || err.message);
+      }
+    }
+    
+    setResolvedExitMedia({ photos: resolvedExitPhotos, video: exitVideoUrl });
+    console.log('🎨 Resolved Exit Media:', { photos: resolvedExitPhotos, video: exitVideoUrl });
+    
+  } catch (err) {
+    console.error('💥 Media resolve failed:', err);
+  } finally {
+    setMediaLoading(false);
+    console.log('✅ Media loading complete');
+  }
+};
+
+// Also add this to check what's stored in the database
+useEffect(() => {
+  if (vehicles.length > 0) {
+    console.log('🚛 Sample Vehicle Data:', vehicles[0]);
+    console.log('📸 Sample Entry Media:', vehicles[0]?.entryMedia);
+    console.log('📸 Sample Exit Media:', vehicles[0]?.exitMedia);
+  }
+}, [vehicles]);
 
   const handleMarkExit = (vehicle) => {
     sessionStorage.setItem('exitVehicleData', JSON.stringify({

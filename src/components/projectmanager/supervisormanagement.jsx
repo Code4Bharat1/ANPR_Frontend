@@ -94,17 +94,17 @@ const SupervisorManagement = () => {
   const fetchCurrentProjectManager = async () => {
     try {
       setLoadingCurrentPM(true);
-      console.log('Fetching PM profile...');
+      // console.log('Fetching PM profile...');
 
       const response = await api.get('/api/project/profile');
-      console.log('Full API Response:', response.data);
+      // console.log('Full API Response:', response.data);
 
       // Store the response as-is
       setCurrentProjectManager(response.data);
 
       // The PM data might be in response.data.data or response.data
       const pmData = response.data.data || response.data;
-      console.log('PM Data for display:', pmData);
+      // console.log('PM Data for display:', pmData);
 
       // IMPORTANT: We might not get _id from this endpoint
       // So we need to get it from elsewhere or the backend will handle it
@@ -137,7 +137,7 @@ const SupervisorManagement = () => {
 
       // Retry logic for network errors
       if (retryCount < 2 && (!err.response || err.code === 'ECONNABORTED')) {
-        console.log(`Retrying fetchSupervisors (attempt ${retryCount + 1})`);
+        // console.log(`Retrying fetchSupervisors (attempt ${retryCount + 1})`);
         setTimeout(() => fetchSupervisors(retryCount + 1), 1000);
         return;
       }
@@ -248,7 +248,7 @@ const SupervisorManagement = () => {
 
   const handleCreateSupervisor = async () => {
     try {
-      console.log('=== Starting supervisor creation ===');
+      // console.log('=== Starting supervisor creation ===');
 
       // Validation
       if (!formData.name?.trim()) {
@@ -283,11 +283,11 @@ const SupervisorManagement = () => {
         // NO projectManagerId here - backend uses req.user.id
       };
 
-      console.log('Sending payload:', payload);
+      // console.log('Sending payload:', payload);
 
       const response = await api.post('/api/project/supervisors', payload);
 
-      console.log('Success! Response:', response.data);
+      // console.log('Success! Response:', response.data);
       alert('Supervisor created successfully!');
 
       // Close modal and reset
@@ -353,7 +353,7 @@ const SupervisorManagement = () => {
         payload.password = formData.password;
       }
 
-      console.log('Updating supervisor:', payload);
+      // console.log('Updating supervisor:', payload);
       await api.put(`/api/project/supervisors/${selectedSupervisor._id}`, payload);
 
       // Success
