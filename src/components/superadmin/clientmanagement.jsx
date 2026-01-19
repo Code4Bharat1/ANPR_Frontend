@@ -12,7 +12,7 @@ const ClientCard = ({ client, onEdit, onActivate, onDeactivate }) => (
     <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-4 gap-3">
       <div className="flex-1 min-w-0">
         <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-2 truncate">
-          Client Name : {client.name}
+          Client Name : {client.clientname}
         </h3>
         <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-2 truncate">
           Company Name : {client.companyName}
@@ -96,7 +96,7 @@ const ClientCard = ({ client, onEdit, onActivate, onDeactivate }) => (
 // Edit Client Modal
 const EditClientModal = ({ isOpen, onClose, onSubmit, loading, client }) => {
   const [formData, setFormData] = useState({
-    name: '',
+    clientname: '',
     companyName: '',
     email: '',
     phone: '',
@@ -133,7 +133,7 @@ const EditClientModal = ({ isOpen, onClose, onSubmit, loading, client }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="sticky top-0 bg-white border-b border-gray-200 px-4 md:px-6 py-3 md:py-4 flex items-center justify-between">
           <h2 className="text-xl md:text-2xl font-bold text-gray-900">Edit Client</h2>
@@ -291,7 +291,7 @@ const EditClientModal = ({ isOpen, onClose, onSubmit, loading, client }) => {
 // Add Client Modal
 const AddClientModal = ({ isOpen, onClose, onSubmit, loading }) => {
   const [formData, setFormData] = useState({
-    name: '',
+    clientname: '',
     companyName: '',
     email: '',
     phone: '',
@@ -331,7 +331,7 @@ const AddClientModal = ({ isOpen, onClose, onSubmit, loading }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0  z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="sticky top-0 bg-white border-b border-gray-200 px-4 md:px-6 py-3 md:py-4 flex items-center justify-between">
           <h2 className="text-xl md:text-2xl font-bold text-gray-900">Add New Client</h2>
@@ -349,7 +349,7 @@ const AddClientModal = ({ isOpen, onClose, onSubmit, loading }) => {
               <input
                 type="text"
                 name="clientname"
-                value={formData.name}
+                value={formData.clientname}
                 onChange={handleChange}
                 required
                 placeholder="e.g., John Doe"
@@ -578,7 +578,7 @@ const ClientManagement = () => {
       }
 
       const payload = {
-        clientname: formData.name,
+        clientname: formData.clientname,
         companyName: formData.companyName,
         email: formData.email,
         password: formData.password,

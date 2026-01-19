@@ -45,52 +45,52 @@ const ActiveVehicles = () => {
     applyFilters();
   }, [searchQuery, filterStatus, vehicles]);
 
- // In your activeVehicles.jsx component
+  // In your activeVehicles.jsx component
 
-const fetchActiveVehicles = async () => {
-  try {
-    setRefreshing(true);
-    const token = localStorage.getItem('accessToken');
-    
-    // 🔥 Make sure this endpoint returns trips with entryMedia
-    const response = await axios.get(`${API_URL}/api/supervisor/vehicles/active`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
+  const fetchActiveVehicles = async () => {
+    try {
+      setRefreshing(true);
+      const token = localStorage.getItem('accessToken');
 
-    const data = response.data.data || response.data || [];
-    const vehiclesArray = Array.isArray(data) ? data : [];
+      // 🔥 Make sure this endpoint returns trips with entryMedia
+      const response = await axios.get(`${API_URL}/api/supervisor/vehicles/active`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
 
-    console.log('📥 Fetched vehicles:', vehiclesArray.length);
-    console.log('📸 Sample vehicle media:', vehiclesArray[0]?.entryMedia);
+      const data = response.data.data || response.data || [];
+      const vehiclesArray = Array.isArray(data) ? data : [];
 
-    const vehiclesWithDuration = vehiclesArray.map(vehicle => {
-      const entryTime = vehicle.entryAt || vehicle.entryTime;
-      const exitTime = vehicle.exitAt || vehicle.exitTime;
+      console.log('📥 Fetched vehicles:', vehiclesArray.length);
+      console.log('📸 Sample vehicle media:', vehiclesArray[0]?.entryMedia);
 
-      return {
-        ...vehicle,
-        entryTimestamp: entryTime,
-        entryTime: entryTime,
-        exitTimestamp: exitTime,
-        exitTime: exitTime,
-        gate: vehicle.entryGate || 'Main Gate',
-        exitGate: vehicle.exitGate || 'N/A',
-        materialType: vehicle.loadStatus || vehicle.purpose || 'N/A',
-        calculatedDuration: calculateDuration(entryTime, exitTime),
-        hasExited: !!exitTime
-      };
-    });
+      const vehiclesWithDuration = vehiclesArray.map(vehicle => {
+        const entryTime = vehicle.entryAt || vehicle.entryTime;
+        const exitTime = vehicle.exitAt || vehicle.exitTime;
 
-    console.log('✅ Vehicles with duration:', vehiclesWithDuration.length);
-    setVehicles(vehiclesWithDuration);
-  } catch (error) {
-    console.error('❌ Error fetching active vehicles:', error);
-    setVehicles([]);
-  } finally {
-    setLoading(false);
-    setRefreshing(false);
-  }
-};
+        return {
+          ...vehicle,
+          entryTimestamp: entryTime,
+          entryTime: entryTime,
+          exitTimestamp: exitTime,
+          exitTime: exitTime,
+          gate: vehicle.entryGate || 'Main Gate',
+          exitGate: vehicle.exitGate || 'N/A',
+          materialType: vehicle.loadStatus || vehicle.purpose || 'N/A',
+          calculatedDuration: calculateDuration(entryTime, exitTime),
+          hasExited: !!exitTime
+        };
+      });
+
+      console.log('✅ Vehicles with duration:', vehiclesWithDuration.length);
+      setVehicles(vehiclesWithDuration);
+    } catch (error) {
+      console.error('❌ Error fetching active vehicles:', error);
+      setVehicles([]);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
   const calculateDuration = (entryTime, exitTime = null) => {
     if (!entryTime) return 'N/A';
     try {
@@ -134,131 +134,131 @@ const fetchActiveVehicles = async () => {
     setFilteredVehicles(filtered);
   };
 
- // Replace the handleViewDetails function with this debug version
+  // Replace the handleViewDetails function with this debug version
 
-const handleViewDetails = async (vehicle) => {
-  console.log('🚗 Opening details for vehicle:', vehicle.vehicleNumber);
-  console.log('📦 Entry Media Object:', vehicle.entryMedia);
-  console.log('📦 Exit Media Object:', vehicle.exitMedia);
-  
-  setSelectedVehicle(vehicle);
-  setShowDetailsModal(true);
-  setMediaLoading(true);
-  
-  try {
-    const token = localStorage.getItem('accessToken');
-    
-    // Entry media
-    const entryMedia = vehicle.entryMedia || {};
-    const entryPhotos = entryMedia.photos || {};
-    const resolvedEntryPhotos = {};
-    
-    console.log('🔍 Entry Photos Keys:', Object.keys(entryPhotos));
-    
-    for (const key in entryPhotos) {
-      if (entryPhotos[key]) {
-        try {
-          const fileKey = entryPhotos[key];
-          console.log(`📸 Fetching ${key}:`, fileKey);
-          
-          const url = `${API_URL}/api/uploads/get-file`;
-          console.log(`🌐 Request URL:`, url);
-          console.log(`🔑 File Key:`, fileKey);
-          
-          const res = await axios.get(url, {
-            params: { key: fileKey },
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          
-          console.log(`✅ ${key} loaded:`, res.data.url);
-          resolvedEntryPhotos[key] = res.data.url;
-        } catch (err) {
-          console.error(`❌ Failed to load ${key}:`, err.response?.data || err.message);
-          console.error('Error details:', {
-            status: err.response?.status,
-            statusText: err.response?.statusText,
-            url: err.config?.url,
-            params: err.config?.params
-          });
+  const handleViewDetails = async (vehicle) => {
+    console.log('🚗 Opening details for vehicle:', vehicle.vehicleNumber);
+    console.log('📦 Entry Media Object:', vehicle.entryMedia);
+    console.log('📦 Exit Media Object:', vehicle.exitMedia);
+
+    setSelectedVehicle(vehicle);
+    setShowDetailsModal(true);
+    setMediaLoading(true);
+
+    try {
+      const token = localStorage.getItem('accessToken');
+
+      // Entry media
+      const entryMedia = vehicle.entryMedia || {};
+      const entryPhotos = entryMedia.photos || {};
+      const resolvedEntryPhotos = {};
+
+      console.log('🔍 Entry Photos Keys:', Object.keys(entryPhotos));
+
+      for (const key in entryPhotos) {
+        if (entryPhotos[key]) {
+          try {
+            const fileKey = entryPhotos[key];
+            console.log(`📸 Fetching ${key}:`, fileKey);
+
+            const url = `${API_URL}/api/uploads/get-file`;
+            console.log(`🌐 Request URL:`, url);
+            console.log(`🔑 File Key:`, fileKey);
+
+            const res = await axios.get(url, {
+              params: { key: fileKey },
+              headers: { Authorization: `Bearer ${token}` }
+            });
+
+            console.log(`✅ ${key} loaded:`, res.data.url);
+            resolvedEntryPhotos[key] = res.data.url;
+          } catch (err) {
+            console.error(`❌ Failed to load ${key}:`, err.response?.data || err.message);
+            console.error('Error details:', {
+              status: err.response?.status,
+              statusText: err.response?.statusText,
+              url: err.config?.url,
+              params: err.config?.params
+            });
+          }
         }
       }
-    }
-    
-    let entryVideoUrl = null;
-    if (entryMedia.video) {
-      try {
-        console.log('🎥 Fetching entry video:', entryMedia.video);
-        const res = await axios.get(`${API_URL}/api/uploads/get-file`, {
-          params: { key: entryMedia.video },
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        entryVideoUrl = res.data.url;
-        console.log('✅ Entry video loaded:', entryVideoUrl);
-      } catch (err) {
-        console.error('❌ Failed to load entry video:', err.response?.data || err.message);
-      }
-    }
-    
-    setResolvedEntryMedia({ photos: resolvedEntryPhotos, video: entryVideoUrl });
-    console.log('🎨 Resolved Entry Media:', { photos: resolvedEntryPhotos, video: entryVideoUrl });
-    
-    // Exit media
-    const exitMedia = vehicle.exitMedia || {};
-    const exitPhotos = exitMedia.photos || {};
-    const resolvedExitPhotos = {};
-    
-    console.log('🔍 Exit Photos Keys:', Object.keys(exitPhotos));
-    
-    for (const key in exitPhotos) {
-      if (exitPhotos[key]) {
+
+      let entryVideoUrl = null;
+      if (entryMedia.video) {
         try {
-          console.log(`📸 Fetching exit ${key}:`, exitPhotos[key]);
+          console.log('🎥 Fetching entry video:', entryMedia.video);
           const res = await axios.get(`${API_URL}/api/uploads/get-file`, {
-            params: { key: exitPhotos[key] },
+            params: { key: entryMedia.video },
             headers: { Authorization: `Bearer ${token}` }
           });
-          resolvedExitPhotos[key] = res.data.url;
-          console.log(`✅ Exit ${key} loaded`);
+          entryVideoUrl = res.data.url;
+          console.log('✅ Entry video loaded:', entryVideoUrl);
         } catch (err) {
-          console.error(`❌ Failed to load exit ${key}:`, err.response?.data || err.message);
+          console.error('❌ Failed to load entry video:', err.response?.data || err.message);
         }
       }
-    }
-    
-    let exitVideoUrl = null;
-    if (exitMedia.video) {
-      try {
-        console.log('🎥 Fetching exit video:', exitMedia.video);
-        const res = await axios.get(`${API_URL}/api/uploads/get-file`, {
-          params: { key: exitMedia.video },
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        exitVideoUrl = res.data.url;
-        console.log('✅ Exit video loaded');
-      } catch (err) {
-        console.error('❌ Failed to load exit video:', err.response?.data || err.message);
-      }
-    }
-    
-    setResolvedExitMedia({ photos: resolvedExitPhotos, video: exitVideoUrl });
-    console.log('🎨 Resolved Exit Media:', { photos: resolvedExitPhotos, video: exitVideoUrl });
-    
-  } catch (err) {
-    console.error('💥 Media resolve failed:', err);
-  } finally {
-    setMediaLoading(false);
-    console.log('✅ Media loading complete');
-  }
-};
 
-// Also add this to check what's stored in the database
-useEffect(() => {
-  if (vehicles.length > 0) {
-    console.log('🚛 Sample Vehicle Data:', vehicles[0]);
-    console.log('📸 Sample Entry Media:', vehicles[0]?.entryMedia);
-    console.log('📸 Sample Exit Media:', vehicles[0]?.exitMedia);
-  }
-}, [vehicles]);
+      setResolvedEntryMedia({ photos: resolvedEntryPhotos, video: entryVideoUrl });
+      console.log('🎨 Resolved Entry Media:', { photos: resolvedEntryPhotos, video: entryVideoUrl });
+
+      // Exit media
+      const exitMedia = vehicle.exitMedia || {};
+      const exitPhotos = exitMedia.photos || {};
+      const resolvedExitPhotos = {};
+
+      console.log('🔍 Exit Photos Keys:', Object.keys(exitPhotos));
+
+      for (const key in exitPhotos) {
+        if (exitPhotos[key]) {
+          try {
+            console.log(`📸 Fetching exit ${key}:`, exitPhotos[key]);
+            const res = await axios.get(`${API_URL}/api/uploads/get-file`, {
+              params: { key: exitPhotos[key] },
+              headers: { Authorization: `Bearer ${token}` }
+            });
+            resolvedExitPhotos[key] = res.data.url;
+            console.log(`✅ Exit ${key} loaded`);
+          } catch (err) {
+            console.error(`❌ Failed to load exit ${key}:`, err.response?.data || err.message);
+          }
+        }
+      }
+
+      let exitVideoUrl = null;
+      if (exitMedia.video) {
+        try {
+          console.log('🎥 Fetching exit video:', exitMedia.video);
+          const res = await axios.get(`${API_URL}/api/uploads/get-file`, {
+            params: { key: exitMedia.video },
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          exitVideoUrl = res.data.url;
+          console.log('✅ Exit video loaded');
+        } catch (err) {
+          console.error('❌ Failed to load exit video:', err.response?.data || err.message);
+        }
+      }
+
+      setResolvedExitMedia({ photos: resolvedExitPhotos, video: exitVideoUrl });
+      console.log('🎨 Resolved Exit Media:', { photos: resolvedExitPhotos, video: exitVideoUrl });
+
+    } catch (err) {
+      console.error('💥 Media resolve failed:', err);
+    } finally {
+      setMediaLoading(false);
+      console.log('✅ Media loading complete');
+    }
+  };
+
+  // Also add this to check what's stored in the database
+  useEffect(() => {
+    if (vehicles.length > 0) {
+      console.log('🚛 Sample Vehicle Data:', vehicles[0]);
+      console.log('📸 Sample Entry Media:', vehicles[0]?.entryMedia);
+      console.log('📸 Sample Exit Media:', vehicles[0]?.exitMedia);
+    }
+  }, [vehicles]);
 
   const handleMarkExit = (vehicle) => {
     sessionStorage.setItem('exitVehicleData', JSON.stringify({
@@ -277,10 +277,10 @@ useEffect(() => {
       maintenance: { bg: 'bg-gradient-to-r from-yellow-100 to-yellow-50', text: 'text-yellow-700', icon: ToolCase, label: 'Maintenance' },
       exited: { bg: 'bg-gradient-to-r from-gray-100 to-gray-50', text: 'text-gray-700', icon: CheckCircle, label: 'Exited' }
     };
-    
+
     const config = configs[status] || configs.loading;
     const Icon = config.icon || Package;
-    
+
     return (
       <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${config.bg} ${config.text}`}>
         <Icon className="w-3 h-3" />
@@ -433,7 +433,7 @@ useEffect(() => {
                 className="w-full pl-12 pr-4 py-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
               />
             </div>
-            
+
             <div className="flex flex-col sm:flex-row gap-3">
               <select
                 value={filterStatus}
@@ -447,7 +447,7 @@ useEffect(() => {
                 <option value="meeting">Meeting ({stats.meeting})</option>
                 <option value="maintenance">Maintenance ({stats.maintenance})</option>
               </select>
-              
+
               <div className="flex items-center gap-2 bg-blue-50 px-4 py-3 rounded-lg">
                 <Filter className="w-4 h-4 text-blue-600" />
                 <span className="text-sm font-medium text-blue-700">
@@ -511,13 +511,13 @@ useEffect(() => {
                       const entryDateTime = formatDateTime(vehicle.entryTimestamp);
                       const exitDateTime = formatDateTime(vehicle.exitTimestamp);
                       const duration = calculateDuration(vehicle.entryTimestamp, vehicle.exitTimestamp);
-                      
+
                       return (
                         <tr key={vehicle._id} className="hover:bg-gray-50/50 transition-colors group">
                           <td className="px-6 py-4">
                             <div className="font-bold text-gray-700 text-center">{index + 1}</div>
                           </td>
-                          
+
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
                               <div className="w-10 h-10 bg-gradient-to-br from-blue-100 to-blue-50 rounded-lg flex items-center justify-center">
@@ -532,7 +532,7 @@ useEffect(() => {
                               </div>
                             </div>
                           </td>
-                          
+
                           <td className="px-6 py-4">
                             <div>
                               <div className="font-semibold text-gray-900">{vehicle.vendor || 'Unknown'}</div>
@@ -542,7 +542,7 @@ useEffect(() => {
                               </div>
                             </div>
                           </td>
-                          
+
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-2">
                               <div className="w-8 h-8 bg-gradient-to-br from-green-100 to-green-50 rounded-lg flex items-center justify-center">
@@ -554,7 +554,7 @@ useEffect(() => {
                               </div>
                             </div>
                           </td>
-                          
+
                           <td className="px-6 py-4">
                             {vehicle.exitTimestamp ? (
                               <div className="flex items-center gap-2">
@@ -570,7 +570,7 @@ useEffect(() => {
                               <div className="text-sm text-gray-400 italic">Inside Premises</div>
                             )}
                           </td>
-                          
+
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-2">
                               <div className="w-8 h-8 bg-gradient-to-br from-purple-100 to-purple-50 rounded-lg flex items-center justify-center">
@@ -584,11 +584,11 @@ useEffect(() => {
                               </div>
                             </div>
                           </td>
-                          
+
                           <td className="px-6 py-4">
                             {getStatusBadge(vehicle.status || 'loading')}
                           </td>
-                          
+
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-2">
                               <button
@@ -622,7 +622,7 @@ useEffect(() => {
                   const entryDateTime = formatDateTime(vehicle.entryTimestamp);
                   const exitDateTime = formatDateTime(vehicle.exitTimestamp);
                   const duration = calculateDuration(vehicle.entryTimestamp, vehicle.exitTimestamp);
-                  
+
                   return (
                     <div key={vehicle._id} className="p-5 hover:bg-gray-50/50 transition-colors border-b border-gray-100 last:border-b-0">
                       <div className="flex items-start justify-between mb-4">
@@ -717,12 +717,12 @@ useEffect(() => {
 
         {/* Enhanced Details Modal */}
         {showDetailsModal && selectedVehicle && (() => {
-          const entryDateTime = formatDateTime(selectedVehicle.entryTimestamp);
+          const entryDateTime = formatDateTime(selectedVehicle.entryTime);
           const exitDateTime = formatDateTime(selectedVehicle.exitTimestamp);
           const duration = calculateDuration(selectedVehicle.entryTimestamp, selectedVehicle.exitTimestamp);
           const entryVideo = resolvedEntryMedia.video;
           const exitVideo = resolvedExitMedia.video;
-          
+
           const photoFields = [
             { key: 'frontView', label: 'Front View', description: 'Vehicle front side' },
             { key: 'backView', label: 'Back View', description: 'Vehicle rear side' },
@@ -742,7 +742,7 @@ useEffect(() => {
                       {getStatusBadge(selectedVehicle.status || 'loading')}
                     </div>
                   </div>
-                  <button 
+                  <button
                     onClick={() => setShowDetailsModal(false)}
                     className="p-2 hover:bg-white/20 rounded-lg transition"
                   >
@@ -842,7 +842,7 @@ useEffect(() => {
                           </h3>
                           <span className="text-xs bg-green-100 text-green-700 px-3 py-1 rounded-full">4 Photos Required</span>
                         </div>
-                        
+
                         <div className="mb-6">
                           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                             {photoFields.map(photo => {
@@ -897,7 +897,7 @@ useEffect(() => {
                             </h3>
                             <span className="text-xs bg-red-100 text-red-700 px-3 py-1 rounded-full">4 Photos Required</span>
                           </div>
-                          
+
                           <div className="mb-6">
                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                               {photoFields.map(photo => {
