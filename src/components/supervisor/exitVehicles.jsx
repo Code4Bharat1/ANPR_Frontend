@@ -277,10 +277,10 @@ const handleAllowExit = async () => {
   }
 
   const REQUIRED_PHOTOS = [
-    { key: "frontView", name: "Front View" },
-    { key: "backView", name: "Back View" },
-    { key: "loadView", name: "Load View" },
-    { key: "driverView", name: "Driver View" },
+    { key: "frontView", name: "Front View", index: 1 },
+    { key: "backView", name: "Back View", index: 2 },
+    { key: "loadView", name: "Load View", index: 3 },
+    { key: "driverView", name: "Driver View", index: 4 },
   ];
 
   const missingPhotos = REQUIRED_PHOTOS.filter(
@@ -296,7 +296,6 @@ const handleAllowExit = async () => {
     return;
   }
 
-  // ✅ CORRECT vehicleId
   const vehicleId = selectedVehicle?._id;
   if (!vehicleId) {
     alert("Invalid vehicle selected");
@@ -314,20 +313,24 @@ const handleAllowExit = async () => {
 
     const uploadedPhotoKeys = {};
 
+    // 🔥 PHOTO UPLOADS
     for (const photo of REQUIRED_PHOTOS) {
       const file = base64ToFile(
         exitData.exitMedia[photo.key],
         `${Date.now()}-${photo.key}.jpg`
       );
 
-      const fileKey = await uploadToWasabi(
+      const fileKey = await uploadToWasabi({
         file,
-        `vehicles/${selectedVehicle.vehicleNumber}/exit/photos`
-      );
+        vehicleId,
+        type: "exit",
+        index: photo.index,
+      });
 
       uploadedPhotoKeys[photo.key] = fileKey;
     }
 
+    // 🔥 VIDEO UPLOAD (optional)
     let videoKey = "";
     if (exitData.exitMedia?.videoClip) {
       try {
@@ -336,15 +339,17 @@ const handleAllowExit = async () => {
           `${Date.now()}-exit-video.webm`
         );
 
-        videoKey = await uploadToWasabi(
-          videoFile,
-          `vehicles/${selectedVehicle.vehicleNumber}/exit/videos`
-        );
+        videoKey = await uploadToWasabi({
+          file: videoFile,
+          vehicleId,
+          type: "exit",
+        });
       } catch (err) {
-        console.warn("Video upload failed", err);
+        console.warn("⚠️ Video upload failed", err);
       }
     }
 
+    // 🔥 FINAL EXIT PAYLOAD
     const exitPayload = {
       vehicleId,
       exitTime: new Date().toISOString(),
@@ -370,8 +375,6 @@ const handleAllowExit = async () => {
         },
       }
     );
-
-    console.log(res);
 
     alert("✅ Vehicle exit allowed successfully!");
     handleBackToList();
