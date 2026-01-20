@@ -202,120 +202,120 @@ const UserManagement = () => {
         : [...prev.assignedSupervisors, supervisorId]
     }));
   };
-// Validation Function
-const validateForm = () => {
-  const newErrors = {};
+  // Validation Function
+  const validateForm = () => {
+    const newErrors = {};
 
-  // Name validation
-  if (!formData.name.trim()) {
-    newErrors.name = "Full name is required";
-  }
-
-  // Email validation
-  if (!formData.email.trim()) {
-    newErrors.email = "Email is required";
-  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-    newErrors.email = "Invalid email format";
-  }
-
-  // Mobile validation
-  if (!formData.mobile.trim()) {
-    newErrors.mobile = "Phone number is required";
-  } else if (!/^\d{10}$/.test(formData.mobile.replace(/\D/g, ""))) {
-    newErrors.mobile = "Phone number must be 10 digits";
-  }
-
-  // Address validation
-  if (!formData.address.trim()) {
-    newErrors.address = "Address is required";
-  }
-
-  // Password validation
-  if (!formData.password) {
-    newErrors.password = "Password is required";
-  } else if (formData.password.length < 6) {
-    newErrors.password = "Password must be at least 6 characters";
-  }
-
-  // Project Manager specific validation
-  if (activeTab === "Project Managers") {
-    if (!formData.assignedSites.length) {
-      newErrors.assignedSites = "Select at least one site";
+    // Name validation
+    if (!formData.name.trim()) {
+      newErrors.name = "Full name is required";
     }
-  }
 
-  // Supervisor specific validation
-  if (activeTab === "Supervisors") {
-    if (!formData.projectManagerId) {
-      newErrors.projectManagerId = "Project Manager is required";
+    // Email validation
+    if (!formData.email.trim()) {
+      newErrors.email = "Email is required";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = "Invalid email format";
     }
-    if (!formData.siteId) {
-      newErrors.siteId = "Site is required";
+
+    // Mobile validation
+    if (!formData.mobile.trim()) {
+      newErrors.mobile = "Phone number is required";
+    } else if (!/^\d{10}$/.test(formData.mobile.replace(/\D/g, ""))) {
+      newErrors.mobile = "Phone number must be 10 digits";
     }
-  }
 
-  setErrors(newErrors);
-  return Object.keys(newErrors).length === 0;
-};
+    // Address validation
+    if (!formData.address.trim()) {
+      newErrors.address = "Address is required";
+    }
 
+    // Password validation
+    if (!formData.password) {
+      newErrors.password = "Password is required";
+    } else if (formData.password.length < 6) {
+      newErrors.password = "Password must be at least 6 characters";
+    }
 
-// Updated handleCreateUser function
-const handleCreateUser = async () => {
-  // Validate form first
-  if (!validateForm()) {
-    return;
-  }
-
-  try {
-    const payload = {
-      name: formData.name.trim(),
-      email: formData.email.trim(),
-      mobile: formData.mobile,
-      address: formData.address.trim(),
-      password: formData.password,
-    };
-
+    // Project Manager specific validation
     if (activeTab === "Project Managers") {
-      payload.assignedSites = formData.assignedSites;
-      if (formData.assignedSupervisors.length) {
-        payload.assignedSupervisors = formData.assignedSupervisors;
+      if (!formData.assignedSites.length) {
+        newErrors.assignedSites = "Select at least one site";
       }
-    } else {
-      payload.siteId = formData.siteId;
-      payload.projectManagerId = formData.projectManagerId;
     }
 
-    const endpoint =
-      activeTab === "Project Managers"
-        ? "/api/client-admin/project-managers"
-        : "/api/client-admin/supervisors";
+    // Supervisor specific validation
+    if (activeTab === "Supervisors") {
+      if (!formData.projectManagerId) {
+        newErrors.projectManagerId = "Project Manager is required";
+      }
+      if (!formData.siteId) {
+        newErrors.siteId = "Site is required";
+      }
+    }
 
-    await api.post(endpoint, payload);
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
-    alert("User created successfully!");
 
-    // Reset form
-    setFormData({
-      name: "",
-      email: "",
-      mobile: "",
-      address: "",
-      password: "",
-      assignedSites: [],
-      assignedSupervisors: [],
-      siteId: "",
-      projectManagerId: "",
-    });
+  // Updated handleCreateUser function
+  const handleCreateUser = async () => {
+    // Validate form first
+    if (!validateForm()) {
+      return;
+    }
 
-    setErrors({});
-    setShowPassword(false);
-    setShowAdd(false);
-    fetchUsers();
+    try {
+      const payload = {
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        mobile: formData.mobile,
+        address: formData.address.trim(),
+        password: formData.password,
+      };
 
-  } catch (err) {
-    alert(err.response?.data?.message || "Failed to create user");
-  }
-};
+      if (activeTab === "Project Managers") {
+        payload.assignedSites = formData.assignedSites;
+        if (formData.assignedSupervisors.length) {
+          payload.assignedSupervisors = formData.assignedSupervisors;
+        }
+      } else {
+        payload.siteId = formData.siteId;
+        payload.projectManagerId = formData.projectManagerId;
+      }
+
+      const endpoint =
+        activeTab === "Project Managers"
+          ? "/api/client-admin/project-managers"
+          : "/api/client-admin/supervisors";
+
+      await api.post(endpoint, payload);
+
+      alert("User created successfully!");
+
+      // Reset form
+      setFormData({
+        name: "",
+        email: "",
+        mobile: "",
+        address: "",
+        password: "",
+        assignedSites: [],
+        assignedSupervisors: [],
+        siteId: "",
+        projectManagerId: "",
+      });
+
+      setErrors({});
+      setShowPassword(false);
+      setShowAdd(false);
+      fetchUsers();
+
+    } catch (err) {
+      alert(err.response?.data?.message || "Failed to create user");
+    }
+  };
 
 
   const handleUpdateUser = async () => {
@@ -374,29 +374,29 @@ const handleCreateUser = async () => {
   };
 
   const handleToggleStatus = async (userId, currentStatus) => {
-  try {
-    const endpoint = activeTab === 'Project Managers'
-      ? `/api/client-admin/pm/${userId}/status`
-      : `/api/client-admin/supervisor/${userId}/status`;
+    try {
+      const endpoint = activeTab === 'Project Managers'
+        ? `/api/client-admin/pm/${userId}/status`
+        : `/api/client-admin/supervisor/${userId}/status`;
 
-    const newStatus = currentStatus === 'Active' ? 'Inactive' : 'Active';
+      const newStatus = currentStatus === 'Active' ? 'Inactive' : 'Active';
 
-    // console.log('Toggling status:', { userId, currentStatus, newStatus }); // ✅ Debug log
+      // console.log('Toggling status:', { userId, currentStatus, newStatus }); // ✅ Debug log
 
-    const response = await api.patch(endpoint, { status: newStatus });
+      const response = await api.patch(endpoint, { status: newStatus });
 
-    // console.log('Response:', response.data); // ✅ Check what backend returns
+      // console.log('Response:', response.data); // ✅ Check what backend returns
 
-    // ✅ Refresh the user list BEFORE showing alert
-    await fetchUsers();
-    
-    alert('Status updated successfully!');
+      // ✅ Refresh the user list BEFORE showing alert
+      await fetchUsers();
 
-  } catch (err) {
-    console.error('Error updating status:', err);
-    alert(err.response?.data?.message || 'Failed to update status');
-  }
-};
+      alert('Status updated successfully!');
+
+    } catch (err) {
+      console.error('Error updating status:', err);
+      alert(err.response?.data?.message || 'Failed to update status');
+    }
+  };
 
   const filteredUsers = Array.isArray(users) ? users.filter(user => {
     const matchesSearch = user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -769,6 +769,23 @@ const handleCreateUser = async () => {
                 <label className="text-sm font-medium text-gray-500">Address</label>
                 <p className="text-base text-gray-900 mt-1">{selectedUser.address || '-'}</p>
               </div>
+              {activeTab === 'Project Managers' && (
+              <div>
+                <label className="text-sm font-medium text-gray-500">
+                  Assigned Supervisors
+                </label>
+
+                <p className="text-base text-gray-900 mt-1">
+                  {selectedUser.supervisors?.length
+                    ? selectedUser.supervisors
+                      .map(s => s.name.charAt(0).toUpperCase() + s.name.slice(1))
+                      .join(", ")
+                    : "-"
+                  }
+                </p>
+              </div>
+              )}
+
 
               <div>
                 <label className="text-sm font-medium text-gray-500">Status</label>
@@ -842,334 +859,334 @@ const handleCreateUser = async () => {
       )}
 
       {/* Add User Modal */}
-     // Updated Form JSX with Error Messages
-{showAdd && (
-  <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-    <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
-      <div className="sticky top-0 bg-white flex items-center justify-between p-4 sm:p-6 border-b border-gray-200">
-        <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
-          Add {activeTab.slice(0, -1)}
-        </h2>
-        <button
-          onClick={() => {
-            setShowAdd(false);
-            setErrors({});
-          }}
-          className="text-gray-400 hover:text-gray-600 transition-colors"
-        >
-          <X className="w-6 h-6" />
-        </button>
-      </div>
+      {/* // Updated Form JSX with Error Messages */}
+      {showAdd && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white flex items-center justify-between p-4 sm:p-6 border-b border-gray-200">
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
+                Add {activeTab.slice(0, -1)}
+              </h2>
+              <button
+                onClick={() => {
+                  setShowAdd(false);
+                  setErrors({});
+                }}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
 
-      <div className="p-4 sm:p-6 space-y-4">
-        {/* Full Name */}
-        <div>
-          <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-            <User className="w-4 h-4" />
-            Full Name <span className="text-red-500">*</span>
-          </label>
-          <input
-            placeholder="John Doe"
-            type="text"
-            value={formData.name}
-            onChange={(e) => {
-              setFormData({ ...formData, name: e.target.value });
-              if (errors.name) setErrors({ ...errors, name: null });
-            }}
-            className={`w-full border ${errors.name ? 'border-red-500' : 'border-gray-300'} px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
-          />
-          {errors.name && (
-            <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-              <AlertCircle className="w-3 h-3" />
-              {errors.name}
-            </p>
-          )}
-        </div>
-
-        {/* Email */}
-        <div>
-          <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-            <Mail className="w-4 h-4" />
-            Email Address <span className="text-red-500">*</span>
-          </label>
-          <input
-            placeholder="john@example.com"
-            type="email"
-            value={formData.email}
-            onChange={(e) => {
-              setFormData({ ...formData, email: e.target.value });
-              if (errors.email) setErrors({ ...errors, email: null });
-            }}
-            className={`w-full border ${errors.email ? 'border-red-500' : 'border-gray-300'} px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
-          />
-          {errors.email && (
-            <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-              <AlertCircle className="w-3 h-3" />
-              {errors.email}
-            </p>
-          )}
-        </div>
-
-        {/* Phone Number */}
-        <div>
-          <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-            <Phone className="w-4 h-4" />
-            Phone Number <span className="text-red-500">*</span>
-          </label>
-          <input
-            placeholder="+91 98765 43210"
-            type="tel"
-            value={formData.mobile}
-            onChange={(e) => {
-              setFormData({ ...formData, mobile: e.target.value });
-              if (errors.mobile) setErrors({ ...errors, mobile: null });
-            }}
-            className={`w-full border ${errors.mobile ? 'border-red-500' : 'border-gray-300'} px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
-          />
-          {errors.mobile && (
-            <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-              <AlertCircle className="w-3 h-3" />
-              {errors.mobile}
-            </p>
-          )}
-        </div>
-
-        {/* Address */}
-        <div>
-          <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-            <MapPin className="w-4 h-4" />
-            Address <span className="text-red-500">*</span>
-          </label>
-          <textarea
-            placeholder="Enter full address"
-            value={formData.address}
-            onChange={(e) => {
-              setFormData({ ...formData, address: e.target.value });
-              if (errors.address) setErrors({ ...errors, address: null });
-            }}
-            rows={3}
-            className={`w-full border ${errors.address ? 'border-red-500' : 'border-gray-300'} px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none`}
-          />
-          {errors.address && (
-            <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-              <AlertCircle className="w-3 h-3" />
-              {errors.address}
-            </p>
-          )}
-        </div>
-
-        {/* Password */}
-        <div>
-          <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-            <Lock className="w-4 h-4" />
-            Password <span className="text-red-500">*</span>
-          </label>
-          <div className="relative">
-            <input
-              placeholder="Enter password (min 6 characters)"
-              type={showPassword ? "text" : "password"}
-              value={formData.password}
-              onChange={(e) => {
-                setFormData({ ...formData, password: e.target.value });
-                if (errors.password) setErrors({ ...errors, password: null });
-              }}
-              className={`w-full border ${errors.password ? 'border-red-500' : 'border-gray-300'} px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-10`}
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
-            >
-              {showPassword ? (
-                <EyeOff className="w-5 h-5" />
-              ) : (
-                <Eye className="w-5 h-5" />
-              )}
-            </button>
-          </div>
-          {errors.password && (
-            <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-              <AlertCircle className="w-3 h-3" />
-              {errors.password}
-            </p>
-          )}
-        </div>
-
-        {/* Project Manager Selection (for Supervisors) */}
-        {activeTab === 'Supervisors' && (
-          <div>
-            <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-              <User className="w-4 h-4" />
-              Project Manager <span className="text-red-500">*</span>
-            </label>
-            {loadingPMs ? (
-              <div className="w-full border border-gray-300 px-4 py-3 rounded-lg bg-gray-50 flex items-center justify-center">
-                <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mr-2"></div>
-                <span className="text-sm text-gray-600">Loading...</span>
-              </div>
-            ) : (
-              <>
-                <select
-                  value={formData.projectManagerId}
+            <div className="p-4 sm:p-6 space-y-4">
+              {/* Full Name */}
+              <div>
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                  <User className="w-4 h-4" />
+                  Full Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  placeholder="John Doe"
+                  type="text"
+                  value={formData.name}
                   onChange={(e) => {
-                    setFormData({ ...formData, projectManagerId: e.target.value });
-                    if (errors.projectManagerId) setErrors({ ...errors, projectManagerId: null });
+                    setFormData({ ...formData, name: e.target.value });
+                    if (errors.name) setErrors({ ...errors, name: null });
                   }}
-                  className={`w-full border ${errors.projectManagerId ? 'border-red-500' : 'border-gray-300'} px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
-                >
-                  <option value="">Select Project Manager</option>
-                  {projectManagers.map((pm) => (
-                    <option key={pm._id || pm.id} value={pm._id || pm.id}>
-                      {pm.name}
-                    </option>
-                  ))}
-                </select>
-                {errors.projectManagerId && (
+                  className={`w-full border ${errors.name ? 'border-red-500' : 'border-gray-300'} px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                />
+                {errors.name && (
                   <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
                     <AlertCircle className="w-3 h-3" />
-                    {errors.projectManagerId}
+                    {errors.name}
                   </p>
                 )}
-              </>
-            )}
-          </div>
-        )}
-
-        {/* Site Selection */}
-        <div>
-          <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-            <Building2 className="w-4 h-4" />
-            {activeTab === 'Project Managers' ? 'Assigned Sites (Multiple)' : 'Assigned Site'}
-            <span className="text-red-500">*</span>
-          </label>
-
-          {loadingSites ? (
-            <div className="w-full border border-gray-300 px-4 py-3 rounded-lg bg-gray-50 flex items-center justify-center">
-              <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mr-2"></div>
-              <span className="text-sm text-gray-600">Loading sites...</span>
-            </div>
-          ) : sites.length === 0 ? (
-            <div className="border border-gray-300 rounded-lg p-4 text-center text-sm text-gray-500">
-              No sites available
-            </div>
-          ) : (
-            <>
-              <div className={`border ${errors.assignedSites || errors.siteId ? 'border-red-500' : 'border-gray-300'} rounded-lg max-h-48 overflow-y-auto`}>
-                {sites.map((site) => {
-                  const siteId = site._id || site.id;
-                  const siteName = site.name || site.siteName;
-                  const isSelected = activeTab === 'Project Managers'
-                    ? formData.assignedSites.includes(siteId)
-                    : formData.siteId === siteId;
-
-                  return (
-                    <div
-                      key={siteId}
-                      onClick={() => {
-                        handleToggleSite(siteId);
-                        if (errors.assignedSites) setErrors({ ...errors, assignedSites: null });
-                        if (errors.siteId) setErrors({ ...errors, siteId: null });
-                      }}
-                      className={`flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-gray-50 transition border-b border-gray-100 last:border-b-0 ${isSelected ? 'bg-blue-50' : ''}`}
-                    >
-                      <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition ${isSelected ? 'bg-blue-600 border-blue-600' : 'border-gray-300'}`}>
-                        {isSelected && <Check className="w-3 h-3 text-white" />}
-                      </div>
-                      <span className={`text-sm ${isSelected ? 'font-semibold text-blue-900' : 'text-gray-700'}`}>
-                        {siteName}
-                      </span>
-                    </div>
-                  );
-                })}
               </div>
-              {(errors.assignedSites || errors.siteId) && (
-                <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-                  <AlertCircle className="w-3 h-3" />
-                  {errors.assignedSites || errors.siteId}
-                </p>
+
+              {/* Email */}
+              <div>
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                  <Mail className="w-4 h-4" />
+                  Email Address <span className="text-red-500">*</span>
+                </label>
+                <input
+                  placeholder="john@example.com"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => {
+                    setFormData({ ...formData, email: e.target.value });
+                    if (errors.email) setErrors({ ...errors, email: null });
+                  }}
+                  className={`w-full border ${errors.email ? 'border-red-500' : 'border-gray-300'} px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                />
+                {errors.email && (
+                  <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" />
+                    {errors.email}
+                  </p>
+                )}
+              </div>
+
+              {/* Phone Number */}
+              <div>
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                  <Phone className="w-4 h-4" />
+                  Phone Number <span className="text-red-500">*</span>
+                </label>
+                <input
+                  placeholder="+91 98765 43210"
+                  type="tel"
+                  value={formData.mobile}
+                  onChange={(e) => {
+                    setFormData({ ...formData, mobile: e.target.value });
+                    if (errors.mobile) setErrors({ ...errors, mobile: null });
+                  }}
+                  className={`w-full border ${errors.mobile ? 'border-red-500' : 'border-gray-300'} px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                />
+                {errors.mobile && (
+                  <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" />
+                    {errors.mobile}
+                  </p>
+                )}
+              </div>
+
+              {/* Address */}
+              <div>
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                  <MapPin className="w-4 h-4" />
+                  Address <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  placeholder="Enter full address"
+                  value={formData.address}
+                  onChange={(e) => {
+                    setFormData({ ...formData, address: e.target.value });
+                    if (errors.address) setErrors({ ...errors, address: null });
+                  }}
+                  rows={3}
+                  className={`w-full border ${errors.address ? 'border-red-500' : 'border-gray-300'} px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none`}
+                />
+                {errors.address && (
+                  <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" />
+                    {errors.address}
+                  </p>
+                )}
+              </div>
+
+              {/* Password */}
+              <div>
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                  <Lock className="w-4 h-4" />
+                  Password <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <input
+                    placeholder="Enter password (min 6 characters)"
+                    type={showPassword ? "text" : "password"}
+                    value={formData.password}
+                    onChange={(e) => {
+                      setFormData({ ...formData, password: e.target.value });
+                      if (errors.password) setErrors({ ...errors, password: null });
+                    }}
+                    className={`w-full border ${errors.password ? 'border-red-500' : 'border-gray-300'} px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-10`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="w-5 h-5" />
+                    ) : (
+                      <Eye className="w-5 h-5" />
+                    )}
+                  </button>
+                </div>
+                {errors.password && (
+                  <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" />
+                    {errors.password}
+                  </p>
+                )}
+              </div>
+
+              {/* Project Manager Selection (for Supervisors) */}
+              {activeTab === 'Supervisors' && (
+                <div>
+                  <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                    <User className="w-4 h-4" />
+                    Project Manager <span className="text-red-500">*</span>
+                  </label>
+                  {loadingPMs ? (
+                    <div className="w-full border border-gray-300 px-4 py-3 rounded-lg bg-gray-50 flex items-center justify-center">
+                      <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mr-2"></div>
+                      <span className="text-sm text-gray-600">Loading...</span>
+                    </div>
+                  ) : (
+                    <>
+                      <select
+                        value={formData.projectManagerId}
+                        onChange={(e) => {
+                          setFormData({ ...formData, projectManagerId: e.target.value });
+                          if (errors.projectManagerId) setErrors({ ...errors, projectManagerId: null });
+                        }}
+                        className={`w-full border ${errors.projectManagerId ? 'border-red-500' : 'border-gray-300'} px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                      >
+                        <option value="">Select Project Manager</option>
+                        {projectManagers.map((pm) => (
+                          <option key={pm._id || pm.id} value={pm._id || pm.id}>
+                            {pm.name}
+                          </option>
+                        ))}
+                      </select>
+                      {errors.projectManagerId && (
+                        <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                          <AlertCircle className="w-3 h-3" />
+                          {errors.projectManagerId}
+                        </p>
+                      )}
+                    </>
+                  )}
+                </div>
               )}
-            </>
-          )}
 
-          {activeTab === 'Project Managers' && formData.assignedSites.length > 0 && (
-            <p className="text-xs text-blue-600 mt-2 font-medium">
-              {formData.assignedSites.length} site(s) selected
-            </p>
-          )}
-        </div>
+              {/* Site Selection */}
+              <div>
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                  <Building2 className="w-4 h-4" />
+                  {activeTab === 'Project Managers' ? 'Assigned Sites (Multiple)' : 'Assigned Site'}
+                  <span className="text-red-500">*</span>
+                </label>
 
-        {/* Supervisor Selection (for Project Managers) */}
-        {activeTab === 'Project Managers' && (
-          <div>
-            <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-              <Users className="w-4 h-4" />
-              Assign Supervisors (Optional)
-            </label>
-            {loadingSupervisors ? (
-              <div className="w-full border border-gray-300 px-4 py-3 rounded-lg bg-gray-50 flex items-center justify-center">
-                <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mr-2"></div>
-                <span className="text-sm text-gray-600">Loading supervisors...</span>
-              </div>
-            ) : supervisors.length === 0 ? (
-              <div className="border border-gray-300 rounded-lg p-4 text-center text-sm text-gray-500">
-                No supervisors available
-              </div>
-            ) : (
-              <div className="border border-gray-300 rounded-lg max-h-48 overflow-y-auto">
-                {supervisors.map((supervisor) => {
-                  const supervisorId = supervisor._id || supervisor.id;
-                  const isSelected = formData.assignedSupervisors.includes(supervisorId);
+                {loadingSites ? (
+                  <div className="w-full border border-gray-300 px-4 py-3 rounded-lg bg-gray-50 flex items-center justify-center">
+                    <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mr-2"></div>
+                    <span className="text-sm text-gray-600">Loading sites...</span>
+                  </div>
+                ) : sites.length === 0 ? (
+                  <div className="border border-gray-300 rounded-lg p-4 text-center text-sm text-gray-500">
+                    No sites available
+                  </div>
+                ) : (
+                  <>
+                    <div className={`border ${errors.assignedSites || errors.siteId ? 'border-red-500' : 'border-gray-300'} rounded-lg max-h-48 overflow-y-auto`}>
+                      {sites.map((site) => {
+                        const siteId = site._id || site.id;
+                        const siteName = site.name || site.siteName;
+                        const isSelected = activeTab === 'Project Managers'
+                          ? formData.assignedSites.includes(siteId)
+                          : formData.siteId === siteId;
 
-                  return (
-                    <div
-                      key={supervisorId}
-                      onClick={() => handleToggleSupervisor(supervisorId)}
-                      className={`flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-gray-50 transition border-b border-gray-100 last:border-b-0 ${isSelected ? 'bg-blue-50' : ''}`}
-                    >
-                      <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition ${isSelected ? 'bg-blue-600 border-blue-600' : 'border-gray-300'}`}>
-                        {isSelected && <Check className="w-3 h-3 text-white" />}
-                      </div>
-                      <div className="flex-1">
-                        <span className={`text-sm ${isSelected ? 'font-semibold text-blue-900' : 'text-gray-700'}`}>
-                          {supervisor.name}
-                        </span>
-                        <p className="text-xs text-gray-500">{supervisor.email}</p>
-                      </div>
+                        return (
+                          <div
+                            key={siteId}
+                            onClick={() => {
+                              handleToggleSite(siteId);
+                              if (errors.assignedSites) setErrors({ ...errors, assignedSites: null });
+                              if (errors.siteId) setErrors({ ...errors, siteId: null });
+                            }}
+                            className={`flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-gray-50 transition border-b border-gray-100 last:border-b-0 ${isSelected ? 'bg-blue-50' : ''}`}
+                          >
+                            <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition ${isSelected ? 'bg-blue-600 border-blue-600' : 'border-gray-300'}`}>
+                              {isSelected && <Check className="w-3 h-3 text-white" />}
+                            </div>
+                            <span className={`text-sm ${isSelected ? 'font-semibold text-blue-900' : 'text-gray-700'}`}>
+                              {siteName}
+                            </span>
+                          </div>
+                        );
+                      })}
                     </div>
-                  );
-                })}
+                    {(errors.assignedSites || errors.siteId) && (
+                      <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                        <AlertCircle className="w-3 h-3" />
+                        {errors.assignedSites || errors.siteId}
+                      </p>
+                    )}
+                  </>
+                )}
+
+                {activeTab === 'Project Managers' && formData.assignedSites.length > 0 && (
+                  <p className="text-xs text-blue-600 mt-2 font-medium">
+                    {formData.assignedSites.length} site(s) selected
+                  </p>
+                )}
               </div>
-            )}
 
-            {formData.assignedSupervisors.length > 0 && (
-              <p className="text-xs text-blue-600 mt-2 font-medium">
-                {formData.assignedSupervisors.length} supervisor(s) selected
-              </p>
-            )}
+              {/* Supervisor Selection (for Project Managers) */}
+              {activeTab === 'Project Managers' && (
+                <div>
+                  <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                    <Users className="w-4 h-4" />
+                    Assign Supervisors (Optional)
+                  </label>
+                  {loadingSupervisors ? (
+                    <div className="w-full border border-gray-300 px-4 py-3 rounded-lg bg-gray-50 flex items-center justify-center">
+                      <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mr-2"></div>
+                      <span className="text-sm text-gray-600">Loading supervisors...</span>
+                    </div>
+                  ) : supervisors.length === 0 ? (
+                    <div className="border border-gray-300 rounded-lg p-4 text-center text-sm text-gray-500">
+                      No supervisors available
+                    </div>
+                  ) : (
+                    <div className="border border-gray-300 rounded-lg max-h-48 overflow-y-auto">
+                      {supervisors.map((supervisor) => {
+                        const supervisorId = supervisor._id || supervisor.id;
+                        const isSelected = formData.assignedSupervisors.includes(supervisorId);
+
+                        return (
+                          <div
+                            key={supervisorId}
+                            onClick={() => handleToggleSupervisor(supervisorId)}
+                            className={`flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-gray-50 transition border-b border-gray-100 last:border-b-0 ${isSelected ? 'bg-blue-50' : ''}`}
+                          >
+                            <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition ${isSelected ? 'bg-blue-600 border-blue-600' : 'border-gray-300'}`}>
+                              {isSelected && <Check className="w-3 h-3 text-white" />}
+                            </div>
+                            <div className="flex-1">
+                              <span className={`text-sm ${isSelected ? 'font-semibold text-blue-900' : 'text-gray-700'}`}>
+                                {supervisor.name}
+                              </span>
+                              <p className="text-xs text-gray-500">{supervisor.email}</p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {formData.assignedSupervisors.length > 0 && (
+                    <p className="text-xs text-blue-600 mt-2 font-medium">
+                      {formData.assignedSupervisors.length} supervisor(s) selected
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="sticky bottom-0 bg-gray-50 flex flex-col sm:flex-row justify-end gap-3 p-4 sm:p-6 border-t border-gray-200">
+              <button
+                onClick={() => {
+                  setShowAdd(false);
+                  setErrors({});
+                }}
+                className="w-full sm:w-auto px-6 py-2.5 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-100 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCreateUser}
+                className="w-full sm:w-auto px-6 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200"
+              >
+                Create User
+              </button>
+            </div>
           </div>
-        )}
-      </div>
-
-      <div className="sticky bottom-0 bg-gray-50 flex flex-col sm:flex-row justify-end gap-3 p-4 sm:p-6 border-t border-gray-200">
-        <button
-          onClick={() => {
-            setShowAdd(false);
-            setErrors({});
-          }}
-          className="w-full sm:w-auto px-6 py-2.5 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-100 transition-colors"
-        >
-          Cancel
-        </button>
-        <button
-          onClick={handleCreateUser}
-          className="w-full sm:w-auto px-6 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200"
-        >
-          Create User
-        </button>
-      </div>
-    </div>
-  </div>
-)}
+        </div>
+      )}
       {/* Edit User Modal */}
       {showEdit && selectedUser && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
