@@ -70,9 +70,17 @@ const SiteModal = ({ isOpen, onClose, site, onSave, mode }) => {
     }
 
     // Validate gates
-    const mainGateCount = formData.gates.filter(g => g.isMainGate).length;
-    if (mainGateCount > 1) {
-      newErrors.gates = 'Only one gate can be marked as main gate';
+    if (formData.gates.length > 0) {
+      const mainGateCount = formData.gates.filter(g => g.isMainGate).length;
+      if (mainGateCount > 1) {
+        newErrors.gates = 'Only one gate can be marked as main gate';
+      }
+
+      // Check if any gate has empty name
+      const hasEmptyGateName = formData.gates.some(g => !g.gateName || !g.gateName.trim());
+      if (hasEmptyGateName) {
+        newErrors.gates = 'All gates must have a name';
+      }
     }
 
     setErrors(newErrors);
@@ -86,7 +94,7 @@ const SiteModal = ({ isOpen, onClose, site, onSave, mode }) => {
       gates: [
         ...formData.gates,
         {
-          gateName: '',  // ✅ Use gateName, not name
+          gateName: '',
           isMainGate: formData.gates.length === 0,
           isActive: true
         }
@@ -324,8 +332,8 @@ const SiteModal = ({ isOpen, onClose, site, onSave, mode }) => {
                       <div className="flex-1 space-y-3">
                         <input
                           type="text"
-                          value={gate.name}
-                          onChange={(e) => updateGate(index, 'name', e.target.value)}
+                          value={gate.gateName}
+                          onChange={(e) => updateGate(index, 'gateName', e.target.value)}
                           placeholder={`Gate ${index + 1} name (e.g., Main Entrance, Back Gate)`}
                           className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
                         />
@@ -413,7 +421,6 @@ const SiteModal = ({ isOpen, onClose, site, onSave, mode }) => {
     </div>
   );
 };
-
 // View Site Modal
 const ViewSiteModal = ({ isOpen, onClose, site }) => {
   if (!isOpen || !site) return null;
@@ -505,7 +512,7 @@ const ViewSiteModal = ({ isOpen, onClose, site }) => {
           </div>
 
           {/* Site Stats */}
-          {/* <div>
+          <div>
             <h4 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
               <Building className="w-5 h-5 text-blue-600" />
               Site Statistics
@@ -519,16 +526,16 @@ const ViewSiteModal = ({ isOpen, onClose, site }) => {
                 <div className="text-3xl font-black text-green-700">{site.assignedSupervisors || 0}</div>
                 <div className="text-sm text-green-700 font-semibold mt-1">Supervisors</div>
               </div>
-              <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-4 rounded-xl border border-purple-200 text-center">
+              {/* <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-4 rounded-xl border border-purple-200 text-center">
                 <div className="text-3xl font-black text-purple-700">{site.totalDevices || 0}</div>
                 <div className="text-sm text-purple-700 font-semibold mt-1">Devices</div>
-              </div>
+              </div> */}
               <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-4 rounded-xl border border-orange-200 text-center">
                 <div className="text-3xl font-black text-orange-700">{site.gates?.length || 0}</div>
                 <div className="text-sm text-orange-700 font-semibold mt-1">Gates</div>
               </div> 
             </div>
-          </div> */}
+          </div>
 
           {/* Gates Information */}
           {site.gates && site.gates.length > 0 && (
@@ -673,12 +680,25 @@ const SiteCard = ({ site, onEdit, onView, onDelete }) => (
       </span>
     </div>
 
-    <div className="flex items-center gap-2 text-sm text-gray-600 mb-4 bg-gray-50 px-3 py-2 rounded-lg">
-      <MapPin className="w-4 h-4 text-blue-600 flex-shrink-0" />
-      <span className="font-medium truncate">{site.location}</span>
+    <div className="flex items-center justify-between mb-4 bg-gray-50 px-3 py-2 rounded-lg">
+
+      {/* 📍 Location */}
+      <div className="flex items-center gap-2 text-sm text-gray-600 min-w-0">
+        <MapPin className="w-4 h-4 text-blue-600 flex-shrink-0" />
+        <span className="font-medium truncate">{site.location}</span>
+      </div>
+
+      {/* 🚪 Gates */}
+      <div className="text-center ml-4 flex-shrink-0">
+        <div className="text-xs text-gray-500 leading-none">Gates</div>
+        <div className="font-bold text-orange-600 text-lg leading-tight">
+          {site.gates?.length || 0}
+        </div>
+      </div>
+
     </div>
 
-    {/* <div className="grid grid-cols-3 gap-3 mb-4 pb-4 border-b border-gray-100">
+    <div className="grid grid-cols-2 gap-3 mb-4 pb-4 border-b border-gray-100"> 
       <div className="text-center">
         <div className="text-xs text-gray-500 mb-1">PMs</div>
         <div className="font-bold text-blue-600 text-lg">{site.assignedPMs || 0}</div>
@@ -687,12 +707,9 @@ const SiteCard = ({ site, onEdit, onView, onDelete }) => (
         <div className="text-xs text-gray-500 mb-1">Supervisors</div>
         <div className="font-bold text-green-600 text-lg">{site.assignedSupervisors || 0}</div>
       </div>
-      <div className="text-center">
-        <div className="text-xs text-gray-500 mb-1">Gates</div>
-        <div className="font-bold text-orange-600 text-lg">{site.gates?.length || 0}</div>
-      </div>
-      <div className="text-center"> <div className="text-xs text-gray-500 mb-1">Devices</div> <div className="font-bold text-purple-600 text-lg">{site.totalDevices || 0}</div> </div>
-    </div> */}
+
+      {/* <div className="text-center"> <div className="text-xs text-gray-500 mb-1">Devices</div> <div className="font-bold text-purple-600 text-lg">{site.totalDevices || 0}</div> </div> */}
+    </div>
 
     <div className="grid grid-cols-3 gap-2">
       <button
