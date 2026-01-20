@@ -648,56 +648,50 @@ const EntryVehicles = () => {
  // Utility functions for direct Wasabi upload
 // Make sure your uploadToWasabiDirect function looks like this:
 
-const uploadToWasabiDirect = async (file, folder = "vehicles/entry") => {
+ const uploadToWasabi = async ({
+  file,
+  vehicleId,
+  type,          // "entry" | "exit"
+  index = null,  // 1–4 for photos, null for video/challan
+}) => {
   try {
-    const fileName = `${folder}/${Date.now()}-${Math.random().toString(36).substring(7)}-${file.name}`;
-    const fileType = file.type;
-
-    // console.log('📤 Getting signed URL for:', fileName);
-
-    // STEP 1: Get signed URL
     const token = localStorage.getItem("accessToken");
-    const urlResponse = await axios.post(
+
+    const ext = file.name.split(".").pop();
+    const filename = `${Date.now()}-${Math.random()
+      .toString(36)
+      .slice(2)}.${ext}`;
+
+    const { data } = await axios.post(
       `${API_URL}/api/uploads/upload-url`,
-      { fileName, fileType },
+      {
+        vehicleId,
+        type,
+        index,
+        fileName: filename,
+        fileType: file.type,
+      },
       {
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+          Authorization: `Bearer ${token}`,
+        },
       }
     );
 
-    // console.log('✅ Signed URL received');
-    // console.log('   fileKey:', urlResponse.data.fileKey);  // 🔥 CHECK THIS
+    const { uploadURL, fileKey } = data;
 
-    // STEP 2: Upload to Wasabi
-    await axios.put(urlResponse.data.uploadURL, file, {
-      headers: {
-        'Content-Type': fileType
-      }
+    await axios.put(uploadURL, file, {
+      headers: { "Content-Type": file.type },
+      transformRequest: [(d) => d],
     });
 
-    // console.log('✅ File uploaded to Wasabi');
-    
-    // 🔥 CRITICAL: Return the FILE KEY, not the upload URL
-    const fileKey = urlResponse.data.fileKey;
-    
-    // 🔥 VERIFY: File key should look like a path
-    if (!fileKey || !fileKey.includes('/')) {
-      console.error('❌ INVALID FILE KEY:', fileKey);
-      console.error('   Expected format: vehicles/entry/photos/123-front.jpg');
-      throw new Error('Invalid file key returned from server');
-    }
-    
-    // console.log('✅ Returning file key:', fileKey);
-    return fileKey;  // 🔥 This should be like "vehicles/entry/photos/123-front.jpg"
-
-  } catch (error) {
-    console.error('❌ Upload error:', error.response?.data || error.message);
-    throw error;
+    return fileKey;
+  } catch (err) {
+    console.error("❌ Wasabi upload failed:", err.response?.data || err);
+    throw err;
   }
 };
+
 
 const handleAllowEntry = async () => {
   try {
@@ -706,192 +700,125 @@ const handleAllowEntry = async () => {
 
     if (!anprData.vehicleNumber) {
       alert("❌ Vehicle number is required");
-      setLoading(false);
       return;
     }
 
-    // Vendor logic
-    const finalVendor = vendorInputMode === "manual" 
-      ? manualVendorName 
-      : vehicleDetails.vendorId;
-
-    if (!finalVendor || finalVendor.trim() === "") {
-      const proceedWithoutVendor = window.confirm(
-        "⚠️ No vendor selected. Would you like to continue without vendor information?\n\n" +
-        "Note: You can add vendor details later if needed."
-      );
-      
-      if (!proceedWithoutVendor) {
-        setLoading(false);
-        return;
-      }
+    const vehicleId = selectedVehicle?._id;
+    if (!vehicleId) {
+      alert("Invalid vehicle");
+      return;
     }
 
-    const finalVehicleType = vehicleDetails.vehicleType === 'OTHER' 
-      ? customVehicleType 
-      : vehicleDetails.vehicleType;
+    const finalVehicleType =
+      vehicleDetails.vehicleType === "OTHER"
+        ? customVehicleType
+        : vehicleDetails.vehicleType;
 
-    // console.log('\n🔍 DEBUG: mediaCapture keys:', Object.keys(mediaCapture));
+    const PHOTO_CONFIG = [
+      { key: "frontView", index: 1 },
+      { key: "backView", index: 2 },
+      { key: "loadView", index: 3 },
+      { key: "driverView", index: 4 },
+    ];
 
-    // 🔥 FIX: Create proper photo object with Wasabi keys
     const uploadedPhotos = {
       frontView: null,
       backView: null,
       loadView: null,
-      driverView: null
+      driverView: null,
     };
-    
-    // 🔥 Define how to map your mediaCapture keys to standard photo keys
-    // UPDATE THIS MAP based on your actual mediaCapture structure
-    const photoKeyMapping = {
-      // Format: 'yourMediaCaptureKey': 'standardPhotoKey'
-      'frontView': 'frontView',
-      'backView': 'backView',
-      'loadView': 'loadView',
-      'driverView': 'driverView',
-      // If your keys are different, update like this:
-      // 'photo1': 'frontView',
-      // 'photo2': 'backView',
-      // 'photo3': 'loadView',
-      // 'photo4': 'driverView',
-    };
-    
-    // console.log('📤 Starting photo uploads...');
-    
-    // Upload photos with proper mapping
-    for (const [mediaCaptureKey, photo] of Object.entries(mediaCapture)) {
-      if (photo && mediaCaptureKey !== "videoClip" && typeof photo === 'string') {
-        const standardKey = photoKeyMapping[mediaCaptureKey];
-        
-        if (standardKey) {
-          try {
-            // console.log(`📸 Uploading ${mediaCaptureKey} → ${standardKey}`);
-            const file = base64ToFile(photo, `${Date.now()}-${mediaCaptureKey}.jpg`);
-            const wasabiFileKey = await uploadToWasabiDirect(file, "vehicles/entry/photos");
-            
-            if (wasabiFileKey) {
-              uploadedPhotos[standardKey] = wasabiFileKey;
-              // console.log(`✅ ${standardKey} uploaded:`, wasabiFileKey);
-            }
-          } catch (error) {
-            console.error(`❌ Failed to upload ${mediaCaptureKey}:`, error);
-          }
-        } else {
-          console.warn(`⚠️ No mapping found for key: ${mediaCaptureKey}`);
-        }
-      }
+
+    // 📸 PHOTO UPLOADS
+    for (const photo of PHOTO_CONFIG) {
+      const base64 = mediaCapture?.[photo.key];
+      if (!base64) continue;
+
+      const file = base64ToFile(
+        base64,
+        `${photo.key}-${Date.now()}.jpg`
+      );
+
+      const fileKey = await uploadToWasabi({
+        file,
+        vehicleId,
+        type: "entry",
+        index: photo.index,
+      });
+
+      uploadedPhotos[photo.key] = fileKey;
     }
 
-    // console.log('📊 Final uploadedPhotos:', uploadedPhotos);
+    // 🎥 VIDEO
+    let videoKey = null;
+    if (mediaCapture?.videoClip) {
+      const videoFile = base64ToFile(
+        mediaCapture.videoClip,
+        `entry-video-${Date.now()}.webm`
+      );
 
-    // Upload video
-    let videoUrl = null;
-    if (mediaCapture.videoClip) {
-      try {
-        // console.log('📹 Uploading video...');
-        const videoFile = base64ToFile(
-          mediaCapture.videoClip,
-          `${Date.now()}-video.webm`
-        );
-        videoUrl = await uploadToWasabiDirect(videoFile, "vehicles/entry/videos");
-        // console.log("✅ Video uploaded:", videoUrl);
-      } catch (error) {
-        console.error('❌ Failed to upload video:', error);
-      }
+      videoKey = await uploadToWasabi({
+        file: videoFile,
+        vehicleId,
+        type: "entry",
+      });
     }
 
-    // Upload challan image
-    let challanImageUrl = null;
-    if (vehicleDetails.challanImage) {
-      try {
-        // console.log('📄 Uploading challan...');
-        const challanFile = base64ToFile(
-          vehicleDetails.challanImage,
-          `${Date.now()}-challan.jpg`
-        );
-        challanImageUrl = await uploadToWasabiDirect(challanFile, "vehicles/entry/challan");
-        // console.log("✅ Challan uploaded:", challanImageUrl);
-      } catch (error) {
-        console.error('❌ Failed to upload challan:', error);
-      }
+    // 📄 CHALLAN
+    let challanKey = null;
+    if (vehicleDetails?.challanImage) {
+      const challanFile = base64ToFile(
+        vehicleDetails.challanImage,
+        `challan-${Date.now()}.jpg`
+      );
+
+      challanKey = await uploadToWasabi({
+        file: challanFile,
+        vehicleId,
+        type: "entry",
+      });
     }
 
-    // 🔥 CRITICAL: Prepare entry data with WASABI FILE KEYS, not base64
+    // 📦 FINAL PAYLOAD
     const entryData = {
       vehicleNumber: anprData.vehicleNumber.toUpperCase().trim(),
       vehicleType: finalVehicleType || "TRUCK",
       driverName: driverName || "",
       entryTime: new Date().toISOString(),
       purpose: vehicleDetails.materialType || "Material Delivery",
-      loadStatus: vehicleDetails.loadStatus.toUpperCase() || "FULL",
+      loadStatus: vehicleDetails.loadStatus?.toUpperCase() || "FULL",
       entryGate: "Manual Entry",
       notes: vehicleDetails.notes || "",
       siteId: vehicleDetails.siteId,
       media: {
         anprImage: anprData.capturedImage || null,
-        photos: uploadedPhotos,  // 🔥 These should be Wasabi keys
-        video: videoUrl,
-        challanImage: challanImageUrl,
-      }
+        photos: uploadedPhotos,
+        video: videoKey,
+        challanImage: challanKey,
+      },
     };
 
-    // Add vendor if available
-    if (finalVendor && finalVendor.trim() !== "") {
-      entryData.vendorId = finalVendor;
-    }
-
-    // console.log("\n📦 FINAL PAYLOAD:");
-    // console.log("vehicleNumber:", entryData.vehicleNumber);
-    // console.log("media.photos:", entryData.media.photos);
-    // console.log("media.video:", entryData.media.video);
-    // console.log("media.challanImage:", entryData.media.challanImage);
-
-    // 🔥 VERIFY: Check that photo keys look like file paths
-    Object.entries(entryData.media.photos).forEach(([key, value]) => {
-      if (value) {
-        if (!value.includes('/')) {
-          console.error(`❌ WRONG FORMAT for ${key}:`, value);
-          console.error('   Expected: vehicles/entry/photos/123-front.jpg');
-          console.error('   Got:', value);
-        } else {
-          // console.log(`✅ ${key} format correct:`, value);
-        }
-      }
-    });
-
-    // Send to your vehicle entry API
-    const response = await axios.post(
+    await axios.post(
       `${API_URL}/api/supervisor/vehicles/entry`,
       entryData,
-      { 
-        headers: { 
+      {
+        headers: {
           Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+          "Content-Type": "application/json",
+        },
       }
     );
 
-    // console.log("\n✅ SUCCESS Response:", response.data);
     alert("✅ Vehicle entry recorded successfully!");
     resetForm();
 
-  } catch (error) {
-    console.error("\n❌ ERROR Details:");
-    console.error("Status:", error.response?.status);
-    console.error("Message:", error.response?.data?.message);
-    console.error("Full error:", error.response?.data);
-    
-    if (error.response?.status === 400) {
-      alert(`❌ ${error.response.data.message}`);
-    } else if (error.response?.status === 409) {
-      alert(`⚠️ ${error.response.data.message}`);
-    } else {
-      alert("❌ Failed to record entry. Check console for details.");
-    }
+  } catch (err) {
+    console.error("❌ Entry error:", err.response?.data || err);
+    alert(err.response?.data?.message || "Failed to record entry");
   } finally {
     setLoading(false);
   }
 };
+
 
 
 
