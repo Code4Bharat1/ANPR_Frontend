@@ -34,7 +34,7 @@ const Sidebar = ({ isOpen, onClose }) => {
   return (
     <>
       {isOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden" onClick={onClose} />
+        <div className="fixed inset-0 bg-black/80 z-40 lg:hidden" onClick={onClose} />
       )}
 
       <aside className={`fixed top-0 left-0 h-full w-72 bg-white border-r border-gray-200 z-50 transform transition-transform duration-300 ${
@@ -101,7 +101,7 @@ const Sidebar = ({ isOpen, onClose }) => {
 
       {/* Logout Confirmation Modal */}
       {showLogoutModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl p-6 max-w-sm w-full shadow-2xl">
             <h3 className="text-xl font-bold text-gray-900 mb-2">Confirm Logout</h3>
             <p className="text-gray-600 mb-6">Are you sure you want to logout?</p>
