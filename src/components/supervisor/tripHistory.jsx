@@ -56,6 +56,8 @@ const TripHistory = () => {
 
       const data = response.data.data || response.data || [];
       setTrips(data);
+      // console.log(data);
+      
     } catch (error) {
       console.error('❌ Error fetching trip history:', error);
       setError(error.response?.data?.message || 'Failed to fetch trip history. Please try again.');
@@ -722,7 +724,9 @@ const TripHistory = () => {
                         <div>
                           <div className="text-xs text-blue-600 font-medium mb-2">TRIP INFO</div>
                           <div className="font-semibold text-gray-900 mb-1">{selectedTrip.tripId || 'N/A'}</div>
-                          <div className="text-sm text-gray-600">Material: {selectedTrip.materialType || 'N/A'}</div>
+                          <div className="text-sm text-gray-600">Material: {selectedTrip.loadStatus || 'N/A'}</div>
+                          <div className="text-sm text-gray-600">Type: {selectedTrip.purpose || 'N/A'}</div>
+                          <div className="text-sm text-gray-600">Count: {selectedTrip.countOfMaterials || 'N/A'}</div>
                         </div>
                       </div>
                     </div>

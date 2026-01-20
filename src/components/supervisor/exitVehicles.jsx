@@ -724,53 +724,84 @@ const ExitVehicles = () => {
 
             <div className="space-y-6">
               {/* Vehicle Summary */}
-              <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-                <h2 className="text-lg font-bold text-gray-900 mb-4">
-                  Vehicle Summary
-                </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <div className="text-xs text-gray-500 mb-1">
-                      Vehicle Number
-                    </div>
-                    <div className="text-xl font-bold text-gray-900">
-                      {selectedVehicle.vehicleNumber || "N/A"}
-                    </div>
-                  </div>
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <div className="text-xs text-gray-500 mb-1">Vendor</div>
-                    <div className="font-semibold text-gray-900">
-                      {selectedVehicle.vendor || "Unknown"}
-                    </div>
-                  </div>
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <div className="text-xs text-gray-500 mb-1">Driver</div>
-                    <div className="font-semibold text-gray-900">
-                      {selectedVehicle.driver || "N/A"}
-                    </div>
-                  </div>
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <div className="text-xs text-gray-500 mb-1">
-                      Material Type
-                    </div>
-                    <div className="font-semibold text-gray-900">
-                      {selectedVehicle.materialType || "N/A"}
-                    </div>
-                  </div>
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <div className="text-xs text-gray-500 mb-1">Entry Time</div>
-                    <div className="font-semibold text-gray-900">
-                      {selectedVehicle.entryTime || "N/A"}
-                    </div>
-                  </div>
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <div className="text-xs text-gray-500 mb-1">Duration</div>
-                    <div className="font-semibold text-gray-900">
-                      {selectedVehicle.duration || "0h 0m"}
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+  <div className="flex items-center justify-between mb-5">
+    <h2 className="text-lg font-bold text-gray-900">
+      Vehicle Summary
+    </h2>
+
+   
+  </div>
+
+  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+
+    {/* Vehicle Number */}
+    <div className="bg-gray-50 rounded-xl p-4">
+      <div className="text-xs text-gray-500 mb-1">Vehicle Number</div>
+      <div className="text-xl font-bold text-gray-900">
+        {selectedVehicle.vehicleNumber ?? "N/A"}
+      </div>
+    </div>
+
+    {/* Vendor */}
+    <div className="bg-gray-50 rounded-xl p-4">
+      <div className="text-xs text-gray-500 mb-1">Vendor</div>
+      <div className="font-semibold text-gray-900">
+        {selectedVehicle.vendor ?? "Unknown"}
+      </div>
+    </div>
+
+    {/* Driver */}
+    <div className="bg-gray-50 rounded-xl p-4">
+      <div className="text-xs text-gray-500 mb-1">Driver</div>
+      <div className="font-semibold text-gray-900">
+        {selectedVehicle.driver ?? "N/A"}
+      </div>
+    </div>
+
+    {/* Material Details */}
+    <div className="bg-gray-50 rounded-xl p-4 c">
+      <div className="text-xs text-gray-500 mb-2">Material Details
+       <span className="px-3 py-1 text-xs rounded-full bg-blue-50 text-blue-700 font-semibold">
+        {selectedVehicle.loadStatus ?? "N/A"}
+    </span>
+</div>
+      <div className="flex flex-wrap gap-4 text-sm">
+        <div>
+          <span className="text-gray-500">Type:</span>{" "}
+          <span className="font-semibold text-gray-900">
+            {selectedVehicle.purpose ?? "N/A"}
+          </span>
+        </div>
+
+        <div>
+          <span className="text-gray-500">Count:</span>{" "}
+          <span className="font-semibold text-gray-900">
+            {selectedVehicle.countOfMaterials ?? "N/A"}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    {/* Entry Time */}
+    <div className="bg-gray-50 rounded-xl p-4">
+      <div className="text-xs text-gray-500 mb-1">Entry Time</div>
+      <div className="font-semibold text-gray-900">
+        {selectedVehicle.entryTime ?? "N/A"}
+      </div>
+    </div>
+
+    {/* Duration */}
+    <div className="bg-gray-50 rounded-xl p-4">
+      <div className="text-xs text-gray-500 mb-1">Duration</div>
+      <div className="font-semibold text-gray-900">
+        {selectedVehicle.duration ?? "0h 0m"}
+      </div>
+    </div>
+
+  </div>
+</div>
+
 
               {/* Exit Checklist */}
               <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">

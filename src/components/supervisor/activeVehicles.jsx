@@ -773,6 +773,28 @@ const ActiveVehicles = () => {
                           </div>
                         </div>
                       </div>
+                      <div className="bg-gray-50 rounded-xl p-4 c">
+                        <div className="text-xs text-gray-500 mb-2">Material Details
+                          <span className="px-3 py-1 text-xs rounded-full bg-blue-50 text-blue-700 font-semibold">
+                            {selectedVehicle.loadStatus ?? "N/A"}
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap gap-4 text-sm">
+                          <div>
+                            <span className="text-gray-500">Type:</span>{" "}
+                            <span className="font-semibold text-gray-900">
+                              {selectedVehicle.purpose ?? "N/A"}
+                            </span>
+                          </div>
+
+                          <div>
+                            <span className="text-gray-500">Count:</span>{" "}
+                            <span className="font-semibold text-gray-900">
+                              {selectedVehicle.countOfMaterials ?? "N/A"}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
 
                       {/* Timeline */}
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

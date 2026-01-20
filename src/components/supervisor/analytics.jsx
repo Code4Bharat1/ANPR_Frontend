@@ -542,7 +542,7 @@ const Analytics = () => {
         {/* Vehicle Types & Top Vendors */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Vehicle Types */}
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+          {/* <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
             <div className="flex items-center gap-3 mb-6">
               <div className="p-2 bg-gradient-to-br from-purple-500 to-violet-500 rounded-lg">
                 <Truck className="w-5 h-5 text-white" />
@@ -594,7 +594,7 @@ const Analytics = () => {
                 </div>
               )}
             </div>
-          </div>
+          </div> */}
 
           {/* Top Vendors */}
           <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
