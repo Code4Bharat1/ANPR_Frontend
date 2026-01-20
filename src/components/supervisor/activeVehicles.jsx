@@ -271,10 +271,10 @@ const ActiveVehicles = () => {
   const getStatusBadge = (status) => {
     const configs = {
       loading: { bg: 'bg-gradient-to-r from-blue-100 to-blue-50', text: 'text-blue-700', icon: Package, label: 'Loading' },
-      unloading: { bg: 'bg-gradient-to-r from-green-100 to-green-50', text: 'text-green-700', icon: Package, label: 'Unloading' },
+      // unloading: { bg: 'bg-gradient-to-r from-green-100 to-green-50', text: 'text-green-700', icon: Package, label: 'Unloading' },
       overstay: { bg: 'bg-gradient-to-r from-orange-100 to-orange-50', text: 'text-orange-700', icon: AlertCircle, label: 'Overstay' },
-      meeting: { bg: 'bg-gradient-to-r from-purple-100 to-purple-50', text: 'text-purple-700', icon: Users, label: 'Meeting' },
-      maintenance: { bg: 'bg-gradient-to-r from-yellow-100 to-yellow-50', text: 'text-yellow-700', icon: ToolCase, label: 'Maintenance' },
+      // meeting: { bg: 'bg-gradient-to-r from-purple-100 to-purple-50', text: 'text-purple-700', icon: Users, label: 'Meeting' },
+      // maintenance: { bg: 'bg-gradient-to-r from-yellow-100 to-yellow-50', text: 'text-yellow-700', icon: ToolCase, label: 'Maintenance' },
       exited: { bg: 'bg-gradient-to-r from-gray-100 to-gray-50', text: 'text-gray-700', icon: CheckCircle, label: 'Exited' }
     };
 
@@ -292,10 +292,10 @@ const ActiveVehicles = () => {
   const stats = {
     total: vehicles.length,
     loading: vehicles.filter(v => v.status === 'loading').length,
-    unloading: vehicles.filter(v => v.status === 'unloading').length,
+    // unloading: vehicles.filter(v => v.status === 'unloading').length,
     overstay: vehicles.filter(v => v.status === 'overstay').length,
-    meeting: vehicles.filter(v => v.status === 'meeting').length,
-    maintenance: vehicles.filter(v => v.status === 'maintenance').length,
+    // meeting: vehicles.filter(v => v.status === 'meeting').length,
+    // maintenance: vehicles.filter(v => v.status === 'maintenance').length,
   };
 
   const capacityPercentage = Math.min(Math.round((stats.total / 100) * 100), 100);
@@ -403,7 +403,7 @@ const ActiveVehicles = () => {
           </div>
 
           {/* Unloading Card */}
-          <div className="bg-gradient-to-br from-white to-green-50 rounded-xl p-5 border border-green-100 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
+          {/* <div className="bg-gradient-to-br from-white to-green-50 rounded-xl p-5 border border-green-100 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
             <div className="flex items-center justify-between mb-3">
               <div className="text-sm text-gray-600 font-medium">Unloading</div>
               <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center shadow-sm">
@@ -417,7 +417,7 @@ const ActiveVehicles = () => {
                 {stats.unloading > 0 ? `${stats.unloading} active` : 'None'}
               </div>
             </div>
-          </div>
+          </div> */}
         </div>
 
         {/* Enhanced Search & Filter Bar */}
@@ -442,10 +442,10 @@ const ActiveVehicles = () => {
               >
                 <option value="all">All Status ({vehicles.length})</option>
                 <option value="loading">Loading ({stats.loading})</option>
-                <option value="unloading">Unloading ({stats.unloading})</option>
+                {/* <option value="unloading">Unloading ({stats.unloading})</option> */}
                 <option value="overstay">Overstay ({stats.overstay})</option>
-                <option value="meeting">Meeting ({stats.meeting})</option>
-                <option value="maintenance">Maintenance ({stats.maintenance})</option>
+                {/* <option value="meeting">Meeting ({stats.meeting})</option> */}
+                {/* <option value="maintenance">Maintenance ({stats.maintenance})</option> */}
               </select>
 
               <div className="flex items-center gap-2 bg-blue-50 px-4 py-3 rounded-lg">
