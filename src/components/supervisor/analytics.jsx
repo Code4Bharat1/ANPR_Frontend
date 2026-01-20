@@ -5,7 +5,7 @@ import SupervisorLayout from './SupervisorLayout';
 import axios from 'axios';
 import {
   Download, Calendar, TrendingUp, TrendingDown, Activity,
-  Clock, Car, CheckCircle, XCircle, BarChart3, Loader2, 
+  Clock, Car, CheckCircle, XCircle, BarChart3, Loader2,
   Users, ArrowUpRight, ArrowDownRight, PieChart, LineChart,
   Target, Shield, Zap, Filter, RefreshCw, Award,
   Truck, Package, Building2, Database, AlertCircle
@@ -49,20 +49,36 @@ const Analytics = () => {
         `${API_URL}/api/supervisor/analytics?period=${timeFilter}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      
+
       if (response.data) {
         setAnalytics(response.data.analytics || analytics);
         setDailyTrends(response.data.dailyTrends || []);
         setHourlyTrends(response.data.hourlyTrends || []);
-        setVehicleTypes(response.data.vehicleTypes || []);
-        setTopVendors(response.data.topVendors || []);
-        
+        setVehicleTypes(response.data.vehicleTypes || []); // ✅ Now populated from backend
+        setTopVendors(response.data.topVendors || []); // ✅ Now includes vendor names
+
         // Enhanced performance metrics
         setPerformanceMetrics([
-          { label: 'Entry Processing', value: response.data.analytics?.avgProcessingTime || '--', trend: 'faster' },
-          { label: 'Exit Processing', value: '12 min', trend: 'stable' },
-          { label: 'Security Checks', value: '98%', trend: 'improved' },
-          { label: 'Compliance Rate', value: '99.5%', trend: 'excellent' }
+          {
+            label: 'Entry Processing',
+            value: response.data.analytics?.avgProcessingTime || '--',
+            trend: 'faster'
+          },
+          {
+            label: 'Exit Processing',
+            value: response.data.analytics?.avgDuration || '--',
+            trend: 'stable'
+          },
+          {
+            label: 'Security Checks',
+            value: '98%',
+            trend: 'improved'
+          },
+          {
+            label: 'Compliance Rate',
+            value: '99.5%',
+            trend: 'excellent'
+          }
         ]);
       }
     } catch (error) {
@@ -77,7 +93,7 @@ const Analytics = () => {
     try {
       const token = localStorage.getItem('accessToken');
       const downloadUrl = `${API_URL}/api/supervisor/analytics/export?period=${timeFilter}`;
-      
+
       const response = await fetch(downloadUrl, {
         method: 'GET',
         headers: {
@@ -92,16 +108,16 @@ const Analytics = () => {
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      
+
       const today = new Date();
       const dateStr = today.toISOString().split('T')[0];
       link.setAttribute('download', `analytics-report-${dateStr}.xlsx`);
-      
+
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-      
+
     } catch (error) {
       console.error('Error downloading report:', error);
       alert('Failed to download report. Please try again.');
@@ -109,14 +125,14 @@ const Analytics = () => {
   };
 
   const maxDailyValue = dailyTrends.length > 0
-    ? Math.max(1, ...dailyTrends.map(d => Math.max(d.entries || 0, d.exits || 0)))
-    : 1;
+    ? Math.max(10, ...dailyTrends.map(d => Math.max(d.entries || 0, d.exits || 0)))
+    : 10;
 
   const maxHourlyValue = hourlyTrends.length > 0
     ? Math.max(...hourlyTrends.map(h => h.count))
     : 1;
 
-  if (loading) {
+  if (loading && dailyTrends.length === 0) {
     return (
       <SupervisorLayout>
         <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)]">
@@ -136,15 +152,12 @@ const Analytics = () => {
 
   return (
     <SupervisorLayout>
-      <div className="max-w-5xl ">
+      <div className="max-w-7xl mx-auto px-4">
         {/* Enhanced Header */}
         <div className="mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <div className="flex items-center gap-3 mb-2">
-                {/* <div className="p-2 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl">
-                  <BarChart3 className="w-6 h-6 text-white" />
-                </div> */}
                 <div>
                   <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Analytics Dashboard</h1>
                   <p className="text-gray-600 mt-1">Data-driven insights and operational intelligence</p>
@@ -161,7 +174,7 @@ const Analytics = () => {
                   <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
                   {refreshing ? 'Refreshing...' : 'Refresh'}
                 </button>
-                
+
                 <div className="bg-gradient-to-r from-white to-blue-50 rounded-xl p-2 border border-blue-100 shadow-sm">
                   <div className="flex items-center gap-2">
                     <Calendar className="w-5 h-5 text-blue-600" />
@@ -305,43 +318,53 @@ const Analytics = () => {
             </div>
 
             <div className="p-6">
-              <div className="h-80">
-                <div className="flex items-end justify-between h-full gap-4">
-                  {dailyTrends.map((data, idx) => (
-                    <div key={idx} className="flex-1 flex flex-col items-center gap-3 h-full group">
-                      <div className="flex-1 w-full flex items-end justify-center gap-1">
-                        {/* Entry Bar */}
-                        <div className="relative flex-1 flex flex-col justify-end">
-                          <div
-                            className="bg-gradient-to-t from-blue-500 to-blue-600 rounded-t-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-300 cursor-pointer min-h-[8px]"
-                            style={{ height: `${(data.entries / maxDailyValue) * 100}%` }}
-                          >
-                            <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-xs px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition whitespace-nowrap z-10 shadow-xl before:content-[''] before:absolute before:left-1/2 before:-bottom-1 before:transform before:-translate-x-1/2 before:w-2 before:h-2 before:bg-gray-900 before:rotate-45">
-                              <div className="font-bold">{data.entries} entries</div>
-                              <div className="text-gray-300">{data.day}</div>
+              {dailyTrends.length > 0 ? (
+                <div className="h-80">
+                  <div className="flex items-end justify-between h-full gap-2 sm:gap-4">
+                    {dailyTrends.map((data, idx) => (
+                      <div key={idx} className="flex-1 flex flex-col items-center gap-3 h-full group">
+                        <div className="flex-1 w-full flex items-end justify-center gap-1">
+                          {/* Entry Bar */}
+                          <div className="relative flex-1 flex flex-col justify-end h-full">
+                            <div
+                              className="bg-gradient-to-t from-blue-500 to-blue-600 rounded-t-lg min-h-[8px]"
+                              style={{ height: `${(data.entries / maxDailyValue) * 100}%` }}
+                            >
+
+                              <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-xs px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition whitespace-nowrap z-10 shadow-xl before:content-[''] before:absolute before:left-1/2 before:-bottom-1 before:transform before:-translate-x-1/2 before:w-2 before:h-2 before:bg-gray-900 before:rotate-45">
+                                <div className="font-bold">{data.entries} entries</div>
+                                <div className="text-gray-300">{data.day}</div>
+                              </div>
+                            </div>
+                          </div>
+                          {/* Exit Bar */}
+                          <div className="relative flex-1 flex flex-col justify-end">
+                            <div
+                              className="bg-gradient-to-t from-gray-400 to-gray-500 rounded-t-lg hover:from-gray-500 hover:to-gray-600 transition-all duration-300 cursor-pointer min-h-[8px]"
+                              style={{ height: `${(data.exits / maxDailyValue) * 100}%` }}
+                            >
+                              <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-xs px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition whitespace-nowrap z-10 shadow-xl before:content-[''] before:absolute before:left-1/2 before:-bottom-1 before:transform before:-translate-x-1/2 before:w-2 before:h-2 before:bg-gray-900 before:rotate-45">
+                                <div className="font-bold">{data.exits} exits</div>
+                                <div className="text-gray-300">{data.day}</div>
+                              </div>
                             </div>
                           </div>
                         </div>
-                        {/* Exit Bar */}
-                        <div className="relative flex-1 flex flex-col justify-end">
-                          <div
-                            className="bg-gradient-to-t from-gray-400 to-gray-500 rounded-t-lg hover:from-gray-500 hover:to-gray-600 transition-all duration-300 cursor-pointer min-h-[8px]"
-                            style={{ height: `${(data.exits / maxDailyValue) * 100}%` }}
-                          >
-                            <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-xs px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition whitespace-nowrap z-10 shadow-xl before:content-[''] before:absolute before:left-1/2 before:-bottom-1 before:transform before:-translate-x-1/2 before:w-2 before:h-2 before:bg-gray-900 before:rotate-45">
-                              <div className="font-bold">{data.exits} exits</div>
-                              <div className="text-gray-300">{data.day}</div>
-                            </div>
-                          </div>
+                        <div className="text-xs sm:text-sm font-semibold text-gray-700 bg-gray-50 px-2 sm:px-3 py-1.5 rounded-lg min-w-[45px] sm:min-w-[60px] text-center">
+                          {data.day}
                         </div>
                       </div>
-                      <div className="text-sm font-semibold text-gray-700 bg-gray-50 px-3 py-1.5 rounded-lg min-w-[60px] text-center">
-                        {data.day}
-                      </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="h-80 flex items-center justify-center text-gray-400">
+                  <div className="text-center">
+                    <BarChart3 className="w-16 h-16 mx-auto mb-3 opacity-50" />
+                    <p>No data available for this period</p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -351,7 +374,7 @@ const Analytics = () => {
             <div className="bg-gradient-to-br from-orange-500 via-orange-600 to-pink-600 rounded-2xl p-6 text-white shadow-xl overflow-hidden relative">
               <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16"></div>
               <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full translate-y-12 -translate-x-12"></div>
-              
+
               <div className="relative z-10">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
@@ -375,7 +398,7 @@ const Analytics = () => {
                   <p className="text-sm text-gray-500">Real-time operational metrics</p>
                 </div>
               </div>
-              
+
               <div className="space-y-4">
                 <div className="flex items-center justify-between p-3 bg-blue-50 rounded-xl hover:bg-blue-100 transition">
                   <div className="flex items-center gap-3">
@@ -386,7 +409,7 @@ const Analytics = () => {
                   </div>
                   <span className="font-bold text-gray-900 text-lg">{analytics.totalEntries}</span>
                 </div>
-                
+
                 <div className="flex items-center justify-between p-3 bg-blue-50 rounded-xl hover:bg-blue-100 transition">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
@@ -396,7 +419,7 @@ const Analytics = () => {
                   </div>
                   <span className="font-bold text-gray-900 text-lg">{analytics.totalExits}</span>
                 </div>
-                
+
                 <div className="flex items-center justify-between p-3 bg-purple-50 rounded-xl hover:bg-purple-100 transition">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center">
@@ -406,7 +429,7 @@ const Analytics = () => {
                   </div>
                   <span className="font-bold text-purple-600 text-lg">{analytics.activeVehicles}</span>
                 </div>
-                
+
                 <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center">
@@ -437,27 +460,36 @@ const Analytics = () => {
               </div>
             </div>
 
-            <div className="space-y-4">
-              {hourlyTrends.map((data, idx) => (
-                <div key={idx} className="flex items-center gap-4 group">
-                  <div className="text-sm font-semibold text-gray-700 w-16 text-center bg-gray-50 px-3 py-1.5 rounded-lg">
-                    {data.hour}
-                  </div>
-                  <div className="flex-1 relative">
-                    <div className="flex-1 bg-gray-100 rounded-full h-10 overflow-hidden relative">
-                      <div
-                        className="bg-gradient-to-r from-blue-500 to-blue-600 h-full rounded-full flex items-center justify-end pr-4 transition-all duration-700 group-hover:from-blue-600 group-hover:to-cyan-600"
-                        style={{ width: `${Math.max((data.count / maxHourlyValue) * 100, 5)}%` }}
-                      >
-                        <span className="text-sm font-bold text-white">{data.count} vehicles</span>
+            <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
+              {hourlyTrends.length > 0 ? (
+                hourlyTrends.map((data, idx) => (
+                  <div key={idx} className="flex items-center gap-4 group">
+                    <div className="text-sm font-semibold text-gray-700 w-16 text-center bg-gray-50 px-3 py-1.5 rounded-lg flex-shrink-0">
+                      {data.hour}
+                    </div>
+                    <div className="flex-1 relative">
+                      <div className="flex-1 bg-gray-100 rounded-full h-10 overflow-hidden relative">
+                        <div
+                          className="bg-gradient-to-r from-blue-500 to-blue-600 h-full rounded-full flex items-center justify-end pr-4 transition-all duration-700 group-hover:from-blue-600 group-hover:to-cyan-600"
+                          style={{ width: `${Math.max((data.count / maxHourlyValue) * 100, 5)}%` }}
+                        >
+                          <span className="text-sm font-bold text-white">{data.count}</span>
+                        </div>
+                      </div>
+                      <div className="absolute -top-8 left-0 bg-gray-900 text-white text-xs px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition whitespace-nowrap z-10 shadow-xl">
+                        {data.count} vehicles at {data.hour}
                       </div>
                     </div>
-                    <div className="absolute -top-8 left-0 bg-gray-900 text-white text-xs px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition whitespace-nowrap z-10 shadow-xl">
-                      {data.count} vehicles at {data.hour}
-                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="flex items-center justify-center py-12 text-gray-400">
+                  <div className="text-center">
+                    <Clock className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                    <p>No hourly data available</p>
                   </div>
                 </div>
-              ))}
+              )}
             </div>
           </div>
 
@@ -468,22 +500,21 @@ const Analytics = () => {
                 <Award className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h2 className="text-xl font-bold text-gray-900">Performance Metrics</h2>
-                <p className="text-sm text-gray-500">Operational excellence indicators</p>
+                <h2 className="text-xl font-bold text-gray-900">Performance</h2>
+                <p className="text-sm text-gray-500">Operational metrics</p>
               </div>
             </div>
-            
+
             <div className="space-y-4">
               {performanceMetrics.map((metric, idx) => (
                 <div key={idx} className="p-4 bg-gradient-to-r from-gray-50 to-white rounded-xl border border-gray-100 hover:border-blue-200 transition">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-semibold text-gray-700">{metric.label}</span>
-                    <span className={`text-sm font-bold ${
-                      metric.trend === 'excellent' ? 'text-green-600' :
-                      metric.trend === 'improved' ? 'text-blue-600' :
-                      metric.trend === 'stable' ? 'text-gray-600' :
-                      'text-green-600'
-                    }`}>
+                    <span className={`text-sm font-bold ${metric.trend === 'excellent' ? 'text-green-600' :
+                        metric.trend === 'improved' ? 'text-blue-600' :
+                          metric.trend === 'stable' ? 'text-gray-600' :
+                            'text-green-600'
+                      }`}>
                       {metric.value}
                     </span>
                   </div>
@@ -494,12 +525,11 @@ const Analytics = () => {
                       {metric.trend === 'improved' && 'Quality improvement'}
                       {metric.trend === 'excellent' && 'Top-tier compliance'}
                     </div>
-                    <span className={`text-xs px-2 py-1 rounded-full ${
-                      metric.trend === 'excellent' ? 'bg-green-100 text-green-700' :
-                      metric.trend === 'improved' ? 'bg-blue-100 text-blue-700' :
-                      metric.trend === 'stable' ? 'bg-gray-100 text-gray-700' :
-                      'bg-green-100 text-green-700'
-                    }`}>
+                    <span className={`text-xs px-2 py-1 rounded-full ${metric.trend === 'excellent' ? 'bg-green-100 text-green-700' :
+                        metric.trend === 'improved' ? 'bg-blue-100 text-blue-700' :
+                          metric.trend === 'stable' ? 'bg-gray-100 text-gray-700' :
+                            'bg-green-100 text-green-700'
+                      }`}>
                       {metric.trend}
                     </span>
                   </div>
@@ -522,40 +552,47 @@ const Analytics = () => {
                 <p className="text-sm text-gray-500">Distribution by vehicle category</p>
               </div>
             </div>
-            
+
             <div className="space-y-4">
-              {vehicleTypes.map((type, idx) => (
-                <div key={idx} className="group">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                        idx === 0 ? 'bg-gradient-to-br from-blue-500 to-cyan-500' :
-                        idx === 1 ? 'bg-gradient-to-br from-green-500 to-emerald-500' :
-                        idx === 2 ? 'bg-gradient-to-br from-purple-500 to-violet-500' :
-                        'bg-gradient-to-br from-orange-500 to-amber-500'
-                      }`}>
-                        {idx === 0 && <Truck className="w-4 h-4 text-white" />}
-                        {idx === 1 && <Package className="w-4 h-4 text-white" />}
-                        {idx === 2 && <Car className="w-4 h-4 text-white" />}
-                        {idx === 3 && <Building2 className="w-4 h-4 text-white" />}
+              {vehicleTypes.length > 0 ? (
+                vehicleTypes.map((type, idx) => (
+                  <div key={idx} className="group">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${idx === 0 ? 'bg-gradient-to-br from-blue-500 to-cyan-500' :
+                            idx === 1 ? 'bg-gradient-to-br from-green-500 to-emerald-500' :
+                              idx === 2 ? 'bg-gradient-to-br from-purple-500 to-violet-500' :
+                                'bg-gradient-to-br from-orange-500 to-amber-500'
+                          }`}>
+                          {idx === 0 && <Truck className="w-4 h-4 text-white" />}
+                          {idx === 1 && <Package className="w-4 h-4 text-white" />}
+                          {idx === 2 && <Car className="w-4 h-4 text-white" />}
+                          {idx >= 3 && <Building2 className="w-4 h-4 text-white" />}
+                        </div>
+                        <span className="text-sm text-gray-700 font-medium">{type.type}</span>
                       </div>
-                      <span className="text-sm text-gray-700 font-medium">{type.type}</span>
+                      <span className="text-sm font-bold text-gray-900">{type.count}</span>
                     </div>
-                    <span className="text-sm font-bold text-gray-900">{type.count}</span>
+                    <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all duration-700 ${idx === 0 ? 'bg-gradient-to-r from-blue-500 to-cyan-500' :
+                            idx === 1 ? 'bg-gradient-to-r from-green-500 to-emerald-500' :
+                              idx === 2 ? 'bg-gradient-to-r from-purple-500 to-violet-500' :
+                                'bg-gradient-to-r from-orange-500 to-amber-500'
+                          }`}
+                        style={{ width: `${type.percentage}%` }}
+                      ></div>
+                    </div>
                   </div>
-                  <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
-                    <div
-                      className={`h-full rounded-full transition-all duration-700 ${
-                        idx === 0 ? 'bg-gradient-to-r from-blue-500 to-cyan-500' :
-                        idx === 1 ? 'bg-gradient-to-r from-green-500 to-emerald-500' :
-                        idx === 2 ? 'bg-gradient-to-r from-purple-500 to-violet-500' :
-                        'bg-gradient-to-r from-orange-500 to-amber-500'
-                      }`}
-                      style={{ width: `${type.percentage}%` }}
-                    ></div>
+                ))
+              ) : (
+                <div className="flex items-center justify-center py-12 text-gray-400">
+                  <div className="text-center">
+                    <Truck className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                    <p>No vehicle type data</p>
                   </div>
                 </div>
-              ))}
+              )}
             </div>
           </div>
 
@@ -570,42 +607,49 @@ const Analytics = () => {
                 <p className="text-sm text-gray-500">Leading partners by trip volume</p>
               </div>
             </div>
-            
+
             <div className="space-y-4">
-              {topVendors.map((vendor, idx) => (
-                <div key={idx} className="p-4 bg-gradient-to-r from-gray-50 to-white rounded-xl border border-gray-100 hover:border-blue-200 transition group">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-4 flex-1 min-w-0">
-                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-bold text-white flex-shrink-0 shadow-lg ${
-                        idx === 0 ? 'bg-gradient-to-br from-yellow-400 to-yellow-500' : 
-                        idx === 1 ? 'bg-gradient-to-br from-gray-400 to-gray-500' : 
-                        idx === 2 ? 'bg-gradient-to-br from-orange-500 to-orange-600' : 
-                        'bg-gradient-to-br from-blue-500 to-blue-600'
-                      }`}>
-                        {idx + 1}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-semibold text-gray-900 truncate mb-1">{vendor.name}</div>
-                        <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
-                          <div
-                            className={`h-full rounded-full transition-all duration-700 ${
-                              idx === 0 ? 'bg-gradient-to-r from-yellow-400 to-yellow-500' : 
-                              idx === 1 ? 'bg-gradient-to-r from-gray-400 to-gray-500' : 
-                              idx === 2 ? 'bg-gradient-to-r from-orange-500 to-orange-600' : 
-                              'bg-gradient-to-r from-blue-500 to-blue-600'
-                            }`}
-                            style={{ width: `${vendor.percentage}%` }}
-                          ></div>
+              {topVendors.length > 0 ? (
+                topVendors.map((vendor, idx) => (
+                  <div key={idx} className="p-4 bg-gradient-to-r from-gray-50 to-white rounded-xl border border-gray-100 hover:border-blue-200 transition group">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-4 flex-1 min-w-0">
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-bold text-white flex-shrink-0 shadow-lg ${idx === 0 ? 'bg-gradient-to-br from-yellow-400 to-yellow-500' :
+                            idx === 1 ? 'bg-gradient-to-br from-gray-400 to-gray-500' :
+                              idx === 2 ? 'bg-gradient-to-br from-orange-500 to-orange-600' :
+                                'bg-gradient-to-br from-blue-500 to-blue-600'
+                          }`}>
+                          {idx + 1}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-semibold text-gray-900 truncate mb-1">{vendor.name}</div>
+                          <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+                            <div
+                              className={`h-full rounded-full transition-all duration-700 ${idx === 0 ? 'bg-gradient-to-r from-yellow-400 to-yellow-500' :
+                                  idx === 1 ? 'bg-gradient-to-r from-gray-400 to-gray-500' :
+                                    idx === 2 ? 'bg-gradient-to-r from-orange-500 to-orange-600' :
+                                      'bg-gradient-to-r from-blue-500 to-blue-600'
+                                }`}
+                              style={{ width: `${vendor.percentage}%` }}
+                            ></div>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    <div className="flex flex-col items-end">
-                      <span className="text-lg font-bold text-gray-900 flex-shrink-0">{vendor.trips}</span>
-                      <span className="text-xs text-gray-500">trips</span>
+                      <div className="flex flex-col items-end">
+                        <span className="text-lg font-bold text-gray-900 flex-shrink-0">{vendor.trips}</span>
+                        <span className="text-xs text-gray-500">trips</span>
+                      </div>
                     </div>
                   </div>
+                ))
+              ) : (
+                <div className="flex items-center justify-center py-12 text-gray-400">
+                  <div className="text-center">
+                    <Award className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                    <p>No vendor data available</p>
+                  </div>
                 </div>
-              ))}
+              )}
             </div>
           </div>
         </div>

@@ -517,7 +517,7 @@ const SupervisorDashboard = () => {
 
               {stats.pendingExit > 0 && (
                 <button
-                  onClick={() => router.push('/supervisor/pending-exits')}
+                  onClick={() => router.push('/supervisor/exit-vehicles')}
                   className="w-full flex items-center justify-between p-3 bg-gradient-to-r from-orange-50 to-orange-100 hover:from-orange-100 hover:to-orange-200 rounded-lg border border-orange-200 transition group"
                 >
                   <div className="flex items-center gap-3">

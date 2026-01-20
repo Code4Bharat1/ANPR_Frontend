@@ -32,15 +32,15 @@ const SiteCard = ({ site }) => {
         </span>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 text-sm mt-3">
+      <div className="grid grid-cols-1 gap-4 text-sm mt-3">
         <div>
           <p className="text-gray-500">Barriers</p>
           <p className="font-semibold">{site.barriersActive} active</p>
         </div>
-        <div>
+        {/* <div>
           <p className="text-gray-500">Active Trips</p>
           <p className="font-semibold">{site.activeTrips}</p>
-        </div>
+        </div> */}
       </div>
 
     
