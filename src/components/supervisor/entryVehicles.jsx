@@ -236,8 +236,8 @@ const EntryVehicles = () => {
       const endpoints = [
         `${API_URL}/api/supervisor/vendors`,
         `${API_URL}/api/project/vendors`,
-        `${API_URL}/api/supervisor/vendors-by-site`,
-        `${API_URL}/api/vendors/active`,
+        // `${API_URL}/api/supervisor/vendors-by-site`,
+        // `${API_URL}/api/vendors/active`,
         `${API_URL}/api/vendors`
       ];
       
@@ -268,7 +268,7 @@ const EntryVehicles = () => {
           }
           
           if (vendorsData.length > 0) {
-            // console.log(`Successfully fetched ${vendorsData.length} vendors from ${endpoint}`);
+            console.log(`Successfully fetched ${vendorsData.length} vendors from ${endpoint}`);
             break;
           }
         } catch (error) {
