@@ -131,7 +131,7 @@ const SiteModal = ({ isOpen, onClose, site, onSave, mode }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4 backdrop-blur-sm overflow-y-auto">
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4  overflow-y-auto">
       <div className="bg-white rounded-2xl max-w-2xl w-full my-4 shadow-2xl max-h-[95vh] overflow-y-auto">
         <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 flex items-center justify-between z-10">
           <h2 className="text-2xl font-bold text-white">
