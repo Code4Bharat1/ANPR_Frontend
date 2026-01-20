@@ -2,9 +2,6 @@ import axios from 'axios';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
-/* ===============================
-   Base64 → File
-================================ */
 export const base64ToFile = (base64, filename) => {
   let base64Data = base64;
   let mimeType = 'image/jpeg';
@@ -33,47 +30,60 @@ export const base64ToFile = (base64, filename) => {
   });
 };
 
-/* ===============================
-   Upload to Wasabi (FIXED)
-================================ */
-export const uploadToWasabi = async (file) => {
+
+export const uploadToWasabi = async ({
+  file,
+  vehicleId,
+  type,       // 'entry' | 'exit'
+  index = null // 1–4 for photos, null for video
+}) => {
   try {
     const token = localStorage.getItem('accessToken');
+
+    if (!vehicleId || !type || !file) {
+      throw new Error('Missing required upload params');
+    }
 
     const ext = file.name.split('.').pop();
     const filename = `${Date.now()}-${Math.random()
       .toString(36)
       .slice(2)}.${ext}`;
 
-    // 🔴 IMPORTANT: send ONLY filename
+    // ✅ STEP 1: ask backend for signed URL
     const { data } = await axios.post(
       `${API_URL}/api/uploads/upload-url`,
       {
+        vehicleId,
+        type,
+        index,
         fileName: filename,
         fileType: file.type,
       },
       {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       }
     );
 
     const { uploadURL, fileKey } = data;
 
+    // ✅ STEP 2: upload directly to Wasabi
     await axios.put(uploadURL, file, {
-      headers: { 'Content-Type': file.type },
-      transformRequest: [(d) => d], // 🔥 prevents axios corruption
+      headers: {
+        'Content-Type': file.type,
+      },
+      transformRequest: [(d) => d], // 🔥 REQUIRED
     });
 
-    return fileKey; // e.g. uploads/12345-front.jpg
+    return fileKey; // store this in DB
   } catch (err) {
-    console.error('Wasabi upload failed:', err);
+    console.error('Wasabi upload failed:', err.response?.data || err);
     throw err;
   }
 };
 
-/* ===============================
-   Get Signed Download URL
-================================ */
+
 export const getDownloadUrl = async (fileKey) => {
   if (!fileKey) return null;
   if (fileKey.startsWith('http')) return fileKey;
@@ -92,9 +102,6 @@ export const getDownloadUrl = async (fileKey) => {
   }
 };
 
-/* ===============================
-   Resolve Vehicle Media
-================================ */
 export const getVehicleMediaUrls = async (vehicle) => {
   const empty = {
     entryPhotos: {},
@@ -134,9 +141,7 @@ export const getVehicleMediaUrls = async (vehicle) => {
   return result;
 };
 
-/* ===============================
-   Open Media
-================================ */
+
 export const openMediaInNewTab = (url) => {
   if (url) window.open(url, '_blank', 'noopener,noreferrer');
 };
