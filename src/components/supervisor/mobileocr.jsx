@@ -1243,8 +1243,8 @@ const OcrScan = () => {
       const endpoints = [
         `${API_URL}/api/supervisor/vendors`,
         `${API_URL}/api/project/vendors`,
-        `${API_URL}/api/supervisor/vendors-by-site`,
-        `${API_URL}/api/vendors/active`,
+        // `${API_URL}/api/supervisor/vendors-by-site`,
+        // `${API_URL}/api/vendors/active`,
         `${API_URL}/api/vendors`,
       ];
 
@@ -1260,6 +1260,9 @@ const OcrScan = () => {
             timeout: 5000,
           });
 
+          console.log(response);
+          
+
           if (response.data && response.data.success) {
             if (Array.isArray(response.data.data)) {
               vendorsData = response.data.data;
@@ -1270,7 +1273,10 @@ const OcrScan = () => {
             vendorsData = response.data;
           }
 
-          if (vendorsData.length > 0) break;
+          if (vendorsData.length > 0) {
+            console.log(`Successfully fetched ${vendorsData.length} vendors from ${endpoint}`);
+            break;
+          }
         } catch (error) {
           continue;
         }
