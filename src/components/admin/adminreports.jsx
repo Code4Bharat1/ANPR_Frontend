@@ -292,25 +292,26 @@ const AdminReports = () => {
     return statusMap[status] || status;
   };
 
-  const calculateDuration = (entryTime, exitTime) => {
-    if (!entryTime || !exitTime) return null;
-    
-    try {
-      const entry = new Date(entryTime);
-      const exit = new Date(exitTime);
-      const diffMs = exit - entry;
-      const diffMins = Math.floor(diffMs / 60000);
-      const diffHours = Math.floor(diffMins / 60);
-      const remainingMins = diffMins % 60;
-      
-      if (diffHours > 0) {
-        return `${diffHours}h ${remainingMins}m`;
-      }
-      return `${diffMins}m`;
-    } catch {
-      return null;
-    }
-  };
+const calculateDuration = (entryTime, exitTime, status) => {
+  if (!entryTime) return '--:--';
+
+  const start = new Date(entryTime).getTime();
+  const end =
+    status === 'active' || status === 'INSIDE'
+      ? Date.now()                     // 🔥 live duration
+      : exitTime
+        ? new Date(exitTime).getTime()
+        : null;
+
+  if (!start || !end || end <= start) return '--:--';
+
+  const diff = end - start;
+  const hours = Math.floor(diff / (1000 * 60 * 60));
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+  return `${hours}h ${minutes}m`;
+};
+
 
   const handleSort = (key) => {
     let direction = 'asc';
@@ -365,13 +366,13 @@ const AdminReports = () => {
     }
   };
 
-  const handleExportPDF = () => {
-    alert('PDF export feature coming soon!');
-  };
+  // const handleExportPDF = () => {
+  //   alert('PDF export feature coming soon!');
+  // };
 
-  const handlePrint = () => {
-    window.print();
-  };
+  // const handlePrint = () => {
+  //   window.print();
+  // };
 
   const handleShare = () => {
     if (navigator.share) {
@@ -794,7 +795,7 @@ const AdminReports = () => {
                           </div>
                           <div>
                             <div className="font-semibold text-gray-900">{trip.vehicleNumber}</div>
-                            <div className="text-xs text-gray-500">ID: {trip.id.substring(0, 8)}...</div>
+                            {/* <div className="text-xs text-gray-500">ID: {trip.id.substring(0, 8)}...</div> */}
                           </div>
                         </div>
                       </td>
