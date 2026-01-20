@@ -124,7 +124,7 @@ const SupervisorManagement = () => {
     try {
       setLoading(true);
       const response = await api.get('/api/project/supervisors');
-
+      console.log("res : ", response);
       let supervisorsData = response.data.supervisors || response.data.data || response.data || [];
 
       if (!Array.isArray(supervisorsData)) {
@@ -132,6 +132,7 @@ const SupervisorManagement = () => {
       }
 
       setSupervisors(supervisorsData);
+      console.log('Fetched supervisors:', supervisorsData);
     } catch (err) {
       console.error('Error fetching supervisors:', err);
 
@@ -503,7 +504,7 @@ const SupervisorManagement = () => {
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Name</th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Assigned Site</th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Today's Trips</th>
+                  {/* <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Today's Trips</th> */}
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
@@ -530,9 +531,9 @@ const SupervisorManagement = () => {
                         {supervisor.isActive ? 'Active' : 'Inactive'}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-900 font-semibold">
+                    {/* <td className="px-6 py-4 text-sm text-gray-900 font-semibold">
                       {supervisor.todayTrips || 0}
-                    </td>
+                    </td> */}
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
                         <button
