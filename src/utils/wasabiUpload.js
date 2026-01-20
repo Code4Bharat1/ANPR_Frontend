@@ -86,21 +86,33 @@ export const uploadToWasabi = async ({
 
 export const getDownloadUrl = async (fileKey) => {
   if (!fileKey) return null;
-  if (fileKey.startsWith('http')) return fileKey;
+
+  // If already a URL (legacy / CDN)
+  if (fileKey.startsWith("http")) return fileKey;
 
   try {
-    const token = localStorage.getItem('accessToken');
-    const res = await axios.get(`${API_URL}/api/uploads/get-file`, {
-      params: { key: fileKey },
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const token = localStorage.getItem("accessToken");
+    if (!token) return null;
+
+    const res = await axios.get(
+      `${API_URL}/api/uploads/get-file`,
+      {
+        params: { key: fileKey },
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
 
     return res.data.url;
   } catch (err) {
-    console.error('Signed URL error:', err);
+    console.error(
+      "Signed URL error:",
+      err.response?.status,
+      err.response?.data || err.message
+    );
     return null;
   }
 };
+
 
 export const getVehicleMediaUrls = async (vehicle) => {
   const empty = {

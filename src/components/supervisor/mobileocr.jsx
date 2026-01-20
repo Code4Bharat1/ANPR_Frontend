@@ -1405,78 +1405,111 @@ const OcrScan = () => {
     await startCamera();
   };
 
-  const handleAllowEntry = async () => {
-    try {
-      setLoading(true);
-      const token = localStorage.getItem("accessToken");
-      const API_URL =
-        process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+ const handleAllowEntry = async () => {
+  try {
+    setLoading(true);
 
-      if (!vehicleNumber) {
-        alert("❌ Vehicle number is required");
-        setLoading(false);
-        return;
-      }
+    const token = localStorage.getItem("accessToken");
+    const API_URL =
+      process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
-      const finalVendor =
-        vendorInputMode === "manual"
-          ? manualVendorName
-          : vehicleDetails.vendorId;
+    if (!vehicleNumber) {
+      alert("❌ Vehicle number is required");
+      return;
+    }
 
-      const finalVehicleType =
-        vehicleDetails.vehicleType === "OTHER"
-          ? customVehicleType
-          : vehicleDetails.vehicleType;
+    const finalVendor =
+      vendorInputMode === "manual"
+        ? manualVendorName
+        : vehicleDetails.vendorId;
 
-      const entryData = {
-        vehicleNumber: vehicleNumber.toUpperCase().trim(),
-        vendorId: finalVendor || "",
-        vehicleType: finalVehicleType || "TRUCK",
-        driverName: driverName || "",
-        entryTime: new Date().toISOString(),
-        purpose: vehicleDetails.materialType || "Material Delivery",
-        loadStatus: vehicleDetails.loadStatus.toUpperCase() || "FULL",
-        entryGate: "OCR Manual Entry",
-        notes: vehicleDetails.notes || "",
-        siteId: vehicleDetails.siteId,
-        // Media optional कर दें
-        media: {
-          photos: [],
-          video: "",
-          challanImage: vehicleDetails.challanImage || "",
-        },
-      };
+    const finalVehicleType =
+      vehicleDetails.vehicleType === "OTHER"
+        ? customVehicleType
+        : vehicleDetails.vehicleType;
 
-      // console.log("📦 OCR Entry Payload:", entryData);
+    // ✅ ENTRY PHOTOS CONFIG
+    const ENTRY_PHOTOS = [
+      { key: "frontView", name: "Front View" },
+      { key: "backView", name: "Back View" },
+    ];
 
-      const response = await axios.post(
-        `${API_URL}/api/supervisor/mobile/trips/manual`,
-        entryData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        },
+    const uploadedEntryPhotos = {};
+
+    // ✅ Upload entry photos to Wasabi
+    for (const photo of ENTRY_PHOTOS) {
+      if (!entryMedia?.[photo.key]) continue;
+
+      const file = base64ToFile(
+        entryMedia[photo.key],
+        `${Date.now()}-${photo.key}.jpg`
       );
 
-      // console.log("✅ SUCCESS Response:", response.data);
-      alert("✅ Vehicle entry recorded successfully via OCR!");
+      const fileKey = await uploadToWasabi(
+        file,
+        `vehicles/${vehicleNumber}/entry/photos`
+      );
 
-      resetForm();
-      router.push("/supervisor/active-vehicles");
-    } catch (error) {
-      console.error("❌ ERROR Details:", error.response?.data);
-
-      if (error.response?.status === 400) {
-        alert(`❌ ${error.response.data.message}`);
-      } else {
-        alert("❌ Failed to record entry. Please try again.");
-      }
-    } finally {
-      setLoading(false);
+      uploadedEntryPhotos[photo.key] = fileKey;
     }
-  };
+
+    // ✅ Upload challan image (if any)
+    let challanKey = "";
+    if (vehicleDetails.challanImage) {
+      const challanFile = base64ToFile(
+        vehicleDetails.challanImage,
+        `${Date.now()}-challan.jpg`
+      );
+
+      challanKey = await uploadToWasabi(
+        challanFile,
+        `vehicles/${vehicleNumber}/entry/challan`
+      );
+    }
+
+    // ✅ FINAL ENTRY PAYLOAD
+    const entryData = {
+      vehicleNumber: vehicleNumber.toUpperCase().trim(),
+      vendorId: finalVendor || "",
+      vehicleType: finalVehicleType || "TRUCK",
+      driverName: driverName || "",
+      entryTime: new Date().toISOString(),
+      purpose: vehicleDetails.materialType || "Material Delivery",
+      loadStatus: vehicleDetails.loadStatus.toUpperCase() || "FULL",
+      entryGate: "OCR Manual Entry",
+      notes: vehicleDetails.notes || "",
+      siteId: vehicleDetails.siteId,
+
+      media: {
+        photos: uploadedEntryPhotos, // ✅ Wasabi keys
+        video: "",
+        challanImage: challanKey,     // ✅ Wasabi key
+      },
+    };
+
+    const response = await axios.post(
+      `${API_URL}/api/supervisor/mobile/trips/manual`,
+      entryData,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    alert("✅ Vehicle entry recorded successfully!");
+    resetForm();
+    router.push("/supervisor/active-vehicles");
+
+  } catch (error) {
+    console.error("❌ Entry Error:", error);
+    alert(error.response?.data?.message || "Entry failed");
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const resetForm = () => {
     setStep(1);
