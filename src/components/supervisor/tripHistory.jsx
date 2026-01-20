@@ -338,7 +338,7 @@ const TripHistory = () => {
                 <Calendar className="w-6 h-6 text-white" />
               </div>
             </div>
-            <div className="text-xl font-bold text-gray-900 mb-1 capitalize">{dateFilter.replace('last', '').replace('days', '')}</div>
+            <div className="text-xl font-bold text-gray-900 mb-1 capitalize">{dateFilter.replace('last', '').replace('days', ' Days')}</div>
             <div className="text-xs text-gray-500">Time range</div>
           </div>
         </div>
