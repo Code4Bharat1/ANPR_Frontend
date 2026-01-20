@@ -13,18 +13,18 @@ import Sidebar from './sidebar';
 import Header from './header';
 
 // Dashboard Card Component with enhanced design
-const DashboardCard = ({ 
-  icon: Icon, 
-  value, 
-  label, 
-  bgColor, 
-  iconColor, 
-  trend, 
+const DashboardCard = ({
+  icon: Icon,
+  value,
+  label,
+  bgColor,
+  iconColor,
+  trend,
   subtitle,
   isLoading = false,
-  onClick 
+  onClick
 }) => (
-  <div 
+  <div
     className={`bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-300 hover:-translate-y-1 ${onClick ? 'cursor-pointer hover:border-blue-200' : ''}`}
     onClick={onClick}
   >
@@ -63,7 +63,7 @@ const UsageBar = ({ used, limit, label, type = 'default' }) => {
   const percentage = limit > 0 ? (used / limit) * 100 : 0;
   const isNearLimit = percentage > 80;
   const isOverLimit = used > limit;
-  
+
   const getBarColor = () => {
     if (isOverLimit) return 'bg-red-500';
     if (isNearLimit) return 'bg-yellow-500';
@@ -99,11 +99,11 @@ const UsageBar = ({ used, limit, label, type = 'default' }) => {
 };
 
 // Enhanced Package Card with more features
-const PackageCard = ({ 
-  name, 
-  price, 
-  isCurrent, 
-  features, 
+const PackageCard = ({
+  name,
+  price,
+  isCurrent,
+  features,
   icon: Icon,
   bgGradient,
   type,
@@ -111,13 +111,12 @@ const PackageCard = ({
   onClick
 }) => {
   const isPopular = name.includes("Pro") || name.includes("Core");
-  
+
   return (
-    <div 
-      className={`relative bg-white rounded-2xl p-6 shadow-sm border-2 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 cursor-pointer ${
-        isCurrent ? 'border-blue-600 ring-4 ring-blue-100' : 
-        isPopular ? 'border-indigo-200' : 'border-gray-200'
-      }`}
+    <div
+      className={`relative bg-white rounded-2xl p-6 shadow-sm border-2 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 cursor-pointer ${isCurrent ? 'border-blue-600 ring-4 ring-blue-100' :
+          isPopular ? 'border-indigo-200' : 'border-gray-200'
+        }`}
       onClick={() => onClick && onClick(type)}
     >
       {/* {isRecommended && (
@@ -127,7 +126,7 @@ const PackageCard = ({
           </span>
         </div>
       )} */}
-      
+
       {isCurrent && (
         <div className="absolute -top-3 right-4">
           <span className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg flex items-center gap-1 animate-pulse">
@@ -136,17 +135,17 @@ const PackageCard = ({
           </span>
         </div>
       )}
-      
+
       <div className={`w-14 h-14 bg-gradient-to-br ${bgGradient} rounded-xl flex items-center justify-center mb-4 shadow-lg`}>
         <Icon className="w-7 h-7 text-white" />
       </div>
-      
+
       <h3 className="text-xl font-bold text-gray-900 mb-2">{name}</h3>
       <div className="flex items-baseline gap-1 mb-4">
         <div className="text-3xl font-bold text-gray-900">₹{price.toLocaleString()}</div>
         <div className="text-sm text-gray-600">/month</div>
       </div>
-      
+
       <div className="space-y-3 mb-6">
         {features.map((feature, index) => (
           <div key={index} className="flex items-start gap-2">
@@ -155,12 +154,11 @@ const PackageCard = ({
           </div>
         ))}
       </div>
-      
-      <button className={`w-full font-semibold py-3 rounded-xl transition-all duration-300 ${
-        isCurrent 
-          ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' 
+
+      <button className={`w-full font-semibold py-3 rounded-xl transition-all duration-300 ${isCurrent
+          ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
           : 'bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-xl'
-      }`}>
+        }`}>
         {isCurrent ? 'Current Plan' : 'Upgrade Now'}
       </button>
     </div>
@@ -200,7 +198,7 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     fetchDashboardData();
-    
+
     // Auto-refresh every 30 seconds
     const interval = setInterval(() => {
       fetchDashboardData(false);
@@ -213,7 +211,7 @@ const AdminDashboard = () => {
     try {
       if (showLoading) setLoading(true);
       setRefreshing(true);
-      
+
       const token = localStorage.getItem('accessToken');
       const response = await axios.get(
         `${process.env.NEXT_PUBLIC_API_URL}/api/client-admin/dashboard`,
@@ -312,7 +310,7 @@ const AdminDashboard = () => {
           <AlertCircle className="w-20 h-20 text-red-400 mx-auto mb-6" />
           <h3 className="text-xl font-bold text-gray-800 mb-2">Failed to load dashboard</h3>
           <p className="text-gray-600 mb-6">We couldn't fetch your dashboard data. Please try again.</p>
-          <button 
+          <button
             onClick={() => fetchDashboardData()}
             className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-lg transition-colors flex items-center gap-2 mx-auto"
           >
@@ -345,12 +343,12 @@ const AdminDashboard = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      
-      <Header 
-        title="Dashboard" 
+
+      <Header
+        title="Dashboard"
         onMenuClick={() => setSidebarOpen(true)}
         actions={
-          <button 
+          <button
             onClick={() => fetchDashboardData(false)}
             disabled={refreshing}
             className="flex items-center gap-2 bg-white hover:bg-gray-50 text-gray-700 font-medium px-4 py-2 rounded-lg border border-gray-200 transition-colors disabled:opacity-50"
@@ -362,13 +360,12 @@ const AdminDashboard = () => {
       />
 
       <main className="lg:ml-72 max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
-        
+
         {/* Current Plan Status Banner with warning */}
-        <div className={`rounded-2xl p-6 text-white mb-8 shadow-xl ${
-          isPlanExpiringSoon 
-            ? 'bg-gradient-to-r from-red-600 to-red-700 animate-pulse' 
+        <div className={`rounded-2xl p-6 text-white mb-8 shadow-xl ${isPlanExpiringSoon
+            ? 'bg-gradient-to-r from-red-600 to-red-700 animate-pulse'
             : 'bg-gradient-to-r from-blue-600 to-indigo-700'
-        }`}>
+          }`}>
           <div className="flex items-center justify-between flex-wrap gap-6">
             <div className="flex items-center gap-4">
               <div className="w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
@@ -382,7 +379,7 @@ const AdminDashboard = () => {
                 <p className="text-blue-100 opacity-90">Your current subscription status</p>
               </div>
             </div>
-            
+
             <div className="flex items-center gap-6">
               <div className="text-right">
                 <div className="text-sm text-blue-100 opacity-90 mb-1 flex items-center gap-2">
@@ -402,7 +399,7 @@ const AdminDashboard = () => {
               </div>
             </div>
           </div>
-          
+
           {hasOverLimitDevices && (
             <div className="mt-4 pt-4 border-t border-white/20">
               <div className="flex items-center gap-2 text-yellow-200">
@@ -424,17 +421,24 @@ const AdminDashboard = () => {
               </span>
             </div>
           </div>
-          
+
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             <DashboardCard
               icon={MapPin}
               value={dashboardData.totalSites}
-              label="Active Sites"
+              label="Total Sites"
               bgColor="bg-gradient-to-br from-blue-50 to-blue-100"
               iconColor="text-blue-600"
               subtitle={`${dashboardData.totalSites > 0 ? 'All operational' : 'No sites configured'}`}
               onClick={() => console.log('Navigate to sites')}
             />
+            {/* <DashboardCard
+             icon={MapPin}
+              value={dashboardData.activeSites}
+              label="Active Sites"
+              subtitle={`${dashboardData.inactiveSites} inactive`}
+            /> */}
+
             <DashboardCard
               icon={Users}
               value={dashboardData.totalUsers}
@@ -465,7 +469,7 @@ const AdminDashboard = () => {
 
         {/* Usage Overview Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-          
+
           {/* User Allocation */}
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
             <div className="flex items-center justify-between mb-6">
@@ -475,16 +479,16 @@ const AdminDashboard = () => {
               </h3>
               <ExternalLink className="w-4 h-4 text-gray-400" />
             </div>
-            <UsageBar 
-              used={dashboardData.usage.pm} 
-              limit={dashboardData.plan.limits.pm} 
-              label="Project Managers" 
+            <UsageBar
+              used={dashboardData.usage.pm}
+              limit={dashboardData.plan.limits.pm}
+              label="Project Managers"
               type={dashboardData.usage.pm >= dashboardData.plan.limits.pm ? 'warning' : 'default'}
             />
-            <UsageBar 
-              used={dashboardData.usage.supervisor} 
-              limit={dashboardData.plan.limits.supervisor} 
-              label="Supervisors" 
+            <UsageBar
+              used={dashboardData.usage.supervisor}
+              limit={dashboardData.plan.limits.supervisor}
+              label="Supervisors"
               type={dashboardData.usage.supervisor >= dashboardData.plan.limits.supervisor ? 'warning' : 'default'}
             />
             <div className="mt-6 pt-6 border-t border-gray-100">
@@ -509,20 +513,20 @@ const AdminDashboard = () => {
               </h3>
               <ExternalLink className="w-4 h-4 text-gray-400" />
             </div>
-            <UsageBar 
-              used={dashboardData.usage.devices.BARRIER || 0} 
-              limit={dashboardData.plan.limits.devices.BARRIER || 0} 
-              label="Barrier Gates" 
+            <UsageBar
+              used={dashboardData.usage.devices.BARRIER || 0}
+              limit={dashboardData.plan.limits.devices.BARRIER || 0}
+              label="Barrier Gates"
             />
-            <UsageBar 
-              used={dashboardData.usage.devices.BIOMETRIC || 0} 
-              limit={dashboardData.plan.limits.devices.BIOMETRIC || 0} 
-              label="Biometric Devices" 
+            <UsageBar
+              used={dashboardData.usage.devices.BIOMETRIC || 0}
+              limit={dashboardData.plan.limits.devices.BIOMETRIC || 0}
+              label="Biometric Devices"
             />
-            <UsageBar 
-              used={dashboardData.usage.devices.ANPR || 0} 
-              limit={dashboardData.plan.limits.devices.ANPR || 0} 
-              label="ANPR Cameras" 
+            <UsageBar
+              used={dashboardData.usage.devices.ANPR || 0}
+              limit={dashboardData.plan.limits.devices.ANPR || 0}
+              label="ANPR Cameras"
             />
             <div className="mt-6 pt-6 border-t border-gray-100">
               <div className="flex items-center justify-between">
@@ -531,7 +535,7 @@ const AdminDashboard = () => {
                   <div className="text-xs text-gray-500">All device types</div>
                 </div>
                 <div className="text-lg font-bold text-gray-900">
-                  {(dashboardData.usage.devices.ANPR || 0) + (dashboardData.usage.devices.BARRIER || 0) + (dashboardData.usage.devices.BIOMETRIC || 0)} / 
+                  {(dashboardData.usage.devices.ANPR || 0) + (dashboardData.usage.devices.BARRIER || 0) + (dashboardData.usage.devices.BIOMETRIC || 0)} /
                   {(dashboardData.plan.limits.devices.ANPR || 0) + (dashboardData.plan.limits.devices.BARRIER || 0) + (dashboardData.plan.limits.devices.BIOMETRIC || 0)}
                 </div>
               </div>
@@ -550,7 +554,7 @@ const AdminDashboard = () => {
                 <HardDrive className="w-4 h-4 text-gray-400" />
               </div>
             </div>
-            
+
             <div className="space-y-4">
               <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
                 <div className="flex items-center gap-3">
@@ -566,7 +570,7 @@ const AdminDashboard = () => {
                   {dashboardData.activeDevices}
                 </div>
               </div>
-              
+
               <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
@@ -581,7 +585,7 @@ const AdminDashboard = () => {
                   {dashboardData.inactiveDevices}
                 </div>
               </div>
-              
+
               <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -613,104 +617,102 @@ const AdminDashboard = () => {
             </div>
 
             {dashboardData.recentActivity && dashboardData.recentActivity.length > 0 ? (
-  <div className="space-y-3">
-    {dashboardData.recentActivity.slice(0, 5).map((activity, index) => {
-      // Convert time to 12-hour format
-      const formatTime12Hour = (dateString) => {
-        try {
-          const date = new Date(dateString);
-          return date.toLocaleTimeString('en-US', {
-            hour: 'numeric',
-            minute: '2-digit',
-            hour12: true
-          });
-        } catch (error) {
-          return 'Invalid time';
-        }
-      };
+              <div className="space-y-3">
+                {dashboardData.recentActivity.slice(0, 5).map((activity, index) => {
+                  // Convert time to 12-hour format
+                  const formatTime12Hour = (dateString) => {
+                    try {
+                      const date = new Date(dateString);
+                      return date.toLocaleTimeString('en-US', {
+                        hour: 'numeric',
+                        minute: '2-digit',
+                        hour12: true
+                      });
+                    } catch (error) {
+                      return 'Invalid time';
+                    }
+                  };
 
-      // Format date with month/day
-      const formatDate = (dateString) => {
-        try {
-          const date = new Date(dateString);
-          return date.toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric'
-          });
-        } catch (error) {
-          return '';
-        }
-      };
+                  // Format date with month/day
+                  const formatDate = (dateString) => {
+                    try {
+                      const date = new Date(dateString);
+                      return date.toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric'
+                      });
+                    } catch (error) {
+                      return '';
+                    }
+                  };
 
-      const activityTime = formatTime12Hour(activity.time);
-      const activityDate = formatDate(activity.time);
-      const isToday = new Date(activity.time).toDateString() === new Date().toDateString();
-      
-      // Determine if it's entry or exit based on title or description
-      const isEntry = activity.title.includes('Vehicle') && activity.description.includes('entry') || 
-                     activity.title.includes('Entry') || 
-                     activity.description.toLowerCase().includes('entry');
-      const isExit = activity.title.includes('Vehicle') && activity.description.includes('exit') || 
-                    activity.title.includes('Exit') || 
+                  const activityTime = formatTime12Hour(activity.time);
+                  const activityDate = formatDate(activity.time);
+                  const isToday = new Date(activity.time).toDateString() === new Date().toDateString();
+
+                  // Determine if it's entry or exit based on title or description
+                  const isEntry = activity.title.includes('Vehicle') && activity.description.includes('entry') ||
+                    activity.title.includes('Entry') ||
+                    activity.description.toLowerCase().includes('entry');
+                  const isExit = activity.title.includes('Vehicle') && activity.description.includes('exit') ||
+                    activity.title.includes('Exit') ||
                     activity.description.toLowerCase().includes('exit');
 
-      return (
-        <div 
-          key={index} 
-          className="flex items-start gap-4 p-3 hover:bg-gray-50 rounded-xl transition-colors group"
-        >
-          <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
-            isEntry ? 'bg-green-100' : 
-            isExit ? 'bg-blue-100' : 'bg-purple-100'
-          }`}>
-            {isEntry ? (
-              <ArrowUpRight className="w-5 h-5 text-green-600" />
-            ) : isExit ? (
-              <ArrowDownRight className="w-5 h-5 text-blue-600" />
+                  return (
+                    <div
+                      key={index}
+                      className="flex items-start gap-4 p-3 hover:bg-gray-50 rounded-xl transition-colors group"
+                    >
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${isEntry ? 'bg-green-100' :
+                          isExit ? 'bg-blue-100' : 'bg-purple-100'
+                        }`}>
+                        {isEntry ? (
+                          <ArrowUpRight className="w-5 h-5 text-green-600" />
+                        ) : isExit ? (
+                          <ArrowDownRight className="w-5 h-5 text-blue-600" />
+                        ) : (
+                          <Activity className="w-5 h-5 text-purple-600" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <div className="font-semibold text-gray-900 group-hover:text-blue-600">
+                            {activity.title}
+                          </div>
+                          <div className="flex flex-col items-end">
+                            <div className="text-sm font-medium text-gray-900">
+                              {activityTime}
+                            </div>
+                            <div className="text-xs text-gray-500 mt-0.5">
+                              {isToday ? 'Today' : activityDate}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-sm text-gray-600 mt-1">{activity.description}</div>
+                        <div className="flex items-center gap-2 mt-2">
+                          <div className={`text-xs px-2 py-0.5 rounded-full ${isEntry ? 'bg-green-100 text-green-800' :
+                              isExit ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'
+                            }`}>
+                            {isEntry ? 'Entry' : isExit ? 'Exit' : 'Activity'}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            • {activity.time ? new Date(activity.time).toLocaleDateString() : 'Unknown date'}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             ) : (
-              <Activity className="w-5 h-5 text-purple-600" />
+              <div className="text-center py-12">
+                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Activity className="w-8 h-8 text-gray-400" />
+                </div>
+                <p className="text-gray-500 font-medium">No recent activity detected</p>
+                <p className="text-sm text-gray-400 mt-1">System activity will appear here automatically</p>
+              </div>
             )}
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center justify-between">
-              <div className="font-semibold text-gray-900 group-hover:text-blue-600">
-                {activity.title}
-              </div>
-              <div className="flex flex-col items-end">
-                <div className="text-sm font-medium text-gray-900">
-                  {activityTime}
-                </div>
-                <div className="text-xs text-gray-500 mt-0.5">
-                  {isToday ? 'Today' : activityDate}
-                </div>
-              </div>
-            </div>
-            <div className="text-sm text-gray-600 mt-1">{activity.description}</div>
-            <div className="flex items-center gap-2 mt-2">
-              <div className={`text-xs px-2 py-0.5 rounded-full ${
-                isEntry ? 'bg-green-100 text-green-800' : 
-                isExit ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'
-              }`}>
-                {isEntry ? 'Entry' : isExit ? 'Exit' : 'Activity'}
-              </div>
-              <div className="text-xs text-gray-500">
-                • {activity.time ? new Date(activity.time).toLocaleDateString() : 'Unknown date'}
-              </div>
-            </div>
-          </div>
-        </div>
-      );
-    })}
-  </div>
-) : (
-  <div className="text-center py-12">
-    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-      <Activity className="w-8 h-8 text-gray-400" />
-    </div>
-    <p className="text-gray-500 font-medium">No recent activity detected</p>
-    <p className="text-sm text-gray-400 mt-1">System activity will appear here automatically</p>
-  </div>
-)}
           </div>
         </div>
 
@@ -722,7 +724,7 @@ const AdminDashboard = () => {
               Choose the perfect plan for your growing needs. All plans include 24/7 support and regular updates.
             </p>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {packages.map((pkg, index) => (
               <PackageCard
@@ -733,7 +735,7 @@ const AdminDashboard = () => {
               />
             ))}
           </div>
-          
+
           <div className="mt-8 text-center">
             <p className="text-sm text-gray-500">
               Need a custom solution? <a href="#" className="text-blue-600 hover:text-blue-700 font-medium">Contact our sales team</a>

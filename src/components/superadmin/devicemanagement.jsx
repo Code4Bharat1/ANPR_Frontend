@@ -402,13 +402,14 @@ const AddDeviceModal = ({ isOpen, onClose, onSubmit, loading, clients, sites }) 
             {/* IP Address */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                IP Address
+                IP Address *
               </label>
               <input
                 type="text"
                 name="ipAddress"
                 value={formData.ipAddress}
                 onChange={handleChange}
+                required
                 placeholder="e.g., 192.168.1.100"
                 className="w-full px-3 md:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base"
               />

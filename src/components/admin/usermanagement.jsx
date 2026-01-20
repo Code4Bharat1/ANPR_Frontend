@@ -4,7 +4,8 @@ import axios from 'axios';
 import {
   Search, Plus, User, Mail,
   Phone, Power, X, Building2, Lock,
-  UserCheck, UserX, Check, Users, Eye, Edit, MapPin, EyeOff
+  UserCheck, UserX, Check, Users, Eye, Edit, MapPin, EyeOff,
+  AlertCircle
 } from 'lucide-react';
 import Sidebar from './sidebar';
 import Header from './header';
@@ -45,7 +46,8 @@ const UserManagement = () => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showEditPassword, setShowEditPassword] = useState(false);
-  
+  const [errors, setErrors] = useState({});
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -200,57 +202,121 @@ const UserManagement = () => {
         : [...prev.assignedSupervisors, supervisorId]
     }));
   };
+// Validation Function
+const validateForm = () => {
+  const newErrors = {};
 
-  const handleCreateUser = async () => {
-    try {
-      const payload = {
-        name: formData.name,
-        email: formData.email,
-        mobile: formData.mobile,
-        address: formData.address,
-        password: formData.password,
-      };
+  // Name validation
+  if (!formData.name.trim()) {
+    newErrors.name = "Full name is required";
+  }
 
-      if (activeTab === 'Project Managers') {
-        payload.assignedSites = formData.assignedSites;
-        if (formData.assignedSupervisors.length > 0) {
-          payload.assignedSupervisors = formData.assignedSupervisors;
-        }
-      } else {
-        payload.siteId = formData.siteId;
-        payload.projectManagerId = formData.projectManagerId;
-      }
+  // Email validation
+  if (!formData.email.trim()) {
+    newErrors.email = "Email is required";
+  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+    newErrors.email = "Invalid email format";
+  }
 
-      const endpoint = activeTab === 'Project Managers'
-        ? '/api/client-admin/project-managers'
-        : '/api/client-admin/supervisors';
+  // Mobile validation
+  if (!formData.mobile.trim()) {
+    newErrors.mobile = "Phone number is required";
+  } else if (!/^\d{10}$/.test(formData.mobile.replace(/\D/g, ""))) {
+    newErrors.mobile = "Phone number must be 10 digits";
+  }
 
-      await api.post(endpoint, payload);
+  // Address validation
+  if (!formData.address.trim()) {
+    newErrors.address = "Address is required";
+  }
 
-      alert('User created successfully!');
+  // Password validation
+  if (!formData.password) {
+    newErrors.password = "Password is required";
+  } else if (formData.password.length < 6) {
+    newErrors.password = "Password must be at least 6 characters";
+  }
 
-      setFormData({
-        name: '',
-        email: '',
-        mobile: '',
-        address: '',
-        role: activeTab,
-        password: '',
-        assignedSites: [],
-        siteId: '',
-        assignedSupervisors: [],
-        projectManagerId: '',
-      });
-      setShowPassword(false);
-
-      setShowAdd(false);
-      await fetchUsers();
-
-    } catch (err) {
-      console.error('Error creating user:', err);
-      alert(err.response?.data?.message || err.message || 'Failed to create user');
+  // Project Manager specific validation
+  if (activeTab === "Project Managers") {
+    if (!formData.assignedSites.length) {
+      newErrors.assignedSites = "Select at least one site";
     }
-  };
+  }
+
+  // Supervisor specific validation
+  if (activeTab === "Supervisors") {
+    if (!formData.projectManagerId) {
+      newErrors.projectManagerId = "Project Manager is required";
+    }
+    if (!formData.siteId) {
+      newErrors.siteId = "Site is required";
+    }
+  }
+
+  setErrors(newErrors);
+  return Object.keys(newErrors).length === 0;
+};
+
+
+// Updated handleCreateUser function
+const handleCreateUser = async () => {
+  // Validate form first
+  if (!validateForm()) {
+    return;
+  }
+
+  try {
+    const payload = {
+      name: formData.name.trim(),
+      email: formData.email.trim(),
+      mobile: formData.mobile,
+      address: formData.address.trim(),
+      password: formData.password,
+    };
+
+    if (activeTab === "Project Managers") {
+      payload.assignedSites = formData.assignedSites;
+      if (formData.assignedSupervisors.length) {
+        payload.assignedSupervisors = formData.assignedSupervisors;
+      }
+    } else {
+      payload.siteId = formData.siteId;
+      payload.projectManagerId = formData.projectManagerId;
+    }
+
+    const endpoint =
+      activeTab === "Project Managers"
+        ? "/api/client-admin/project-managers"
+        : "/api/client-admin/supervisors";
+
+    await api.post(endpoint, payload);
+
+    alert("User created successfully!");
+
+    // Reset form
+    setFormData({
+      name: "",
+      email: "",
+      mobile: "",
+      address: "",
+      password: "",
+      assignedSites: [],
+      assignedSupervisors: [],
+      siteId: "",
+      projectManagerId: "",
+    });
+
+    setErrors({});
+    setShowPassword(false);
+    setShowAdd(false);
+    fetchUsers();
+
+  } catch (err) {
+    alert(err.response?.data?.message || "Failed to create user");
+  }
+};
+
 
   const handleUpdateUser = async () => {
     try {
@@ -776,267 +842,334 @@ const UserManagement = () => {
       )}
 
       {/* Add User Modal */}
-      {showAdd && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white flex items-center justify-between p-4 sm:p-6 border-b border-gray-200">
-              <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
-                Add {activeTab.slice(0, -1)}
-              </h2>
-              <button
-                onClick={() => setShowAdd(false)}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
+     // Updated Form JSX with Error Messages
+{showAdd && (
+  <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+    <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
+      <div className="sticky top-0 bg-white flex items-center justify-between p-4 sm:p-6 border-b border-gray-200">
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
+          Add {activeTab.slice(0, -1)}
+        </h2>
+        <button
+          onClick={() => {
+            setShowAdd(false);
+            setErrors({});
+          }}
+          className="text-gray-400 hover:text-gray-600 transition-colors"
+        >
+          <X className="w-6 h-6" />
+        </button>
+      </div>
 
-            <div className="p-4 sm:p-6 space-y-4">
-              <div>
-                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                  <User className="w-4 h-4" />
-                  Full Name
-                </label>
-                <input
-                  placeholder="John Doe"
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full border border-gray-300 px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
+      <div className="p-4 sm:p-6 space-y-4">
+        {/* Full Name */}
+        <div>
+          <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+            <User className="w-4 h-4" />
+            Full Name <span className="text-red-500">*</span>
+          </label>
+          <input
+            placeholder="John Doe"
+            type="text"
+            value={formData.name}
+            onChange={(e) => {
+              setFormData({ ...formData, name: e.target.value });
+              if (errors.name) setErrors({ ...errors, name: null });
+            }}
+            className={`w-full border ${errors.name ? 'border-red-500' : 'border-gray-300'} px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+          />
+          {errors.name && (
+            <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+              <AlertCircle className="w-3 h-3" />
+              {errors.name}
+            </p>
+          )}
+        </div>
 
-              <div>
-                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                  <Mail className="w-4 h-4" />
-                  Email Address
-                </label>
-                <input
-                  placeholder="john@example.com"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full border border-gray-300 px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
+        {/* Email */}
+        <div>
+          <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+            <Mail className="w-4 h-4" />
+            Email Address <span className="text-red-500">*</span>
+          </label>
+          <input
+            placeholder="john@example.com"
+            type="email"
+            value={formData.email}
+            onChange={(e) => {
+              setFormData({ ...formData, email: e.target.value });
+              if (errors.email) setErrors({ ...errors, email: null });
+            }}
+            className={`w-full border ${errors.email ? 'border-red-500' : 'border-gray-300'} px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+          />
+          {errors.email && (
+            <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+              <AlertCircle className="w-3 h-3" />
+              {errors.email}
+            </p>
+          )}
+        </div>
 
-              <div>
-                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                  <Phone className="w-4 h-4" />
-                  Phone Number
-                </label>
-                <input
-                  placeholder="+91 98765 43210"
-                  type="tel"
-                  value={formData.mobile}
-                  onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
-                  className="w-full border border-gray-300 px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
+        {/* Phone Number */}
+        <div>
+          <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+            <Phone className="w-4 h-4" />
+            Phone Number <span className="text-red-500">*</span>
+          </label>
+          <input
+            placeholder="+91 98765 43210"
+            type="tel"
+            value={formData.mobile}
+            onChange={(e) => {
+              setFormData({ ...formData, mobile: e.target.value });
+              if (errors.mobile) setErrors({ ...errors, mobile: null });
+            }}
+            className={`w-full border ${errors.mobile ? 'border-red-500' : 'border-gray-300'} px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+          />
+          {errors.mobile && (
+            <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+              <AlertCircle className="w-3 h-3" />
+              {errors.mobile}
+            </p>
+          )}
+        </div>
 
-              <div>
-                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                  <MapPin className="w-4 h-4" />
-                  Address
-                </label>
-                <textarea
-                  placeholder="Enter full address"
-                  value={formData.address}
-                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                  rows={3}
-                  className="w-full border border-gray-300 px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                />
-              </div>
+        {/* Address */}
+        <div>
+          <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+            <MapPin className="w-4 h-4" />
+            Address <span className="text-red-500">*</span>
+          </label>
+          <textarea
+            placeholder="Enter full address"
+            value={formData.address}
+            onChange={(e) => {
+              setFormData({ ...formData, address: e.target.value });
+              if (errors.address) setErrors({ ...errors, address: null });
+            }}
+            rows={3}
+            className={`w-full border ${errors.address ? 'border-red-500' : 'border-gray-300'} px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none`}
+          />
+          {errors.address && (
+            <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+              <AlertCircle className="w-3 h-3" />
+              {errors.address}
+            </p>
+          )}
+        </div>
 
-              <div>
-                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                  <Lock className="w-4 h-4" />
-                  Password
-                  {activeTab === 'Supervisors' && <span className="text-red-500">*</span>}
-                </label>
-                <div className="relative">
-                  <input
-                    placeholder="Enter password"
-                    type={showPassword ? "text" : "password"}
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    className="w-full border border-gray-300 px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-10"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                  >
-                    {showPassword ? (
-                      <EyeOff className="w-5 h-5" />
-                    ) : (
-                      <Eye className="w-5 h-5" />
-                    )}
-                  </button>
-                </div>
-                {activeTab === 'Supervisors' && (
-                  <p className="text-xs text-gray-500 mt-1">Password is required for supervisor</p>
-                )}
-              </div>
-
-              {activeTab === 'Supervisors' && (
-                <div>
-                  <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                    <User className="w-4 h-4" />
-                    Project Manager <span className="text-red-500">*</span>
-                  </label>
-                  {loadingPMs ? (
-                    <div className="w-full border border-gray-300 px-4 py-3 rounded-lg bg-gray-50 flex items-center justify-center">
-                      <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mr-2"></div>
-                      <span className="text-sm text-gray-600">Loading...</span>
-                    </div>
-                  ) : (
-                    <select
-                      value={formData.projectManagerId}
-                      onChange={(e) => setFormData({ ...formData, projectManagerId: e.target.value })}
-                      className="w-full border border-gray-300 px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    >
-                      <option value="">Select Project Manager</option>
-                      {projectManagers.map((pm) => (
-                        <option key={pm._id || pm.id} value={pm._id || pm.id}>
-                          {pm.name}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                </div>
+        {/* Password */}
+        <div>
+          <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+            <Lock className="w-4 h-4" />
+            Password <span className="text-red-500">*</span>
+          </label>
+          <div className="relative">
+            <input
+              placeholder="Enter password (min 6 characters)"
+              type={showPassword ? "text" : "password"}
+              value={formData.password}
+              onChange={(e) => {
+                setFormData({ ...formData, password: e.target.value });
+                if (errors.password) setErrors({ ...errors, password: null });
+              }}
+              className={`w-full border ${errors.password ? 'border-red-500' : 'border-gray-300'} px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-10`}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+            >
+              {showPassword ? (
+                <EyeOff className="w-5 h-5" />
+              ) : (
+                <Eye className="w-5 h-5" />
               )}
+            </button>
+          </div>
+          {errors.password && (
+            <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+              <AlertCircle className="w-3 h-3" />
+              {errors.password}
+            </p>
+          )}
+        </div>
 
-              <div>
-                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                  <Building2 className="w-4 h-4" />
-                  {activeTab === 'Project Managers' ? 'Assigned Sites (Multiple)' : 'Assigned Site'}
-                </label>
-
-                {loadingSites ? (
-                  <div className="w-full border border-gray-300 px-4 py-3 rounded-lg bg-gray-50 flex items-center justify-center">
-                    <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mr-2"></div>
-                    <span className="text-sm text-gray-600">Loading sites...</span>
-                  </div>
-                ) : sites.length === 0 ? (
-                  <div className="border border-gray-300 rounded-lg p-4 text-center text-sm text-gray-500">
-                    No sites available
-                  </div>
-                ) : (
-                  <div className="border border-gray-300 rounded-lg max-h-48 overflow-y-auto">
-                    {sites.map((site) => {
-                      const siteId = site._id || site.id;
-                      const siteName = site.name || site.siteName;
-                      const isSelected = activeTab === 'Project Managers'
-                        ? formData.assignedSites.includes(siteId)
-                        : formData.siteId === siteId;
-
-                      return (
-                        <div
-                          key={siteId}
-                          onClick={() => handleToggleSite(siteId)}
-                          className={`flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-gray-50 transition border-b border-gray-100 last:border-b-0 ${isSelected ? 'bg-blue-50' : ''
-                            }`}
-                        >
-                          <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition ${isSelected ? 'bg-blue-600 border-blue-600' : 'border-gray-300'
-                            }`}>
-                            {isSelected && <Check className="w-3 h-3 text-white" />}
-                          </div>
-                          <span className={`text-sm ${isSelected ? 'font-semibold text-blue-900' : 'text-gray-700'}`}>
-                            {siteName}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-
-                {activeTab === 'Project Managers' && formData.assignedSites.length > 0 && (
-                  <p className="text-xs text-blue-600 mt-2 font-medium">
-                    {formData.assignedSites.length} site(s) selected
+        {/* Project Manager Selection (for Supervisors) */}
+        {activeTab === 'Supervisors' && (
+          <div>
+            <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+              <User className="w-4 h-4" />
+              Project Manager <span className="text-red-500">*</span>
+            </label>
+            {loadingPMs ? (
+              <div className="w-full border border-gray-300 px-4 py-3 rounded-lg bg-gray-50 flex items-center justify-center">
+                <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mr-2"></div>
+                <span className="text-sm text-gray-600">Loading...</span>
+              </div>
+            ) : (
+              <>
+                <select
+                  value={formData.projectManagerId}
+                  onChange={(e) => {
+                    setFormData({ ...formData, projectManagerId: e.target.value });
+                    if (errors.projectManagerId) setErrors({ ...errors, projectManagerId: null });
+                  }}
+                  className={`w-full border ${errors.projectManagerId ? 'border-red-500' : 'border-gray-300'} px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                >
+                  <option value="">Select Project Manager</option>
+                  {projectManagers.map((pm) => (
+                    <option key={pm._id || pm.id} value={pm._id || pm.id}>
+                      {pm.name}
+                    </option>
+                  ))}
+                </select>
+                {errors.projectManagerId && (
+                  <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" />
+                    {errors.projectManagerId}
                   </p>
                 )}
-              </div>
-
-              {activeTab === 'Project Managers' && (
-                <div>
-                  <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                    <Users className="w-4 h-4" />
-                    Assign Supervisors (Optional)
-                  </label>
-                  {loadingSupervisors ? (
-                    <div className="w-full border border-gray-300 px-4 py-3 rounded-lg bg-gray-50 flex items-center justify-center">
-                      <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mr-2"></div>
-                      <span className="text-sm text-gray-600">Loading supervisors...</span>
-                    </div>
-                  ) : supervisors.length === 0 ? (
-                    <div className="border border-gray-300 rounded-lg p-4 text-center text-sm text-gray-500">
-                      No supervisors available
-                    </div>
-                  ) : (
-                    <div className="border border-gray-300 rounded-lg max-h-48 overflow-y-auto">
-                      {supervisors.map((supervisor) => {
-                        const supervisorId = supervisor._id || supervisor.id;
-                        const isSelected = formData.assignedSupervisors.includes(supervisorId);
-
-                        return (
-                          <div
-                            key={supervisorId}
-                            onClick={() => handleToggleSupervisor(supervisorId)}
-                            className={`flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-gray-50 transition border-b border-gray-100 last:border-b-0 ${isSelected ? 'bg-blue-50' : ''
-                              }`}
-                          >
-                            <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition ${isSelected ? 'bg-blue-600 border-blue-600' : 'border-gray-300'
-                              }`}>
-                              {isSelected && <Check className="w-3 h-3 text-white" />}
-                            </div>
-                            <div className="flex-1">
-                              <span className={`text-sm ${isSelected ? 'font-semibold text-blue-900' : 'text-gray-700'}`}>
-                                {supervisor.name}
-                              </span>
-                              <p className="text-xs text-gray-500">{supervisor.email}</p>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-
-                  {formData.assignedSupervisors.length > 0 && (
-                    <p className="text-xs text-blue-600 mt-2 font-medium">
-                      {formData.assignedSupervisors.length} supervisor(s) selected
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
-
-            <div className="sticky bottom-0 bg-gray-50 flex flex-col sm:flex-row justify-end gap-3 p-4 sm:p-6 border-t border-gray-200">
-              <button
-                onClick={() => setShowAdd(false)}
-                className="w-full sm:w-auto px-6 py-2.5 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-100 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleCreateUser}
-                disabled={
-                  !formData.name ||
-                  !formData.email ||
-                  !formData.password ||
-                  !formData.address ||
-                  (activeTab === 'Project Managers' && formData.assignedSites.length === 0) ||
-                  (activeTab === 'Supervisors' && (!formData.siteId || !formData.projectManagerId))
-                }
-                className="w-full sm:w-auto px-6 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200 disabled:bg-gray-300 disabled:cursor-not-allowed disabled:shadow-none"
-              >
-                Create User
-              </button>
-            </div>
+              </>
+            )}
           </div>
-        </div>
-      )}
+        )}
 
+        {/* Site Selection */}
+        <div>
+          <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+            <Building2 className="w-4 h-4" />
+            {activeTab === 'Project Managers' ? 'Assigned Sites (Multiple)' : 'Assigned Site'}
+            <span className="text-red-500">*</span>
+          </label>
+
+          {loadingSites ? (
+            <div className="w-full border border-gray-300 px-4 py-3 rounded-lg bg-gray-50 flex items-center justify-center">
+              <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mr-2"></div>
+              <span className="text-sm text-gray-600">Loading sites...</span>
+            </div>
+          ) : sites.length === 0 ? (
+            <div className="border border-gray-300 rounded-lg p-4 text-center text-sm text-gray-500">
+              No sites available
+            </div>
+          ) : (
+            <>
+              <div className={`border ${errors.assignedSites || errors.siteId ? 'border-red-500' : 'border-gray-300'} rounded-lg max-h-48 overflow-y-auto`}>
+                {sites.map((site) => {
+                  const siteId = site._id || site.id;
+                  const siteName = site.name || site.siteName;
+                  const isSelected = activeTab === 'Project Managers'
+                    ? formData.assignedSites.includes(siteId)
+                    : formData.siteId === siteId;
+
+                  return (
+                    <div
+                      key={siteId}
+                      onClick={() => {
+                        handleToggleSite(siteId);
+                        if (errors.assignedSites) setErrors({ ...errors, assignedSites: null });
+                        if (errors.siteId) setErrors({ ...errors, siteId: null });
+                      }}
+                      className={`flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-gray-50 transition border-b border-gray-100 last:border-b-0 ${isSelected ? 'bg-blue-50' : ''}`}
+                    >
+                      <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition ${isSelected ? 'bg-blue-600 border-blue-600' : 'border-gray-300'}`}>
+                        {isSelected && <Check className="w-3 h-3 text-white" />}
+                      </div>
+                      <span className={`text-sm ${isSelected ? 'font-semibold text-blue-900' : 'text-gray-700'}`}>
+                        {siteName}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+              {(errors.assignedSites || errors.siteId) && (
+                <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3" />
+                  {errors.assignedSites || errors.siteId}
+                </p>
+              )}
+            </>
+          )}
+
+          {activeTab === 'Project Managers' && formData.assignedSites.length > 0 && (
+            <p className="text-xs text-blue-600 mt-2 font-medium">
+              {formData.assignedSites.length} site(s) selected
+            </p>
+          )}
+        </div>
+
+        {/* Supervisor Selection (for Project Managers) */}
+        {activeTab === 'Project Managers' && (
+          <div>
+            <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+              <Users className="w-4 h-4" />
+              Assign Supervisors (Optional)
+            </label>
+            {loadingSupervisors ? (
+              <div className="w-full border border-gray-300 px-4 py-3 rounded-lg bg-gray-50 flex items-center justify-center">
+                <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mr-2"></div>
+                <span className="text-sm text-gray-600">Loading supervisors...</span>
+              </div>
+            ) : supervisors.length === 0 ? (
+              <div className="border border-gray-300 rounded-lg p-4 text-center text-sm text-gray-500">
+                No supervisors available
+              </div>
+            ) : (
+              <div className="border border-gray-300 rounded-lg max-h-48 overflow-y-auto">
+                {supervisors.map((supervisor) => {
+                  const supervisorId = supervisor._id || supervisor.id;
+                  const isSelected = formData.assignedSupervisors.includes(supervisorId);
+
+                  return (
+                    <div
+                      key={supervisorId}
+                      onClick={() => handleToggleSupervisor(supervisorId)}
+                      className={`flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-gray-50 transition border-b border-gray-100 last:border-b-0 ${isSelected ? 'bg-blue-50' : ''}`}
+                    >
+                      <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition ${isSelected ? 'bg-blue-600 border-blue-600' : 'border-gray-300'}`}>
+                        {isSelected && <Check className="w-3 h-3 text-white" />}
+                      </div>
+                      <div className="flex-1">
+                        <span className={`text-sm ${isSelected ? 'font-semibold text-blue-900' : 'text-gray-700'}`}>
+                          {supervisor.name}
+                        </span>
+                        <p className="text-xs text-gray-500">{supervisor.email}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {formData.assignedSupervisors.length > 0 && (
+              <p className="text-xs text-blue-600 mt-2 font-medium">
+                {formData.assignedSupervisors.length} supervisor(s) selected
+              </p>
+            )}
+          </div>
+        )}
+      </div>
+
+      <div className="sticky bottom-0 bg-gray-50 flex flex-col sm:flex-row justify-end gap-3 p-4 sm:p-6 border-t border-gray-200">
+        <button
+          onClick={() => {
+            setShowAdd(false);
+            setErrors({});
+          }}
+          className="w-full sm:w-auto px-6 py-2.5 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-100 transition-colors"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={handleCreateUser}
+          className="w-full sm:w-auto px-6 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200"
+        >
+          Create User
+        </button>
+      </div>
+    </div>
+  </div>
+)}
       {/* Edit User Modal */}
       {showEdit && selectedUser && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">

@@ -10,6 +10,7 @@ import Header from './header';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
+
 // Add/Edit Site Modal
 const SiteModal = ({ isOpen, onClose, site, onSave, mode }) => {
   const [formData, setFormData] = useState({
@@ -146,7 +147,10 @@ const SiteModal = ({ isOpen, onClose, site, onSave, mode }) => {
             {mode === 'edit' ? 'Edit Site' : 'Add New Site'}
           </h2>
           <button
-            onClick={onClose}
+            onClick={() => {
+              onClose();
+              setErrors({});
+            }}
             className="p-2 hover:bg-white/20 rounded-lg transition text-white"
           >
             <X className="w-6 h-6" />
@@ -162,7 +166,10 @@ const SiteModal = ({ isOpen, onClose, site, onSave, mode }) => {
             <input
               type="text"
               value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              onChange={(e) => {
+                setFormData({ ...formData, name: e.target.value });
+                if (errors.name) setErrors({ ...errors, name: null });
+              }}
               className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition ${errors.name ? 'border-red-500' : 'border-gray-300'
                 }`}
               placeholder="Enter site name"
@@ -184,7 +191,10 @@ const SiteModal = ({ isOpen, onClose, site, onSave, mode }) => {
               <input
                 type="text"
                 value={formData.location}
-                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, location: e.target.value });
+                  if (errors.location) setErrors({ ...errors, location: null });
+                }}
                 className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition ${errors.location ? 'border-red-500' : 'border-gray-300'
                   }`}
                 placeholder="e.g., Mumbai, Maharashtra"
@@ -204,7 +214,7 @@ const SiteModal = ({ isOpen, onClose, site, onSave, mode }) => {
                 className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition"
               >
                 <option value="Active">Active</option>
-                <option value="Complelted">Complelted</option>
+                <option value="Completed">Completed</option>
                 <option value="Inactive">Inactive</option>
               </select>
             </div>
@@ -232,7 +242,10 @@ const SiteModal = ({ isOpen, onClose, site, onSave, mode }) => {
             <input
               type="text"
               value={formData.contactPerson}
-              onChange={(e) => setFormData({ ...formData, contactPerson: e.target.value })}
+              onChange={(e) => {
+                setFormData({ ...formData, contactPerson: e.target.value });
+                if (errors.contactPerson) setErrors({ ...errors, contactPerson: null });
+              }}
               className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition ${errors.contactPerson ? 'border-red-500' : 'border-gray-300'
                 }`}
               placeholder="Enter contact person name"
@@ -251,7 +264,10 @@ const SiteModal = ({ isOpen, onClose, site, onSave, mode }) => {
               <input
                 type="tel"
                 value={formData.contactPhone}
-                onChange={(e) => setFormData({ ...formData, contactPhone: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, contactPhone: e.target.value });
+                  if (errors.contactPhone) setErrors({ ...errors, contactPhone: null });
+                }}
                 className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition ${errors.contactPhone ? 'border-red-500' : 'border-gray-300'
                   }`}
                 placeholder="+91 98765 43210"
@@ -268,7 +284,10 @@ const SiteModal = ({ isOpen, onClose, site, onSave, mode }) => {
               <input
                 type="email"
                 value={formData.contactEmail}
-                onChange={(e) => setFormData({ ...formData, contactEmail: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, contactEmail: e.target.value });
+                  if (errors.contactEmail) setErrors({ ...errors, contactEmail: null });
+                }}
                 className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition ${errors.contactEmail ? 'border-red-500' : 'border-gray-300'
                   }`}
                 placeholder="email@example.com"
@@ -333,7 +352,10 @@ const SiteModal = ({ isOpen, onClose, site, onSave, mode }) => {
                         <input
                           type="text"
                           value={gate.gateName}
-                          onChange={(e) => updateGate(index, 'gateName', e.target.value)}
+                          onChange={(e) => {
+                            updateGate(index, 'gateName', e.target.value);
+                            if (errors.gates) setErrors({ ...errors, gates: null });
+                          }}
                           placeholder={`Gate ${index + 1} name (e.g., Main Entrance, Back Gate)`}
                           className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
                         />
@@ -395,7 +417,10 @@ const SiteModal = ({ isOpen, onClose, site, onSave, mode }) => {
           <div className="flex gap-3 pt-4">
             <button
               type="button"
-              onClick={onClose}
+              onClick={() => {
+                onClose();
+                setErrors({});
+              }}
               disabled={loading}
               className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition font-semibold disabled:opacity-50"
             >
@@ -946,7 +971,7 @@ const SiteManagement = () => {
 
       <main className="lg:ml-72 max-w-7xl mx-auto px-6 py-8">
         {/* Stats */}
-        {/* <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6"> <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-5 border-2 border-blue-200 shadow-sm"> <div className="text-3xl font-black text-blue-700">{sites.length}</div> <div className="text-sm text-blue-700 font-semibold mt-1">Total Sites</div> </div> <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-5 border-2 border-green-200 shadow-sm"> <div className="text-3xl font-black text-green-700"> {sites.filter(s => s.status === 'Active').length} </div> <div className="text-sm text-green-700 font-semibold mt-1">Active</div> </div> <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl p-5 border-2 border-yellow-200 shadow-sm"> <div className="text-3xl font-black text-yellow-700"> {sites.filter(s => s.status === 'Complelted').length} </div> <div className="text-sm text-yellow-700 font-semibold mt-1">Complelted</div> </div> <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-5 border-2 border-gray-200 shadow-sm"> <div className="text-3xl font-black text-gray-700"> {sites.filter(s => s.status === 'Inactive').length} </div> <div className="text-sm text-gray-700 font-semibold mt-1">Inactive</div> </div><div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-5 border-2 border-orange-200 shadow-sm">
+        {/* <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6"> <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-5 border-2 border-blue-200 shadow-sm"> <div className="text-3xl font-black text-blue-700">{sites.length}</div> <div className="text-sm text-blue-700 font-semibold mt-1">Total Sites</div> </div> <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-5 border-2 border-green-200 shadow-sm"> <div className="text-3xl font-black text-green-700"> {sites.filter(s => s.status === 'Active').length} </div> <div className="text-sm text-green-700 font-semibold mt-1">Active</div> </div> <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl p-5 border-2 border-yellow-200 shadow-sm"> <div className="text-3xl font-black text-yellow-700"> {sites.filter(s => s.status === 'Completed').length} </div> <div className="text-sm text-yellow-700 font-semibold mt-1">Completed</div> </div> <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-5 border-2 border-gray-200 shadow-sm"> <div className="text-3xl font-black text-gray-700"> {sites.filter(s => s.status === 'Inactive').length} </div> <div className="text-sm text-gray-700 font-semibold mt-1">Inactive</div> </div><div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-5 border-2 border-orange-200 shadow-sm">
           <div className="text-3xl font-black text-orange-700">
             {sites.reduce((total, site) => total + (site.gates?.length || 0), 0)}
           </div>
@@ -996,7 +1021,7 @@ const SiteManagement = () => {
           >
             <option value="All">All Status</option>
             <option value="Active">Active</option>
-            <option value="Complelted">Complelted</option>
+            <option value="Completed">Completed</option>
             <option value="Inactive">Inactive</option>
           </select>
           <button
