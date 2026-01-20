@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 import Tesseract from "tesseract.js";
 import { useRouter } from "next/navigation";
+import { base64ToFile, uploadToWasabi } from "@/utils/wasabiUpload";
 
 const INDIAN_STATES = [
   "AN",
@@ -437,7 +438,7 @@ const OcrScan = () => {
   const formatRecordingTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
   const switchCamera = async () => {
@@ -1405,111 +1406,119 @@ const OcrScan = () => {
     await startCamera();
   };
 
- const handleAllowEntry = async () => {
-  try {
-    setLoading(true);
+  const handleAllowEntry = async () => {
+    try {
+      setLoading(true);
 
-    const token = localStorage.getItem("accessToken");
-    const API_URL =
-      process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+      const token = localStorage.getItem("accessToken");
+      const API_URL =
+        process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
-    if (!vehicleNumber) {
-      alert("❌ Vehicle number is required");
-      return;
-    }
-
-    const finalVendor =
-      vendorInputMode === "manual"
-        ? manualVendorName
-        : vehicleDetails.vendorId;
-
-    const finalVehicleType =
-      vehicleDetails.vehicleType === "OTHER"
-        ? customVehicleType
-        : vehicleDetails.vehicleType;
-
-    // ✅ ENTRY PHOTOS CONFIG
-    const ENTRY_PHOTOS = [
-      { key: "frontView", name: "Front View" },
-      { key: "backView", name: "Back View" },
-    ];
-
-    const uploadedEntryPhotos = {};
-
-    // ✅ Upload entry photos to Wasabi
-    for (const photo of ENTRY_PHOTOS) {
-      if (!entryMedia?.[photo.key]) continue;
-
-      const file = base64ToFile(
-        entryMedia[photo.key],
-        `${Date.now()}-${photo.key}.jpg`
-      );
-
-      const fileKey = await uploadToWasabi(
-        file,
-        `vehicles/${vehicleNumber}/entry/photos`
-      );
-
-      uploadedEntryPhotos[photo.key] = fileKey;
-    }
-
-    // ✅ Upload challan image (if any)
-    let challanKey = "";
-    if (vehicleDetails.challanImage) {
-      const challanFile = base64ToFile(
-        vehicleDetails.challanImage,
-        `${Date.now()}-challan.jpg`
-      );
-
-      challanKey = await uploadToWasabi(
-        challanFile,
-        `vehicles/${vehicleNumber}/entry/challan`
-      );
-    }
-
-    // ✅ FINAL ENTRY PAYLOAD
-    const entryData = {
-      vehicleNumber: vehicleNumber.toUpperCase().trim(),
-      vendorId: finalVendor || "",
-      vehicleType: finalVehicleType || "TRUCK",
-      driverName: driverName || "",
-      entryTime: new Date().toISOString(),
-      purpose: vehicleDetails.materialType || "Material Delivery",
-      loadStatus: vehicleDetails.loadStatus.toUpperCase() || "FULL",
-      entryGate: "OCR Manual Entry",
-      notes: vehicleDetails.notes || "",
-      siteId: vehicleDetails.siteId,
-
-      media: {
-        photos: uploadedEntryPhotos, // ✅ Wasabi keys
-        video: "",
-        challanImage: challanKey,     // ✅ Wasabi key
-      },
-    };
-
-    const response = await axios.post(
-      `${API_URL}/api/supervisor/mobile/trips/manual`,
-      entryData,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
+      if (!vehicleNumber) {
+        alert("❌ Vehicle number is required");
+        return;
       }
-    );
 
-    alert("✅ Vehicle entry recorded successfully!");
-    resetForm();
-    router.push("/supervisor/active-vehicles");
+      const finalVendor =
+        vendorInputMode === "manual"
+          ? manualVendorName
+          : vehicleDetails.vendorId;
 
-  } catch (error) {
-    console.error("❌ Entry Error:", error);
-    alert(error.response?.data?.message || "Entry failed");
-  } finally {
-    setLoading(false);
-  }
-};
+      const finalVehicleType =
+        vehicleDetails.vehicleType === "OTHER"
+          ? customVehicleType
+          : vehicleDetails.vehicleType;
 
+      // ✅ ENTRY PHOTOS CONFIG
+      const ENTRY_PHOTOS = [
+        { key: "frontView", name: "Front View", index: 1 },
+        { key: "backView", name: "Back View", index: 2 },
+        { key: "loadView", name: "Load View", index: 3 },
+        { key: "driverView", name: "Driver View", index: 4 },
+      ];
+
+      const uploadedEntryPhotos = {};
+
+      // ✅ Upload entry photos to Wasabi
+      for (const photo of ENTRY_PHOTOS) {
+        if (!mediaCapture?.[photo.key]) continue;
+
+        const file = base64ToFile(
+          mediaCapture[photo.key],
+          `${Date.now()}-${photo.key}.jpg`,
+        );
+
+        // console.log(file);
+
+        const fileKey = await uploadToWasabi({
+          file,
+          vehicleId: `${vehicleNumber}/entry/photos`,
+          type: "entry",
+          index: photo.index,
+        });
+
+        uploadedEntryPhotos[photo.key] = fileKey;
+      }
+
+      // ✅ Upload challan image (if any)
+      let challanKey = "";
+      if (vehicleDetails.challanImage) {
+        const challanFile = base64ToFile(
+          vehicleDetails.challanImage,
+          `${Date.now()}-challan.jpg`,
+        );
+
+        console.log("Challan : ", challanFile);
+
+        challanKey = await uploadToWasabi({
+          file: challanFile,
+          vehicleId: `${vehicleNumber}/entry/challan`,
+          type: "entry",
+          index: 1
+        });
+      }
+
+      // ✅ FINAL ENTRY PAYLOAD
+      const entryData = {
+        vehicleNumber: vehicleNumber.toUpperCase().trim(),
+        vendorId: finalVendor || "",
+        vehicleType: finalVehicleType || "TRUCK",
+        driverName: driverName || "",
+        entryTime: new Date().toISOString(),
+        purpose: vehicleDetails.materialType || "Material Delivery",
+        loadStatus: vehicleDetails.loadStatus.toUpperCase() || "FULL",
+        entryGate: "OCR Manual Entry",
+        notes: vehicleDetails.notes || "",
+        siteId: vehicleDetails.siteId,
+
+        media: {
+          photos: uploadedEntryPhotos, // ✅ Wasabi keys
+          video: "",
+          challanImage: challanKey, // ✅ Wasabi key
+        },
+      };
+
+      const response = await axios.post(
+        `${API_URL}/api/supervisor/mobile/trips/manual`,
+        entryData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        },
+      );
+
+      alert("✅ Vehicle entry recorded successfully!");
+      resetForm();
+      router.push("/supervisor/active-vehicles");
+    } catch (error) {
+      console.error("❌ Entry Error:", error);
+      alert(error.response?.data?.message || "Entry failed");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const resetForm = () => {
     setStep(1);

@@ -40,6 +40,11 @@ export const uploadToWasabi = async ({
   try {
     const token = localStorage.getItem('accessToken');
 
+    console.log("File : ", file);
+    console.log("VehicleId : ", vehicleId);
+    console.log("Type : ", type);
+    
+
     if (!vehicleId || !type || !file) {
       throw new Error('Missing required upload params');
     }
