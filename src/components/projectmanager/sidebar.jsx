@@ -34,7 +34,7 @@ const Sidebar = ({ isOpen, onClose }) => {
   return (
     <>
       {isOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden" onClick={onClose} />
+        <div className="fixed inset-0 bg-black/80 z-40 lg:hidden" onClick={onClose} />
       )}
 
       <aside className={`fixed top-0 left-0 h-full w-72 bg-white border-r border-gray-200 z-50 transform transition-transform duration-300 ${
