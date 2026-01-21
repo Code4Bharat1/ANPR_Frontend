@@ -1,14 +1,20 @@
 "use client";
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { 
+import {
   Search, Download, Calendar,
   FileText, TrendingUp, Filter,
   ChevronDown, ChevronUp, X,
   BarChart3, Car, MapPin,
   Clock, AlertCircle, CheckCircle,
   RefreshCw, Eye, MoreVertical,
-  Printer, Mail, Share2
+  Printer, Mail, Share2,
+  LogIn,
+  Timer,
+  LogOut,
+  Camera,
+  Video,
+  Loader2
 } from 'lucide-react';
 import Sidebar from './sidebar';
 import Header from './header';
@@ -17,7 +23,7 @@ import Header from './header';
 const TableHeader = ({ children, sortable = false, onSort, sortDirection }) => (
   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
     {sortable ? (
-      <button 
+      <button
         onClick={onSort}
         className="flex items-center gap-1 hover:text-gray-900 transition-colors"
       >
@@ -101,9 +107,8 @@ const StatCard = ({ title, value, icon: Icon, color, trend, subtitle }) => (
         <Icon className={`w-6 h-6 ${color.icon}`} />
       </div>
       {trend && (
-        <div className={`flex items-center gap-1 text-sm font-semibold px-2 py-1 rounded-full ${
-          trend >= 0 ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
-        }`}>
+        <div className={`flex items-center gap-1 text-sm font-semibold px-2 py-1 rounded-full ${trend >= 0 ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
+          }`}>
           {trend >= 0 ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
           {Math.abs(trend)}%
         </div>
@@ -137,9 +142,12 @@ const AdminReports = () => {
   const [filterSite, setFilterSite] = useState('All Sites');
   const [filterStatus, setFilterStatus] = useState('All Status');
   const [dateRange, setDateRange] = useState({
-    start: new Date().toISOString().split('T')[0],
-    end: new Date().toISOString().split('T')[0]
+    start: new Date(new Date().setDate(new Date().getDate() - 7))
+      .toISOString()
+      .split('T')[0],
+    end: new Date().toISOString().split('T')[0],
   });
+
   const [sortConfig, setSortConfig] = useState({
     key: null,
     direction: 'asc'
@@ -148,7 +156,37 @@ const AdminReports = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [selectedRows, setSelectedRows] = useState([]);
   const [viewMode, setViewMode] = useState('table'); // 'table' or 'card'
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [selectedTrip, setSelectedTrip] = useState(null);
+  const [mediaLoading, setMediaLoading] = useState(false);
+  const [resolvedEntryMedia, setResolvedEntryMedia] = useState({
+    photos: {},
+    video: null,
+  });
+  const [resolvedExitMedia, setResolvedExitMedia] = useState({
+    photos: {},
+    video: null,
+  });
 
+  const [expandedSections, setExpandedSections] = useState({
+    entryEvidence: true,
+    exitEvidence: true,
+  });
+
+  const photoFields = [
+    {
+      key: "frontView",
+      label: "Front View",
+      description: "Vehicle front side",
+    },
+    { key: "backView", label: "Back View", description: "Vehicle rear side" },
+    { key: "loadView", label: "Load Area", description: "Cargo/load area" },
+    {
+      key: "driverView",
+      label: "Driver",
+      description: "Driver identification",
+    },
+  ];
   const getUserRole = () => {
     if (typeof window !== 'undefined') {
       const userData = localStorage.getItem('user');
@@ -169,7 +207,7 @@ const AdminReports = () => {
       setLoading(true);
       const token = localStorage.getItem('accessToken');
       const userRole = getUserRole();
-      
+
       // Build params object
       const params = {
         startDate: dateRange.start,
@@ -189,7 +227,7 @@ const AdminReports = () => {
         : `${process.env.NEXT_PUBLIC_API_URL}/api/client-admin/reports`;
 
       const response = await axios.get(apiEndpoint, {
-        headers: { 
+        headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
@@ -198,24 +236,24 @@ const AdminReports = () => {
 
       // Format trips
       const formattedTrips = (response.data || []).map(trip => {
-        const vehicleNumber = trip.vehicleNumber || 
-                             trip.vehicle || 
-                             trip.plateText || 
-                             trip.vehicleId?.vehicleNumber || 
-                             'N/A';
+        const vehicleNumber = trip.vehicleNumber ||
+          trip.vehicle ||
+          trip.plateText ||
+          trip.vehicleId?.vehicleNumber ||
+          'N/A';
 
-        const entryTime = trip.entryTime || 
-                         (trip.entryAt ? formatDateTime(trip.entryAt) : '-');
+        const entryTime = trip.entryTime ||
+          (trip.entryAt ? formatDateTime(trip.entryAt) : '-');
 
-        const exitTime = trip.exitTime || 
-                        (trip.exitAt ? formatDateTime(trip.exitAt) : '-');
+        const exitTime = trip.exitTime ||
+          (trip.exitAt ? formatDateTime(trip.exitAt) : '-');
 
         const status = normalizeStatus(trip.status);
 
-        const site = trip.site || 
-                    trip.siteName || 
-                    trip.siteId?.name || 
-                    'N/A';
+        const site = trip.site ||
+          trip.siteName ||
+          trip.siteId?.name ||
+          'N/A';
 
         const duration = calculateDuration(trip.entryAt, trip.exitAt);
 
@@ -234,7 +272,7 @@ const AdminReports = () => {
       });
 
       setTrips(formattedTrips);
-      
+      console.log('Fetched trips:', formattedTrips);
       // Update active filters
       const filters = [];
       if (filterStatus !== 'All Status') {
@@ -244,19 +282,90 @@ const AdminReports = () => {
         filters.push({ type: 'site', label: 'Site', value: filterSite });
       }
       if (dateRange.start !== dateRange.end) {
-        filters.push({ 
-          type: 'date', 
-          label: 'Date Range', 
-          value: `${dateRange.start} to ${dateRange.end}` 
+        filters.push({
+          type: 'date',
+          label: 'Date Range',
+          value: `${dateRange.start} to ${dateRange.end}`
         });
       }
       setActiveFilters(filters);
-      
+
     } catch (err) {
       console.error('Error fetching reports:', err);
       alert(err.response?.data?.message || 'Failed to fetch reports. Please try again.');
     } finally {
       setLoading(false);
+    }
+  };
+  const handleViewDetails = async (report) => {
+    setSelectedTrip(report);
+    setShowDetailsModal(true);
+    setMediaLoading(true);
+
+    try {
+      const token = localStorage.getItem("accessToken");
+      const API_URL =
+        process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+
+      // ENTRY MEDIA
+      if (report.rawData?.entryMedia) {
+        const entryPhotos = {};
+        for (const key in report.rawData?.entryMedia.photos || {}) {
+          const mediaKey = report.rawData?.entryMedia.photos[key];
+          if (!mediaKey) continue;
+
+          try {
+            const res = await axios.get(`${API_URL}/api/uploads/get-file`, {
+              params: { key: mediaKey },
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            entryPhotos[key] = res.data.url;
+          } catch { }
+        }
+
+        let entryVideo = null;
+        if (report.rawData?.entryMedia.video) {
+          const res = await axios.get(`${API_URL}/api/uploads/get-file`, {
+            params: { key: report.rawData?.entryMedia.video },
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          entryVideo = res.data.url;
+        }
+
+        setResolvedEntryMedia({ photos: entryPhotos, video: entryVideo });
+      }
+
+      // EXIT MEDIA
+      if (report.rawData?.exitMedia) {
+        const exitPhotos = {};
+        for (const key in report.rawData?.exitMedia.photos || {}) {
+          const mediaKey = report.rawData?.exitMedia.photos[key];
+          if (!mediaKey) continue;
+
+          try {
+            const res = await axios.get(`${API_URL}/api/uploads/get-file`, {
+              params: { key: mediaKey },
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            exitPhotos[key] = res.data.url;
+          } catch { }
+        }
+
+        let exitVideo = null;
+        if (report.rawData?.exitMedia.video) {
+          const res = await axios.get(`${API_URL}/api/uploads/get-file`, {
+            params: { key: report.rawData?.exitMedia.video },
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          exitVideo = res.data.url;
+        }
+
+        setResolvedExitMedia({ photos: exitPhotos, video: exitVideo });
+      }
+    } catch (err) {
+      console.error("Media resolve failed:", err);
+    } finally {
+      setMediaLoading(false);
     }
   };
 
@@ -279,7 +388,7 @@ const AdminReports = () => {
 
   const normalizeStatus = (status) => {
     if (!status) return 'Active';
-    
+
     const statusMap = {
       'INSIDE': 'Active',
       'active': 'Active',
@@ -288,29 +397,29 @@ const AdminReports = () => {
       'completed': 'Completed',
       'COMPLETED': 'Completed'
     };
-    
+
     return statusMap[status] || status;
   };
 
-const calculateDuration = (entryTime, exitTime, status) => {
-  if (!entryTime) return '--:--';
+  const calculateDuration = (entryTime, exitTime, status) => {
+    if (!entryTime) return '--:--';
 
-  const start = new Date(entryTime).getTime();
-  const end =
-    status === 'active' || status === 'INSIDE'
-      ? Date.now()                     // 🔥 live duration
-      : exitTime
-        ? new Date(exitTime).getTime()
-        : null;
+    const start = new Date(entryTime).getTime();
+    const end =
+      status === 'active' || status === 'INSIDE'
+        ? Date.now()                     // 🔥 live duration
+        : exitTime
+          ? new Date(exitTime).getTime()
+          : null;
 
-  if (!start || !end || end <= start) return '--:--';
+    if (!start || !end || end <= start) return 'Ongoing';
 
-  const diff = end - start;
-  const hours = Math.floor(diff / (1000 * 60 * 60));
-  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    const diff = end - start;
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
 
-  return `${hours}h ${minutes}m`;
-};
+    return `${hours}h ${minutes}m`;
+  };
 
 
   const handleSort = (key) => {
@@ -340,7 +449,7 @@ const calculateDuration = (entryTime, exitTime, status) => {
         : `${process.env.NEXT_PUBLIC_API_URL}/api/client-admin/reports/export`;
 
       const response = await axios.get(exportEndpoint, {
-        headers: { 
+        headers: {
           Authorization: `Bearer ${token}`,
           'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         },
@@ -357,7 +466,7 @@ const calculateDuration = (entryTime, exitTime, status) => {
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
-      
+
     } catch (err) {
       console.error('Error exporting report:', err);
       alert('Failed to export report. Please try again.');
@@ -419,6 +528,51 @@ const calculateDuration = (entryTime, exitTime, status) => {
     setActiveFilters(newFilters);
   };
 
+
+  const toggleSection = (section) => {
+    setExpandedSections((prev) => ({
+      ...prev,
+      [section]: !prev[section],
+    }));
+  };
+
+
+  const getStatusBadge = (status) => {
+    const configs = {
+      completed: {
+        bg: "bg-gradient-to-r from-green-100 to-green-50",
+        text: "text-green-700",
+        label: "Completed",
+        icon: CheckCircle,
+      },
+      active: {
+        bg: "bg-gradient-to-r from-blue-100 to-blue-50",
+        text: "text-blue-700",
+        label: "Inside",
+        icon: Clock,
+      },
+      inside: {
+        bg: "bg-gradient-to-r from-blue-100 to-blue-50",
+        text: "text-blue-700",
+        label: "Inside",
+        icon: Clock,
+      },
+    };
+
+    const config = configs[status?.toLowerCase()] || configs.active;
+    const Icon = config.icon;
+
+    return (
+      <span
+        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${config.bg} ${config.text}`}
+      >
+        <Icon className="w-3 h-3" />
+        {config.label}
+      </span>
+    );
+  };
+
+
   // Fetch reports on mount and when date range changes
   useEffect(() => {
     fetchReports();
@@ -434,7 +588,7 @@ const calculateDuration = (entryTime, exitTime, status) => {
   // Filter trips based on search and filters
   const filteredTrips = trips.filter(trip => {
     const matchesSearch = trip.vehicleNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         trip.id?.toLowerCase().includes(searchTerm.toLowerCase());
+      trip.id?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = filterStatus === 'All Status' || trip.status === filterStatus;
     const matchesSite = filterSite === 'All Sites' || trip.site === filterSite;
     return matchesSearch && matchesStatus && matchesSite;
@@ -443,10 +597,10 @@ const calculateDuration = (entryTime, exitTime, status) => {
   // Sort trips AFTER filteredTrips is defined
   const sortedTrips = [...filteredTrips].sort((a, b) => {
     if (!sortConfig.key) return 0;
-    
+
     const aVal = a[sortConfig.key];
     const bVal = b[sortConfig.key];
-    
+
     if (aVal < bVal) {
       return sortConfig.direction === 'asc' ? -1 : 1;
     }
@@ -461,9 +615,9 @@ const calculateDuration = (entryTime, exitTime, status) => {
   const activeTrips = trips.filter(t => t.status === 'Active').length;
   const avgDuration = trips.length > 0
     ? Math.round(trips.reduce((acc, trip) => {
-        const duration = trip.duration ? parseInt(trip.duration) : 0;
-        return acc + duration;
-      }, 0) / trips.length)
+      const duration = trip.duration ? parseInt(trip.duration) : 0;
+      return acc + duration;
+    }, 0) / trips.length)
     : 0;
 
   if (loading) {
@@ -481,9 +635,9 @@ const calculateDuration = (entryTime, exitTime, status) => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      
-      <Header 
-        title="Trip Reports" 
+
+      <Header
+        title="Trip Reports"
         onMenuClick={() => setSidebarOpen(true)}
         actions={
           <div className="flex items-center gap-2">
@@ -500,7 +654,7 @@ const calculateDuration = (entryTime, exitTime, status) => {
       />
 
       <main className="lg:ml-72 max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
-        
+
         {/* Stats Overview */}
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Reports Overview</h2>
@@ -590,7 +744,7 @@ const calculateDuration = (entryTime, exitTime, status) => {
                 <input
                   type="date"
                   value={dateRange.start}
-                  onChange={(e) => setDateRange({...dateRange, start: e.target.value})}
+                  onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
                   className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
                 />
               </div>
@@ -602,7 +756,7 @@ const calculateDuration = (entryTime, exitTime, status) => {
                 <input
                   type="date"
                   value={dateRange.end}
-                  onChange={(e) => setDateRange({...dateRange, end: e.target.value})}
+                  onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
                   className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
                 />
               </div>
@@ -714,17 +868,15 @@ const calculateDuration = (entryTime, exitTime, status) => {
             <div className="flex bg-gray-100 rounded-lg p-1">
               <button
                 onClick={() => setViewMode('table')}
-                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                  viewMode === 'table' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-600'
-                }`}
+                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${viewMode === 'table' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-600'
+                  }`}
               >
                 Table
               </button>
               <button
                 onClick={() => setViewMode('card')}
-                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                  viewMode === 'card' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-600'
-                }`}
+                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${viewMode === 'card' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-600'
+                  }`}
               >
                 Cards
               </button>
@@ -742,42 +894,45 @@ const calculateDuration = (entryTime, exitTime, status) => {
                     <th className="px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase w-20">
                       S.No.
                     </th>
-                    <TableHeader 
-                      sortable 
+                    <TableHeader
+                      sortable
                       onSort={() => handleSort('vehicleNumber')}
                       sortDirection={sortConfig.key === 'vehicleNumber' ? sortConfig.direction : null}
                     >
                       Vehicle
                     </TableHeader>
-                    <TableHeader 
-                      sortable 
+                    <TableHeader
+                      sortable
                       onSort={() => handleSort('entryAt')}
                       sortDirection={sortConfig.key === 'entryAt' ? sortConfig.direction : null}
                     >
                       Entry Time
                     </TableHeader>
-                    <TableHeader 
-                      sortable 
+                    <TableHeader
+                      sortable
                       onSort={() => handleSort('exitAt')}
                       sortDirection={sortConfig.key === 'exitAt' ? sortConfig.direction : null}
                     >
                       Exit Time
                     </TableHeader>
-                    <TableHeader 
-                      sortable 
+                    <TableHeader
+                      sortable
                       onSort={() => handleSort('status')}
                       sortDirection={sortConfig.key === 'status' ? sortConfig.direction : null}
                     >
                       Status
                     </TableHeader>
-                    <TableHeader 
-                      sortable 
+                    <TableHeader
+                      sortable
                       onSort={() => handleSort('site')}
                       sortDirection={sortConfig.key === 'site' ? sortConfig.direction : null}
                     >
                       Site
                     </TableHeader>
                     <TableHeader>Duration</TableHeader>
+                    <TableHeader>Project Managar</TableHeader>
+                    <TableHeader>Superviosr</TableHeader>
+                    <TableHeader>Action</TableHeader>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
@@ -800,16 +955,16 @@ const calculateDuration = (entryTime, exitTime, status) => {
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <TimeBadge 
-                          time={trip.entryTime.split(',')[0]} 
-                          label="Entry" 
+                        <TimeBadge
+                          time={trip.entryTime.split(',')[0]}
+                          label="Entry"
                           variant="entry"
                         />
                       </td>
                       <td className="px-6 py-4">
-                        <TimeBadge 
-                          time={trip.exitTime === '-' ? '--:--' : trip.exitTime.split(',')[0]} 
-                          label="Exit" 
+                        <TimeBadge
+                          time={trip.exitTime === '-' ? '--:--' : trip.exitTime.split(',')[0]}
+                          label="Exit"
                           variant={trip.exitTime === '-' ? 'warning' : 'exit'}
                         />
                       </td>
@@ -827,10 +982,33 @@ const calculateDuration = (entryTime, exitTime, status) => {
                       <td className="px-6 py-4">
                         <div className="flex flex-col">
                           <span className="text-sm font-medium text-gray-900">
-                            {trip.duration || '--:--'}
+                            {trip.duration || 'Ongoing'}
                           </span>
                           <span className="text-xs text-gray-500">Duration</span>
                         </div>
+                      </td><td className="px-6 py-4">
+                        <div className="flex flex-col">
+                          <span className="text-sm font-medium text-gray-900">
+                            {trip.rawData?.projectManager?.name || '--'}
+                          </span>
+                          <span className="text-xs text-gray-500">Project Manager</span>
+                        </div>
+                      </td><td className="px-6 py-4">
+                        <div className="flex flex-col">
+                          <span className="text-sm font-medium text-gray-900">
+                            {trip.rawData?.createdBy?.name || '--'}
+                          </span>
+                          <span className="text-xs text-gray-500">Supervisor</span>
+                        </div>
+                      </td>
+                      <td>
+                        <button
+                          onClick={() => handleViewDetails(trip)}
+                          className="mt-4 w-full px-4 py-2.5 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition font-medium text-sm flex items-center justify-center gap-2"
+                        >
+                          <Eye className="w-4 h-4" />
+                          View Details
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -860,7 +1038,7 @@ const calculateDuration = (entryTime, exitTime, status) => {
         )}
 
         {/* Card View */}
-        {viewMode === 'card' && (
+        {/* {viewMode === 'card' && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {sortedTrips.map((trip, index) => (
               <div key={trip.id} className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all">
@@ -919,6 +1097,494 @@ const calculateDuration = (entryTime, exitTime, status) => {
                 </div>
               </div>
             )}
+          </div>
+        )} */}
+
+        {viewMode === 'card' && (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {sortedTrips.map((trip, index) => (
+                <div
+                  key={trip.id}
+                  className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all"
+                >
+                  {/* Header */}
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center">
+                        <Car className="w-6 h-6 text-blue-600" />
+                      </div>
+                      <div>
+                        <div className="text-lg font-bold text-gray-900">
+                          {trip.vehicleNumber}
+                        </div>
+                        <div className="text-xs text-gray-500">#{index + 1}</div>
+                      </div>
+                    </div>
+                    <StatusBadge status={trip.status} />
+                  </div>
+
+                  {/* Body */}
+                  <div className="space-y-4">
+                    {/* Entry / Exit */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <div className="text-xs text-gray-500 mb-1">Entry Time</div>
+                        <div className="text-sm font-medium text-gray-900">
+                          {trip.entryTime?.split(',')[0]}
+                        </div>
+                        <div className="text-xs text-green-600 mt-1">Entry</div>
+                      </div>
+
+                      <div>
+                        <div className="text-xs text-gray-500 mb-1">Exit Time</div>
+                        <div className="text-sm font-medium text-gray-900">
+                          {trip.exitTime === '-' ? '--:--' : trip.exitTime?.split(',')[0]}
+                        </div>
+                        <div
+                          className={`text-xs mt-1 ${trip.exitTime === '-' ? 'text-orange-600' : 'text-blue-600'
+                            }`}
+                        >
+                          {trip.exitTime === '-' ? 'Not Exited' : 'Exit'}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Project Manager & Supervisor */}
+                    <div className="grid grid-cols-2 gap-4 pt-2">
+                      <div>
+                        <div className="text-xs text-gray-500 mb-1">
+                          Project Manager
+                        </div>
+                        <div className="text-sm font-medium text-gray-900">
+                          {trip.rawData?.projectManager?.name || '--'}
+                        </div>
+                      </div>
+
+                      <div>
+                        <div className="text-xs text-gray-500 mb-1">Supervisor</div>
+                        <div className="text-sm font-medium text-gray-900">
+                          {trip.rawData?.createdBy?.name || '--'}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Site + Duration */}
+                    <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                      <div className="flex items-center gap-2">
+                        <MapPin className="w-4 h-4 text-gray-400" />
+                        <span className="text-sm text-gray-900">{trip.site}</span>
+                      </div>
+                      <div className="text-sm font-medium text-gray-700">
+                        {trip.duration || 'Ongoing'}
+                      </div>
+                      <div className="flex justify-end  ">
+                        <button
+                          onClick={() => handleViewDetails(trip)}
+                          className="px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50"
+                        >
+                          View
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* ✅ Empty State — map ke bahar */}
+            {sortedTrips.length === 0 && (
+              <div className="bg-white rounded-xl p-12 text-center">
+                <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                <p className="text-gray-500 font-medium">No trips found</p>
+                <p className="text-sm text-gray-400 mt-2">
+                  Try adjusting your filters
+                </p>
+              </div>
+            )}
+          </>
+        )}
+
+
+        {/* Enhanced Details Modal */}
+        {showDetailsModal && selectedTrip && (
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl w-full max-w-4xl shadow-2xl max-h-[90vh] overflow-hidden">
+              {/* Header */}
+              <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-4 flex justify-between items-center">
+                <div>
+                  <h2 className="text-xl font-bold text-white">Trip Details</h2>
+                  <div className="flex items-center gap-3 mt-1">
+                    <div className="text-blue-100 text-sm">
+                      {selectedTrip.vehicleId?.vehicleNumber}
+                    </div>
+                    {getStatusBadge(selectedTrip.status)}
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowDetailsModal(false);
+                    setResolvedEntryMedia({ photos: {}, video: null });
+                    setResolvedExitMedia({ photos: {}, video: null });
+                  }}
+                  className="p-2 hover:bg-white/20 rounded-lg transition"
+                >
+                  <X className="w-6 h-6 text-white" />
+                </button>
+              </div>
+
+              <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)] space-y-6">
+                {mediaLoading ? (
+                  <div className="text-center py-12">
+                    <Loader2 className="w-12 h-12 animate-spin text-blue-600 mx-auto mb-4" />
+                    <p className="text-gray-600">Loading media...</p>
+                  </div>
+                ) : (
+                  <>
+                    {/* Vehicle Info Card */}
+                    <div className="bg-gradient-to-r from-blue-50 to-white border border-blue-100 rounded-xl p-5">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <div className="text-xs text-blue-600 font-medium mb-2">
+                            VEHICLE INFORMATION
+                          </div>
+                          <div className="text-2xl font-bold text-gray-900 mb-1">
+                            {selectedTrip.rawData?.vehicleId?.vehicleNumber}
+                          </div>
+                          <div className="text-sm text-gray-600">
+                            {selectedTrip.rawData?.vehicleId?.vehicleType || "Unknown Type"}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-xs text-blue-600 font-medium mb-2">
+                            VENDOR
+                          </div>
+                          <div className="font-semibold text-gray-900 mb-1">
+                            {selectedTrip.rawData?.vendorId?.name || "Unknown"}
+                          </div>
+                          <div className="text-sm text-gray-600">
+                            Driver: {selectedTrip.rawData?.vehicleId?.driverName || "N/A"}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-xs text-blue-600 font-medium mb-2">
+                            TRIP INFO
+                          </div>
+                          <div className="font-semibold text-gray-900 mb-1">
+                            {selectedTrip.rawData?.tripId || "N/A"}
+                          </div>
+                          {/* <div className="text-sm text-gray-600">
+                            Material: {selectedTrip.rawData?.loadStatus || "N/A"}
+                            <br></br>
+                            Purpose: {selectedTrip.rawData?.loadStatus || "N/A"}
+                            : {selectedTrip.rawData?.loadStatus || "N/A"}
+                          </div> */}
+                          <div className="bg-gray-50 rounded-xl p-4 c">
+                            <div className="text-xs text-gray-500 mb-2">Material Details
+                              <span className="px-3 py-1 text-xs rounded-full bg-blue-50 text-blue-700 font-semibold">
+                                {selectedTrip.rawData?.loadStatus ?? "N/A"}
+                              </span>
+                            </div>
+                            <div className="flex flex-wrap gap-4 text-sm">
+                              <div>
+                                <span className="text-gray-500">Type:</span>{" "}
+                                <span className="font-semibold text-gray-900">
+                                  {selectedTrip.rawData?.purpose ?? "N/A"}
+                                </span>
+                              </div>
+
+                              <div>
+                                <span className="text-gray-500">Count:</span>{" "}
+                                <span className="font-semibold text-gray-900">
+                                  {selectedTrip.rawData?.countofmaterials ?? "N/A"}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Timeline */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="bg-gradient-to-r from-green-50 to-white border border-green-100 rounded-xl p-4">
+                        <div className="flex items-center gap-3 mb-2">
+                          <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                            <LogIn className="w-5 h-5 text-green-600" />
+                          </div>
+                          <div>
+                            <div className="text-sm font-medium text-gray-700">
+                              Entry Time
+                            </div>
+                            <div className="font-bold text-gray-900">
+                              {formatDateTime(selectedTrip.entryTime)
+                                ?.split(",")[1]
+                                ?.trim() || "N/A"}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          {formatDateTime(selectedTrip.entryTime)?.split(
+                            ",",
+                          )[0] || "N/A"}
+                        </div>
+                      </div>
+
+                      <div className="bg-gradient-to-r from-purple-50 to-white border border-purple-100 rounded-xl p-4">
+                        <div className="flex items-center gap-3 mb-2">
+                          <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                            <Timer className="w-5 h-5 text-purple-600" />
+                          </div>
+                          <div>
+                            <div className="text-sm font-medium text-gray-700">
+                              Duration
+                            </div>
+                            <div className="font-bold text-gray-900">
+                              {/* {selectedTrip.duration || "N/A"} */}
+                              {calculateDuration(
+                                selectedTrip.entryTime,
+                                selectedTrip.exitTime,
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          Time spent inside premises
+                        </div>
+                      </div>
+
+                      <div
+                        className={`${selectedTrip.exitTime && selectedTrip.exitTime !== "--" ? "bg-gradient-to-r from-red-50 to-white border border-red-100" : "bg-gradient-to-r from-blue-50 to-white border border-blue-100"} rounded-xl p-4`}
+                      >
+                        <div className="flex items-center gap-3 mb-2">
+                          <div
+                            className={`w-10 h-10 ${selectedTrip.exitTime && selectedTrip.exitTime !== "--" ? "bg-red-100" : "bg-blue-100"} rounded-lg flex items-center justify-center`}
+                          >
+                            <LogOut
+                              className={`w-5 h-5 ${selectedTrip.exitTime && selectedTrip.exitTime !== "--" ? "text-red-600" : "text-blue-600"}`}
+                            />
+                          </div>
+                          <div>
+                            <div className="text-sm font-medium text-gray-700">
+                              Exit Time
+                            </div>
+                            <div className="font-bold text-gray-900">
+                              {selectedTrip.exitTime &&
+                                selectedTrip.exitTime !== "--"
+                                ? formatDateTime(selectedTrip.exitTime)
+                                  .split(",")[1]
+                                  ?.trim()
+                                : "--"}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          {selectedTrip.exitTime &&
+                            selectedTrip.exitTime !== "--"
+                            ? formatDateTime(selectedTrip.exitTime).split(
+                              ",",
+                            )[0]
+                            : "Still Inside"}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Entry Evidence Section */}
+                    <div className="border border-gray-200 rounded-xl p-5">
+                      <button
+                        onClick={() => toggleSection("entryEvidence")}
+                        className="w-full flex items-center justify-between mb-4"
+                      >
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-lg font-bold text-gray-900">
+                            Entry Evidence
+                          </h3>
+                          <span className="text-xs bg-green-100 text-green-700 px-3 py-1 rounded-full">
+                            4 Photos Required
+                          </span>
+                        </div>
+                        {expandedSections.entryEvidence ? (
+                          <ChevronUp className="w-5 h-5 text-gray-500" />
+                        ) : (
+                          <ChevronDown className="w-5 h-5 text-gray-500" />
+                        )}
+                      </button>
+
+                      {expandedSections.entryEvidence && (
+                        <>
+                          <div className="mb-6">
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                              {photoFields.map((photo) => {
+                                const photoUrl =
+                                  resolvedEntryMedia.photos[photo.key];
+                                return (
+                                  <div
+                                    key={photo.key}
+                                    className="border rounded-lg overflow-hidden hover:shadow-md transition-shadow"
+                                  >
+                                    {photoUrl ? (
+                                      <div
+                                        className="cursor-pointer"
+                                        onClick={() =>
+                                          window.open(photoUrl, "_blank")
+                                        }
+                                      >
+                                        <img
+                                          src={photoUrl}
+                                          alt={photo.label}
+                                          className="w-full h-32 object-cover hover:scale-105 transition-transform duration-300"
+                                        />
+                                        <div className="p-2 bg-gradient-to-t from-black/80 to-transparent relative -mt-12">
+                                          <div className="text-white text-xs font-medium">
+                                            {photo.label}
+                                          </div>
+                                          <div className="text-white/70 text-xs">
+                                            {photo.description}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      <div className="h-32 flex flex-col items-center justify-center p-4 bg-gray-50">
+                                        <Camera className="w-8 h-8 text-gray-300 mb-2" />
+                                        <div className="text-xs text-center">
+                                          <div className="font-medium text-gray-500">
+                                            {photo.label}
+                                          </div>
+                                          <div className="text-gray-400 mt-1">
+                                            Not available
+                                          </div>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          {resolvedEntryMedia.video && (
+                            <button
+                              onClick={() =>
+                                window.open(resolvedEntryMedia.video, "_blank")
+                              }
+                              className="w-full px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium flex items-center justify-center gap-2"
+                            >
+                              <Video className="w-5 h-5" />
+                              View Entry Video Evidence
+                            </button>
+                          )}
+                        </>
+                      )}
+                    </div>
+
+                    {/* Exit Evidence Section (if available) */}
+                    {selectedTrip.rawData?.exitMedia && (
+                      <div className="border border-gray-200 rounded-xl p-5">
+                        <button
+                          onClick={() => toggleSection("exitEvidence")}
+                          className="w-full flex items-center justify-between mb-4"
+                        >
+                          <div className="flex items-center gap-2">
+                            <h3 className="text-lg font-bold text-gray-900">
+                              Exit Evidence
+                            </h3>
+                            <span className="text-xs bg-red-100 text-red-700 px-3 py-1 rounded-full">
+                              4 Photos Required
+                            </span>
+                          </div>
+                          {expandedSections.exitEvidence ? (
+                            <ChevronUp className="w-5 h-5 text-gray-500" />
+                          ) : (
+                            <ChevronDown className="w-5 h-5 text-gray-500" />
+                          )}
+                        </button>
+
+                        {expandedSections.exitEvidence && (
+                          <>
+                            <div className="mb-6">
+                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                {photoFields.map((photo) => {
+                                  const photoUrl =
+                                    resolvedExitMedia.photos[photo.key];
+                                  return (
+                                    <div
+                                      key={photo.key}
+                                      className="border rounded-lg overflow-hidden hover:shadow-md transition-shadow"
+                                    >
+                                      {photoUrl ? (
+                                        <div
+                                          className="cursor-pointer"
+                                          onClick={() =>
+                                            window.open(photoUrl, "_blank")
+                                          }
+                                        >
+                                          <img
+                                            src={photoUrl}
+                                            alt={`Exit ${photo.label}`}
+                                            className="w-full h-32 object-cover hover:scale-105 transition-transform duration-300"
+                                          />
+                                          <div className="p-2 bg-gradient-to-t from-black/80 to-transparent relative -mt-12">
+                                            <div className="text-white text-xs font-medium">
+                                              {photo.label}
+                                            </div>
+                                            <div className="text-white/70 text-xs">
+                                              {photo.description}
+                                            </div>
+                                          </div>
+                                        </div>
+                                      ) : (
+                                        <div className="h-32 flex flex-col items-center justify-center p-4 bg-gray-50">
+                                          <Camera className="w-8 h-8 text-gray-300 mb-2" />
+                                          <div className="text-xs text-center">
+                                            <div className="font-medium text-gray-500">
+                                              {photo.label}
+                                            </div>
+                                            <div className="text-gray-400 mt-1">
+                                              Not available
+                                            </div>
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+
+                            {resolvedExitMedia.video && (
+                              <button
+                                onClick={() =>
+                                  window.open(resolvedExitMedia.video, "_blank")
+                                }
+                                className="w-full px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-medium flex items-center justify-center gap-2"
+                              >
+                                <Video className="w-5 h-5" />
+                                View Exit Video Evidence
+                              </button>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Close Button */}
+                    <button
+                      onClick={() => {
+                        setShowDetailsModal(false);
+                        setResolvedEntryMedia({ photos: {}, video: null });
+                        setResolvedExitMedia({ photos: {}, video: null });
+                      }}
+                      className="w-full py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium"
+                    >
+                      Close
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
           </div>
         )}
       </main>
