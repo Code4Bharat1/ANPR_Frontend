@@ -755,34 +755,46 @@ const ClientManagement = () => {
     fetchClients();
   }, []);
 
-  const fetchClients = async () => {
-    try {
-      setLoading(true);
-      const token = localStorage.getItem('accessToken');
+ const fetchClients = async () => {
+  try {
+    setLoading(true);
+    const token = localStorage.getItem('accessToken');
 
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/superadmin/clients`,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        }
-      );
-
-      setClients(response.data.data || response.data || []);
-      setError(null);
-    } catch (err) {
-      console.error('Error fetching clients:', err);
-      setError(err.response?.data?.message || err.message);
-    } finally {
-      setLoading(false);
+    if (!token) {
+      // Redirect to login immediately
+      window.location.href = '/login';
+      return; // Important: Stop execution
     }
-  };
+
+    const response = await axios.get(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/superadmin/clients`,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    setClients(response.data.data || response.data || []);
+    setError(null);
+  } catch (err) {
+    console.error('Error fetching clients:', err);
+    
+    // Handle authentication errors (401, 403)
+    if (err.response?.status === 401 || err.response?.status === 403) {
+      // Clear storage and redirect
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('user');
+      window.location.href = '/login';
+      return;
+    }
+    
+    setError(err.response?.data?.message || err.message);
+  } finally {
+    setLoading(false);
+  }
+};
   
 
   const handleAddClient = async (formData) => {

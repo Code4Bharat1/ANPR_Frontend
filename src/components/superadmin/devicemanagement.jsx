@@ -706,35 +706,50 @@ const DeviceManagement = () => {
     fetchSites();
   }, []);
 
-  const getAuthHeaders = () => {
-    const token = localStorage.getItem('accessToken');
-    if (!token) throw new Error('No authentication token found');
-    return {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    };
-  };
-
-  const fetchDevices = async () => {
-    try {
-      setLoading(true);
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/devices`,
-        { headers: getAuthHeaders() }
-      );
-      // console.log(response);
-
-      setDevices(Array.isArray(response.data) ? response.data : []);
-      setError(null);
-    } catch (err) {
-      console.error('Error fetching devices:', err);
-      setError(err.response?.data?.message || err.message);
-      setDevices([]);
-    } finally {
-      setLoading(false);
+ const getAuthHeaders = () => {
+  const token = localStorage.getItem('accessToken');
+  if (!token) {
+    // Redirect immediately if no token
+    if (typeof window !== 'undefined') {
+      window.location.href = '/login';
     }
+    throw new Error('No authentication token found');
+  }
+  return {
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json'
   };
+};
 
+const fetchDevices = async () => {
+  try {
+    setLoading(true);
+    const response = await axios.get(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/devices`,
+      { headers: getAuthHeaders() }
+    );
+    
+    setDevices(Array.isArray(response.data) ? response.data : []);
+    setError(null);
+  } catch (err) {
+    console.error('Error fetching devices:', err);
+    
+    // Handle 401/403 errors
+    if (err.response?.status === 401 || err.response?.status === 403) {
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('user');
+      if (typeof window !== 'undefined') {
+        window.location.href = '/login';
+      }
+      return;
+    }
+    
+    setError(err.response?.data?.message || err.message);
+    setDevices([]);
+  } finally {
+    setLoading(false);
+  }
+};
   const fetchClients = async () => {
     try {
       const response = await axios.get(
