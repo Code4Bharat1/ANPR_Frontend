@@ -97,7 +97,7 @@ const EntryVehicles = () => {
     vehicleType: '',
     vendorId: '',
     materialType: '',
-    materialCount: '',
+    countofmaterials: '',
     loadStatus: 'full',
     challanImage: null,
     notes: '',
@@ -1254,7 +1254,7 @@ const handleAllowEntry = async () => {
                   >
                     Select from List
                   </button>
-                  <button
+                  {/* <button
                     type="button"
                     onClick={() => handleSiteModeChange('manual')}
                     className={`px-3 sm:px-4 py-2 rounded-lg font-semibold text-sm transition ${
@@ -1264,7 +1264,7 @@ const handleAllowEntry = async () => {
                     }`}
                   >
                     Enter Manually
-                  </button>
+                  </button> */}
                 </div>
 
                 {siteInputMode === 'select' ? (
@@ -1319,7 +1319,7 @@ const handleAllowEntry = async () => {
                 </p>
                 
                 {/* Show selected/entered site info */}
-                {vehicleDetails.siteId && (
+                {/* {vehicleDetails.siteId && (
                   <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-lg">
                     <p className="text-xs text-blue-700">
                       <span className="font-semibold">Site ID:</span> {vehicleDetails.siteId}
@@ -1330,7 +1330,7 @@ const handleAllowEntry = async () => {
                       )}
                     </p>
                   </div>
-                )}
+                )} */}
               </div>
 
               {/* Driver Name (Optional) */}
@@ -1429,7 +1429,7 @@ const handleAllowEntry = async () => {
                   >
                     Select from List
                   </button>
-                  <button
+                  {/* <button
                     type="button"
                     onClick={() => {
                       setVendorInputMode('manual');
@@ -1442,7 +1442,7 @@ const handleAllowEntry = async () => {
                     }`}
                   >
                     Enter Manually
-                  </button>
+                  </button> */}
                 </div>
 
                 {vendorInputMode === 'select' ? (
@@ -1509,8 +1509,8 @@ const handleAllowEntry = async () => {
                 </label>
                 <input
                   type="text"
-                  value={vehicleDetails.materialCount}
-                  onChange={(e) => setVehicleDetails({ ...vehicleDetails, materialCount: e.target.value })}
+                  value={vehicleDetails.countofmaterials}
+                  onChange={(e) => setVehicleDetails({ ...vehicleDetails, countofmaterials: e.target.value })}
                   placeholder="e.g. 50 bags, 10 boxes, 500 kg..."
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                 />

@@ -726,7 +726,7 @@ const TripHistory = () => {
                           <div className="font-semibold text-gray-900 mb-1">{selectedTrip.tripId || 'N/A'}</div>
                           <div className="text-sm text-gray-600">Material: {selectedTrip.loadStatus || 'N/A'}</div>
                           <div className="text-sm text-gray-600">Type: {selectedTrip.purpose || 'N/A'}</div>
-                          <div className="text-sm text-gray-600">Count: {selectedTrip.countOfMaterials || 'N/A'}</div>
+                          <div className="text-sm text-gray-600">Count: {selectedTrip.countofmaterials || 'N/A'}</div>
                         </div>
                       </div>
                     </div>

@@ -777,7 +777,7 @@ const ExitVehicles = () => {
         <div>
           <span className="text-gray-500">Count:</span>{" "}
           <span className="font-semibold text-gray-900">
-            {selectedVehicle.countOfMaterials ?? "N/A"}
+            {selectedVehicle.countofmaterials ?? "N/A"}
           </span>
         </div>
       </div>

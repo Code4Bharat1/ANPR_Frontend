@@ -350,7 +350,7 @@ const ActiveVehicles = () => {
         </div>
 
         {/* Enhanced Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4 mb-8">
           {/* Total Inside Card */}
           <div className="bg-gradient-to-br from-white to-purple-50 rounded-xl p-5 border border-purple-100 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
             <div className="flex items-center justify-between mb-3">
@@ -790,7 +790,7 @@ const ActiveVehicles = () => {
                           <div>
                             <span className="text-gray-500">Count:</span>{" "}
                             <span className="font-semibold text-gray-900">
-                              {selectedVehicle.countOfMaterials ?? "N/A"}
+                              {selectedVehicle.countofmaterials ?? "N/A"}
                             </span>
                           </div>
                         </div>

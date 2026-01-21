@@ -160,7 +160,7 @@ const OcrScan = () => {
     vehicleType: "",
     vendorId: "",
     materialType: "",
-    materialCount: "",
+    countofmaterials: "",
     loadStatus: "full",
     challanImage: null,
     notes: "",
@@ -632,8 +632,8 @@ const OcrScan = () => {
 
       setError(
         err?.response?.data?.error ||
-          err.message ||
-          "OCR processing failed. Please try again.",
+        err.message ||
+        "OCR processing failed. Please try again.",
       );
     } finally {
       setOcrProcessing(false);
@@ -813,7 +813,7 @@ const OcrScan = () => {
         result[idx] =
           result[idx + 1] =
           result[idx + 2] =
-            Math.min(255, Math.max(0, sum));
+          Math.min(255, Math.max(0, sum));
         result[idx + 3] = 255;
       }
     }
@@ -1261,7 +1261,7 @@ const OcrScan = () => {
           });
 
           console.log(response);
-          
+
 
           if (response.data && response.data.success) {
             if (Array.isArray(response.data.data)) {
@@ -1494,6 +1494,7 @@ const OcrScan = () => {
         purpose: vehicleDetails.materialType || "Material Delivery",
         loadStatus: vehicleDetails.loadStatus.toUpperCase() || "FULL",
         entryGate: "OCR Manual Entry",
+        countofmaterials: vehicleDetails.countofmaterials || "",
         notes: vehicleDetails.notes || "",
         siteId: vehicleDetails.siteId,
 
@@ -1646,10 +1647,10 @@ const OcrScan = () => {
                   "loadView",
                   "challan",
                 ].includes(cameraView) && (
-                  <div className="text-xs text-blue-300 mt-1">
-                    Position camera for clear photo
-                  </div>
-                )}
+                    <div className="text-xs text-blue-300 mt-1">
+                      Position camera for clear photo
+                    </div>
+                  )}
               </div>
 
               {/* Only show switch camera button for OCR mode */}
@@ -1797,31 +1798,31 @@ const OcrScan = () => {
                 "loadView",
                 "challan",
               ].includes(cameraView) && (
-                <div className="absolute inset-0 pointer-events-none">
-                  {/* Simple center crosshair */}
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-32 h-32 border-2 border-white/50 rounded-lg"></div>
-                  </div>
+                  <div className="absolute inset-0 pointer-events-none">
+                    {/* Simple center crosshair */}
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="w-32 h-32 border-2 border-white/50 rounded-lg"></div>
+                    </div>
 
-                  {/* Bottom guidance text */}
-                  <div className="absolute bottom-8 left-0 right-0 text-center">
-                    <div className="inline-block bg-black/60 backdrop-blur-sm px-4 py-2 rounded-lg">
-                      <p className="text-white text-sm font-medium">
-                        {cameraView === "frontView" &&
-                          "Capture vehicle front with number plate"}
-                        {cameraView === "backView" &&
-                          "Capture vehicle rear with tail lights"}
-                        {cameraView === "driverView" &&
-                          "Capture driver/cabin clearly"}
-                        {cameraView === "loadView" &&
-                          "Capture material/load in vehicle"}
-                        {cameraView === "challan" &&
-                          "Capture challan/bill clearly"}
-                      </p>
+                    {/* Bottom guidance text */}
+                    <div className="absolute bottom-8 left-0 right-0 text-center">
+                      <div className="inline-block bg-black/60 backdrop-blur-sm px-4 py-2 rounded-lg">
+                        <p className="text-white text-sm font-medium">
+                          {cameraView === "frontView" &&
+                            "Capture vehicle front with number plate"}
+                          {cameraView === "backView" &&
+                            "Capture vehicle rear with tail lights"}
+                          {cameraView === "driverView" &&
+                            "Capture driver/cabin clearly"}
+                          {cameraView === "loadView" &&
+                            "Capture material/load in vehicle"}
+                          {cameraView === "challan" &&
+                            "Capture challan/bill clearly"}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
             </div>
 
             <div className="bg-black/80 backdrop-blur-sm p-4 sm:p-6 flex justify-center items-center">
@@ -1859,13 +1860,12 @@ const OcrScan = () => {
               <React.Fragment key={s}>
                 <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
                   <div
-                    className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-bold text-sm sm:text-base ${
-                      s === step
+                    className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-bold text-sm sm:text-base ${s === step
                         ? "bg-blue-600 text-white"
                         : s < step
                           ? "bg-green-600 text-white"
                           : "bg-gray-200 text-gray-600"
-                    }`}
+                      }`}
                   >
                     {s < step ? (
                       <CheckCircle className="w-4 h-4 sm:w-6 sm:h-6" />
@@ -1962,11 +1962,10 @@ const OcrScan = () => {
                       onChange={(e) =>
                         handleVehicleNumberChange(e.target.value)
                       }
-                      className={`w-full px-4 py-3 border-2 rounded-lg text-lg font-bold text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none font-mono ${
-                        validateVehicleNumber(vehicleNumber)
+                      className={`w-full px-4 py-3 border-2 rounded-lg text-lg font-bold text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none font-mono ${validateVehicleNumber(vehicleNumber)
                           ? "border-green-400 bg-green-50"
                           : "border-blue-300"
-                      }`}
+                        }`}
                       placeholder="e.g. MH-12-AB-1234"
                     />
                     <div className="mt-2 flex items-center justify-between">
@@ -1975,11 +1974,10 @@ const OcrScan = () => {
                       </div>
                       {vehicleNumber && (
                         <div
-                          className={`text-xs font-semibold px-2 py-1 rounded ${
-                            validateVehicleNumber(vehicleNumber)
+                          className={`text-xs font-semibold px-2 py-1 rounded ${validateVehicleNumber(vehicleNumber)
                               ? "bg-green-100 text-green-800"
                               : "bg-red-100 text-red-800"
-                          }`}
+                            }`}
                         >
                           {validateVehicleNumber(vehicleNumber)
                             ? "✓ Valid"
@@ -2156,109 +2154,35 @@ const OcrScan = () => {
                   Site <span className="text-red-500">*</span>
                 </label>
 
-                <div className="flex flex-wrap gap-2 mb-3">
-                  <button
-                    type="button"
-                    onClick={() => handleSiteModeChange("select")}
-                    className={`px-3 sm:px-4 py-2 rounded-lg font-semibold text-sm transition ${
-                      siteInputMode === "select"
-                        ? "bg-blue-600 text-white"
-                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                    }`}
+                <div className="relative">
+                  <Building className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+
+                  <select
+                    value={vehicleDetails.siteId}
+                    onChange={(e) => handleSiteSelect(e.target.value)}
+                    className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg
+                 focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+                 outline-none appearance-none bg-white"
                   >
-                    Select from List
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleSiteModeChange("manual")}
-                    className={`px-3 sm:px-4 py-2 rounded-lg font-semibold text-sm transition ${
-                      siteInputMode === "manual"
-                        ? "bg-blue-600 text-white"
-                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                    }`}
-                  >
-                    Enter Manually
-                  </button>
+                    <option value="">Select Site...</option>
+                    {sites.map((site) => (
+                      <option key={site._id} value={site._id}>
+                        {site.name} {site.location ? `- ${site.location}` : ""}
+                      </option>
+                    ))}
+                  </select>
+
+                  <ChevronDown className="absolute right-3 top-3 w-5 h-5 text-gray-400 pointer-events-none" />
                 </div>
 
-                {siteInputMode === "select" ? (
-                  <div className="relative">
-                    <Building className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
-                    <select
-                      value={vehicleDetails.siteId}
-                      onChange={(e) => handleSiteSelect(e.target.value)}
-                      className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none appearance-none bg-white"
-                    >
-                      <option value="">Select Site...</option>
-                      {sites.map((site) => (
-                        <option key={site._id} value={site._id}>
-                          {site.name}{" "}
-                          {site.location ? `- ${site.location}` : ""}
-                        </option>
-                      ))}
-                    </select>
-                    <ChevronDown className="absolute right-3 top-3 w-5 h-5 text-gray-400 pointer-events-none" />
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    <div>
-                      <label className="block text-xs text-gray-600 mb-1">
-                        Site ID *
-                      </label>
-                      <input
-                        type="text"
-                        value={manualSiteId}
-                        onChange={(e) =>
-                          handleManualSiteChange("id", e.target.value)
-                        }
-                        placeholder="Enter Site ID (e.g., 507f1f77bcf86cd799439011)"
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-gray-600 mb-1">
-                        Site Name
-                      </label>
-                      <input
-                        type="text"
-                        value={manualSiteName}
-                        onChange={(e) =>
-                          handleManualSiteChange("name", e.target.value)
-                        }
-                        placeholder="Enter Site Name (optional)"
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                      />
-                    </div>
-                  </div>
-                )}
-
+                {/* Optional validation message */}
                 {!vehicleDetails.siteId && (
                   <p className="text-red-500 text-xs mt-1">
-                    Please enter or select a site
+                    Please select a site
                   </p>
                 )}
-                <p className="text-xs text-gray-500 mt-1">
-                  {siteInputMode === "select"
-                    ? "Select from your assigned sites"
-                    : "Enter Site ID manually (ObjectId format)"}
-                </p>
-
-                {/* Show selected/entered site info */}
-                {vehicleDetails.siteId && (
-                  <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-lg">
-                    <p className="text-xs text-blue-700">
-                      <span className="font-semibold">Site ID:</span>{" "}
-                      {vehicleDetails.siteId}
-                      {vehicleDetails.siteName && (
-                        <span className="ml-2">
-                          <span className="font-semibold">Name:</span>{" "}
-                          {vehicleDetails.siteName}
-                        </span>
-                      )}
-                    </p>
-                  </div>
-                )}
               </div>
+
 
               {/* Driver Name (Optional) */}
               <div>
@@ -2364,28 +2288,26 @@ const OcrScan = () => {
                       setVendorInputMode("select");
                       setManualVendorName("");
                     }}
-                    className={`px-3 sm:px-4 py-2 rounded-lg font-semibold text-sm transition ${
-                      vendorInputMode === "select"
+                    className={`px-3 sm:px-4 py-2 rounded-lg font-semibold text-sm transition ${vendorInputMode === "select"
                         ? "bg-blue-600 text-white"
                         : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                    }`}
+                      }`}
                   >
                     Select from List
                   </button>
-                  <button
+                  {/* <button
                     type="button"
                     onClick={() => {
                       setVendorInputMode("manual");
                       setVehicleDetails({ ...vehicleDetails, vendorId: "" });
                     }}
-                    className={`px-3 sm:px-4 py-2 rounded-lg font-semibold text-sm transition ${
-                      vendorInputMode === "manual"
+                    className={`px-3 sm:px-4 py-2 rounded-lg font-semibold text-sm transition ${vendorInputMode === "manual"
                         ? "bg-blue-600 text-white"
                         : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                    }`}
+                      }`}
                   >
                     Enter Manually
-                  </button>
+                  </button> */}
                 </div>
 
                 {vendorInputMode === "select" ? (
@@ -2433,11 +2355,10 @@ const OcrScan = () => {
                           loadStatus: status,
                         })
                       }
-                      className={`px-3 sm:px-4 py-2 sm:py-3 rounded-lg font-semibold text-sm sm:text-base transition ${
-                        vehicleDetails.loadStatus === status
+                      className={`px-3 sm:px-4 py-2 sm:py-3 rounded-lg font-semibold text-sm sm:text-base transition ${vehicleDetails.loadStatus === status
                           ? "bg-blue-600 text-white border-2 border-blue-600"
                           : "bg-white text-gray-700 border-2 border-gray-300 hover:border-blue-300"
-                      }`}
+                        }`}
                     >
                       {status.charAt(0).toUpperCase() + status.slice(1)}
                     </button>
@@ -2473,11 +2394,11 @@ const OcrScan = () => {
                 </label>
                 <input
                   type="text"
-                  value={vehicleDetails.materialCount}
+                  value={vehicleDetails.countofmaterials}
                   onChange={(e) =>
                     setVehicleDetails({
                       ...vehicleDetails,
-                      materialCount: e.target.value,
+                      countofmaterials: e.target.value,
                     })
                   }
                   placeholder="e.g. 50 bags, 10 boxes, 500 kg..."
@@ -2492,11 +2413,10 @@ const OcrScan = () => {
                   <span className="text-gray-400">(Optional)</span>
                 </label>
                 <div
-                  className={`border-2 border-dashed rounded-lg p-4 sm:p-6 text-center ${
-                    vehicleDetails.challanImage
+                  className={`border-2 border-dashed rounded-lg p-4 sm:p-6 text-center ${vehicleDetails.challanImage
                       ? "border-green-300 bg-green-50"
                       : "border-gray-300 bg-gray-50"
-                  }`}
+                    }`}
                 >
                   {vehicleDetails.challanImage ? (
                     <div className="space-y-2 sm:space-y-3">
@@ -2637,22 +2557,20 @@ const OcrScan = () => {
                 ].map((item) => (
                   <div
                     key={item.key}
-                    className={`relative border-2 border-dashed rounded-lg p-4 transition cursor-pointer ${
-                      mediaCapture[item.key]
+                    className={`relative border-2 border-dashed rounded-lg p-4 transition cursor-pointer ${mediaCapture[item.key]
                         ? "border-green-300 bg-green-50"
                         : "border-blue-300 bg-blue-50 hover:bg-blue-100"
-                    }`}
+                      }`}
                     onClick={() =>
                       !mediaCapture[item.key] && startCamera(item.key)
                     }
                   >
                     <div className="absolute top-2 right-2">
                       <span
-                        className={`px-2 py-1 rounded text-xs font-bold ${
-                          mediaCapture[item.key]
+                        className={`px-2 py-1 rounded text-xs font-bold ${mediaCapture[item.key]
                             ? "bg-green-600 text-white"
                             : "bg-red-100 text-red-700"
-                        }`}
+                          }`}
                       >
                         Required
                       </span>
@@ -2712,11 +2630,10 @@ const OcrScan = () => {
               </p>
 
               <div
-                className={`border-2 border-dashed rounded-lg p-6 sm:p-8 text-center ${
-                  mediaCapture.videoClip
+                className={`border-2 border-dashed rounded-lg p-6 sm:p-8 text-center ${mediaCapture.videoClip
                     ? "border-green-300 bg-green-50"
                     : "border-gray-300 bg-gray-50"
-                }`}
+                  }`}
               >
                 {mediaCapture.videoClip ? (
                   <div>
