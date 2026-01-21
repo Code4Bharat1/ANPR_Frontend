@@ -33,7 +33,7 @@ const PMSites = () => {
       );
 
       setSites(response.data);
-      console.log('✅ Sites loaded:', response.data);
+      // console.log('✅ Sites loaded:', response.data);
     } catch (err) {
       console.error('❌ Error fetching sites:', err);
     } finally {
@@ -46,7 +46,7 @@ const PMSites = () => {
       setLoadingDetails(true);
       const token = localStorage.getItem("accessToken");
 
-      console.log('🔍 Fetching details for site:', siteId);
+      // console.log('🔍 Fetching details for site:', siteId);
 
       const res = await axios.get(
         `${API_URL}/api/project/sites/${siteId}`,
@@ -57,7 +57,7 @@ const PMSites = () => {
         }
       );
 
-      console.log('✅ Site details loaded:', res.data);
+      // console.log('✅ Site details loaded:', res.data);
       setSelectedSite(res.data);
     } catch (err) {
       console.error("❌ Error fetching site details:", err);
@@ -155,8 +155,8 @@ const PMSites = () => {
                           site.status === 'Active'
                             ? 'bg-green-100 text-green-700'
                             : site.status === 'Maintenance'
-                              ? 'bg-yellow-100 text-yellow-700'
-                              : 'bg-gray-100 text-gray-700'
+                            ? 'bg-yellow-100 text-yellow-700'
+                            : 'bg-gray-100 text-gray-700'
                         }`}>
                           {site.status}
                         </span>
@@ -220,203 +220,272 @@ const PMSites = () => {
             ) : selectedSite ? (
               <div className="p-6 space-y-6">
                 {/* Site Name & Status */}
-                <div className="flex items-start justify-between">
-                  <div>
-                    <h3 className="text-2xl font-bold text-gray-900 mb-1">{selectedSite.name}</h3>
-                  </div>
-                  <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                    selectedSite.status === 'Active'
-                      ? 'bg-green-100 text-green-700'
-                      : selectedSite.status === 'Maintenance'
-                        ? 'bg-yellow-100 text-yellow-700'
-                        : 'bg-gray-100 text-gray-700'
+                <div className="flex items-center justify-between">
+                  <h2 className="text-2xl font-bold text-gray-900">{selectedSite.name}</h2>
+                  <span className={`px-4 py-2 rounded-full text-sm font-semibold ${
+                    selectedSite.status === 'Active' ? 'bg-green-100 text-green-700' :
+                    selectedSite.status === 'Inactive' ? 'bg-red-100 text-red-700' :
+                    'bg-yellow-100 text-yellow-700'
                   }`}>
                     {selectedSite.status}
                   </span>
                 </div>
 
                 {/* Location & Address */}
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="flex items-start gap-3">
-                    <MapPin className="w-5 h-5 text-gray-400 mt-0.5" />
-                    <div>
-                      <div className="text-xs text-gray-500 mb-1">Location</div>
-                      <div className="text-gray-900 font-medium">{selectedSite.location}</div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-1">
+                      <MapPin className="w-4 h-4 text-gray-500" />
+                      <span className="text-sm text-gray-600">Location</span>
                     </div>
+                    <p className="font-medium text-gray-900">{selectedSite.location}</p>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-1">
+                      <MapPin className="w-4 h-4 text-gray-500" />
+                      <span className="text-sm text-gray-600">Address</span>
+                    </div>
+                    <p className="font-medium text-gray-900">{selectedSite.address || 'N/A'}</p>
                   </div>
                 </div>
 
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="flex items-start gap-3">
-                    <MapPin className="w-5 h-5 text-gray-400 mt-0.5" />
-                    <div>
-                      <div className="text-xs text-gray-500 mb-1">Address</div>
-                      <div className="text-gray-900 font-medium">{selectedSite.address || 'N/A'}</div>
-                    </div>
+                {/* Active Vehicles On Site Section */}
+                {/* <div className="bg-white rounded-lg border border-gray-200 p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                      <Activity className="w-5 h-5 text-indigo-600" />
+                      Active Vehicles On Site
+                    </h3>
+                    <span className="px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-sm font-semibold">
+                      {selectedSite.activeVehicleList?.length || 0} Vehicles
+                    </span>
                   </div>
-                </div>
 
-                {/* Site Activity - Live Vehicle Status */}
-                {/* <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Activity className="w-5 h-5 text-indigo-600" />
-                    <h4 className="font-semibold text-gray-900">Site Activity - Live Vehicle Status</h4>
-                  </div>
                   <div className="space-y-3">
-                    {selectedSite.liveVehicles && selectedSite.liveVehicles.length > 0 ? (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {selectedSite.liveVehicles.map((vehicle, index) => (
-                          <div key={index} className="bg-white rounded-lg p-3 border border-gray-200">
-                            <div className="flex justify-between items-start mb-2">
+                    {selectedSite.activeVehicleList && selectedSite.activeVehicleList.length > 0 ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-96 overflow-y-auto pr-2">
+                        {selectedSite.activeVehicleList.map((vehicle, index) => (
+                          <div
+                            key={vehicle._id || index}
+                            className="bg-gradient-to-br from-gray-50 to-white rounded-lg p-4 border border-gray-200 hover:shadow-md transition-shadow"
+                          >
+                            <div className="flex justify-between items-start mb-3">
                               <div>
-                                <div className="font-medium text-gray-900">{vehicle.vehicleNumber}</div>
-                                <div className="text-xs text-gray-500">{vehicle.type}</div>
+                                <div className="font-bold text-gray-900 text-lg">
+                                  {vehicle.vehicleNumber}
+                                </div>
+                                <div className="text-xs text-gray-500 flex items-center gap-1 mt-1">
+                                  <MapPin className="w-3 h-3" />
+                                  On Site
+                                </div>
                               </div>
-                              <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                                vehicle.status === 'Working' ? 'bg-green-100 text-green-700' :
-                                vehicle.status === 'Idle' ? 'bg-yellow-100 text-yellow-700' :
-                                vehicle.status === 'Maintenance' ? 'bg-red-100 text-red-700' :
-                                'bg-gray-100 text-gray-700'
-                              }`}>
-                                {vehicle.status}
+                              <span className="px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700 flex items-center gap-1">
+                                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                                {vehicle.status || 'INSIDE'}
                               </span>
                             </div>
-                            <div className="grid grid-cols-2 gap-2 text-sm">
-                              <div className="text-gray-600">Driver: <span className="font-medium">{vehicle.driver || 'N/A'}</span></div>
-                              <div className="text-gray-600">Fuel: <span className="font-medium">{vehicle.fuelLevel || 0}%</span></div>
-                              <div className="text-gray-600">Hours Today: <span className="font-medium">{vehicle.hoursOperated || 0}h</span></div>
-                              <div className="text-gray-600">Last Update: <span className="font-medium">{vehicle.lastUpdate}</span></div>
+
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-2 text-sm">
+                                <User className="w-4 h-4 text-gray-400" />
+                                <span className="text-gray-600">Driver:</span>
+                                <span className="font-medium text-gray-900">
+                                  {vehicle.driver || 'Unknown'}
+                                </span>
+                              </div>
+
+                              {vehicle.vendor && vehicle.vendor !== 'N/A' && (
+                                <div className="flex items-center gap-2 text-sm">
+                                  <div className="w-4 h-4 text-gray-400 flex items-center justify-center">
+                                    <span className="text-xs">🏢</span>
+                                  </div>
+                                  <span className="text-gray-600">Vendor:</span>
+                                  <span className="font-medium text-gray-900">
+                                    {vehicle.vendor}
+                                  </span>
+                                </div>
+                              )}
+
+                              <div className="flex items-center gap-2 text-sm pt-2 border-t border-gray-100">
+                                <Calendar className="w-4 h-4 text-gray-400" />
+                                <span className="text-gray-600">Entry Time:</span>
+                                <span className="font-medium text-indigo-600">
+                                  {vehicle.entryTime}
+                                </span>
+                              </div>
                             </div>
                           </div>
                         ))}
                       </div>
                     ) : (
-                      <div className="text-center py-4">
-                        <Activity className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                        <p className="text-gray-500">No live vehicle data available</p>
+                      <div className="text-center py-12 bg-gray-50 rounded-lg">
+                        <Activity className="w-16 h-16 text-gray-300 mx-auto mb-3" />
+                        <p className="text-gray-600 font-medium">No vehicles currently on site</p>
+                        <p className="text-sm text-gray-500 mt-1">
+                          Vehicles will appear here when they enter the site
+                        </p>
                       </div>
                     )}
                   </div>
                 </div> */}
 
                 {/* Traffic Site - Entry/Exit Vehicles */}
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="flex items-center gap-2 mb-3">
-                    <MapPin className="w-5 h-5 text-indigo-600" />
-                    <h4 className="font-semibold text-gray-900">Traffic Site - Vehicle Movement</h4>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-white rounded-lg border border-gray-200 p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <Activity className="w-5 h-5 text-indigo-600" />
+                    Traffic Site - Vehicle Movement
+                  </h3>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Entry Vehicles */}
-                    <div className="bg-white rounded-lg p-4 border border-gray-200">
+                    <div className="border border-gray-200 rounded-lg p-4">
                       <div className="flex items-center justify-between mb-3">
-                        <h5 className="font-semibold text-green-700">Entry Vehicles</h5>
-                        <span className="bg-green-100 text-green-700 text-xs font-semibold px-2 py-1 rounded-full">
+                        <h4 className="font-medium text-gray-900">Entry Vehicles</h4>
+                        <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold">
                           {selectedSite.entryVehicles?.length || 0}
                         </span>
                       </div>
-                      <div className="space-y-2">
+
+                      <div className="space-y-2 max-h-64 overflow-y-auto">
                         {selectedSite.entryVehicles && selectedSite.entryVehicles.length > 0 ? (
-                          selectedSite.entryVehicles.slice(0, 5).map((vehicle, index) => (
-                            <div key={index} className="flex justify-between items-center text-sm">
-                              <span className="text-gray-700">{vehicle.vehicleNumber}</span>
-                              <span className="text-gray-500 text-xs">{vehicle.time}</span>
+                          selectedSite.entryVehicles.map((vehicle, index) => (
+                            <div
+                              key={vehicle._id || index}
+                              className="p-3 bg-gray-50 rounded-lg border border-gray-200"
+                            >
+                              <div className="flex justify-between items-start">
+                                <div className="flex-1">
+                                  <p className="font-semibold text-gray-900">
+                                    {vehicle.vehicleNumber}
+                                  </p>
+                                  <p className="text-sm text-gray-600">
+                                    Driver: {vehicle.driver}
+                                  </p>
+                                  {vehicle.vendor && vehicle.vendor !== 'N/A' && (
+                                    <p className="text-xs text-gray-500">
+                                      Vendor: {vehicle.vendor}
+                                    </p>
+                                  )}
+                                  {vehicle.gate && vehicle.gate !== 'N/A' && (
+                                    <p className="text-xs text-gray-500">
+                                      Gate: {vehicle.gate}
+                                    </p>
+                                  )}
+                                </div>
+                                <span className="text-sm font-medium text-green-600">
+                                  {vehicle.time}
+                                </span>
+                              </div>
                             </div>
                           ))
                         ) : (
-                          <p className="text-gray-500 text-sm">No recent entries</p>
-                        )}
-                        {selectedSite.entryVehicles && selectedSite.entryVehicles.length > 5 && (
-                          <p className="text-indigo-600 text-sm font-medium text-center pt-2">
-                            +{selectedSite.entryVehicles.length - 5} more entries
-                          </p>
+                          <div className="text-center py-8 text-gray-500">
+                            <Activity className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                            <p className="text-sm">No recent entries</p>
+                          </div>
                         )}
                       </div>
                     </div>
 
                     {/* Exit Vehicles */}
-                    <div className="bg-white rounded-lg p-4 border border-gray-200">
+                    <div className="border border-gray-200 rounded-lg p-4">
                       <div className="flex items-center justify-between mb-3">
-                        <h5 className="font-semibold text-red-700">Exit Vehicles</h5>
-                        <span className="bg-red-100 text-red-700 text-xs font-semibold px-2 py-1 rounded-full">
+                        <h4 className="font-medium text-gray-900">Exit Vehicles</h4>
+                        <span className="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs font-semibold">
                           {selectedSite.exitVehicles?.length || 0}
                         </span>
                       </div>
-                      <div className="space-y-2">
+
+                      <div className="space-y-2 max-h-64 overflow-y-auto">
                         {selectedSite.exitVehicles && selectedSite.exitVehicles.length > 0 ? (
-                          selectedSite.exitVehicles.slice(0, 5).map((vehicle, index) => (
-                            <div key={index} className="flex justify-between items-center text-sm">
-                              <span className="text-gray-700">{vehicle.vehicleNumber}</span>
-                              <span className="text-gray-500 text-xs">{vehicle.time}</span>
+                          selectedSite.exitVehicles.map((vehicle, index) => (
+                            <div
+                              key={vehicle._id || index}
+                              className="p-3 bg-gray-50 rounded-lg border border-gray-200"
+                            >
+                              <div className="flex justify-between items-start">
+                                <div className="flex-1">
+                                  <p className="font-semibold text-gray-900">
+                                    {vehicle.vehicleNumber}
+                                  </p>
+                                  <p className="text-sm text-gray-600">
+                                    Driver: {vehicle.driver}
+                                  </p>
+                                  {vehicle.vendor && vehicle.vendor !== 'N/A' && (
+                                    <p className="text-xs text-gray-500">
+                                      Vendor: {vehicle.vendor}
+                                    </p>
+                                  )}
+                                  {vehicle.gate && vehicle.gate !== 'N/A' && (
+                                    <p className="text-xs text-gray-500">
+                                      Gate: {vehicle.gate}
+                                    </p>
+                                  )}
+                                </div>
+                                <span className="text-sm font-medium text-red-600">
+                                  {vehicle.time}
+                                </span>
+                              </div>
                             </div>
                           ))
                         ) : (
-                          <p className="text-gray-500 text-sm">No recent exits</p>
-                        )}
-                        {selectedSite.exitVehicles && selectedSite.exitVehicles.length > 5 && (
-                          <p className="text-indigo-600 text-sm font-medium text-center pt-2">
-                            +{selectedSite.exitVehicles.length - 5} more exits
-                          </p>
+                          <div className="text-center py-8 text-gray-500">
+                            <Activity className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                            <p className="text-sm">No recent exits</p>
+                          </div>
                         )}
                       </div>
                     </div>
                   </div>
 
                   {/* Traffic Summary */}
-                  <div className="mt-4 pt-4 border-t border-gray-200">
-                    <div className="grid grid-cols-3 gap-4">
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-gray-900">{selectedSite.vehiclesOnSite || 0}</div>
-                        <div className="text-xs text-gray-500">Currently On Site</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-green-700">{selectedSite.todayEntries || 0}</div>
-                        <div className="text-xs text-gray-500">Today's Entries</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-red-700">{selectedSite.todayExits || 0}</div>
-                        <div className="text-xs text-gray-500">Today's Exits</div>
-                      </div>
+                  <div className="grid grid-cols-3 gap-4 mt-6 pt-6 border-t border-gray-200">
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-indigo-600">
+                        {selectedSite.vehiclesOnSite || 0}
+                      </p>
+                      <p className="text-sm text-gray-600">Currently On Site</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-green-600">
+                        {selectedSite.todayEntries || 0}
+                      </p>
+                      <p className="text-sm text-gray-600">Today&apos;s Entries</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-red-600">
+                        {selectedSite.todayExits || 0}
+                      </p>
+                      <p className="text-sm text-gray-600">Today&apos;s Exits</p>
                     </div>
                   </div>
                 </div>
 
                 {/* Contact Information */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="bg-gray-50 rounded-lg p-4">
-                    <div className="flex items-start gap-3">
-                      <User className="w-5 h-5 text-gray-400 mt-0.5" />
-                      <div>
-                        <div className="text-xs text-gray-500 mb-1">Contact Person</div>
-                        <div className="text-gray-900 font-medium">
-                          {selectedSite.contactPerson || 'Not assigned'}
-                        </div>
-                      </div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <User className="w-4 h-4 text-gray-500" />
+                      <span className="text-sm text-gray-600">Contact Person</span>
                     </div>
+                    <p className="font-medium text-gray-900">{selectedSite.contactPerson || 'Not assigned'}</p>
                   </div>
-
                   <div className="bg-gray-50 rounded-lg p-4">
-                    <div className="flex items-start gap-3">
-                      <Phone className="w-5 h-5 text-gray-400 mt-0.5" />
-                      <div>
-                        <div className="text-xs text-gray-500 mb-1">Contact Number</div>
-                        <div className="text-gray-900 font-medium">
-                          {selectedSite.contactPhone || 'N/A'}
-                        </div>
-                      </div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <Phone className="w-4 h-4 text-gray-500" />
+                      <span className="text-sm text-gray-600">Contact Number</span>
                     </div>
+                    <p className="font-medium text-gray-900">{selectedSite.contactPhone || 'N/A'}</p>
                   </div>
                 </div>
 
                 {/* Supervisors Information */}
                 {selectedSite.supervisors && selectedSite.supervisors.length > 0 && (
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <div className="flex items-center gap-2 mb-3">
-                      <User className="w-5 h-5 text-indigo-600" />
-                      <h4 className="font-semibold text-gray-900">Site Supervisors</h4>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="bg-white rounded-lg border border-gray-200 p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Site Supervisors</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {selectedSite.supervisors.map((supervisor, index) => (
-                        <div key={index} className="bg-white rounded-lg p-3 border border-gray-200">
+                        <div key={index} className="bg-gray-50 rounded-lg p-4">
                           <div className="font-medium text-gray-900">{supervisor.name}</div>
                           <div className="text-sm text-gray-600 mt-1">{supervisor.email}</div>
                           {supervisor.phone && (
@@ -430,28 +499,23 @@ const PMSites = () => {
 
                 {/* Created Date */}
                 <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="flex items-start gap-3">
-                    <Calendar className="w-5 h-5 text-gray-400 mt-0.5" />
-                    <div>
-                      <div className="text-xs text-gray-500 mb-1">Created Date</div>
-                      <div className="text-gray-900 font-medium">
-                        {selectedSite.createdAt
-                          ? new Date(selectedSite.createdAt).toLocaleDateString('en-IN', {
-                              day: 'numeric',
-                              month: 'long',
-                              year: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })
-                          : 'N/A'
-                        }
-                      </div>
-                    </div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <Calendar className="w-4 h-4 text-gray-500" />
+                    <span className="text-sm text-gray-600">Created Date</span>
                   </div>
+                  <p className="font-medium text-gray-900">
+                    {selectedSite.createdAt ? new Date(selectedSite.createdAt).toLocaleDateString('en-IN', {
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    }) : 'N/A'}
+                  </p>
                 </div>
               </div>
             ) : (
-              <div className="p-12 text-center">
+              <div className="text-center py-12">
                 <p className="text-gray-500">No site data available</p>
               </div>
             )}

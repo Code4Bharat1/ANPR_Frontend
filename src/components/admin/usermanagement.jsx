@@ -1263,7 +1263,7 @@ const UserManagement = () => {
                 />
               </div>
 
-              <div>
+              {/* <div>
                 <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
                   <Lock className="w-4 h-4" />
                   Password (Leave blank to keep current)
@@ -1292,7 +1292,7 @@ const UserManagement = () => {
                 {activeTab === 'Supervisors' && (
                   <p className="text-xs text-red-500 mt-1">Password is required when editing supervisor</p>
                 )}
-              </div>
+              </div> */}
 
               {activeTab === 'Supervisors' && (
                 <div>
@@ -1441,7 +1441,7 @@ const UserManagement = () => {
                 disabled={
                   !formData.name ||
                   !formData.email ||
-                  (activeTab === 'Supervisors' && !formData.password) ||
+                  
                   (activeTab === 'Project Managers' && formData.assignedSites.length === 0) ||
                   (activeTab === 'Supervisors' && (!formData.siteId || !formData.projectManagerId))
                 }

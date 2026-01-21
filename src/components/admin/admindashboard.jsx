@@ -227,7 +227,7 @@ const AdminDashboard = () => {
   };
 
   const handlePackageSelect = (packageType) => {
-    console.log(`Selected package: ${packageType}`);
+    // console.log(`Selected package: ${packageType}`);
     // Implement package upgrade logic here
   };
 
@@ -430,7 +430,7 @@ const AdminDashboard = () => {
               bgColor="bg-gradient-to-br from-blue-50 to-blue-100"
               iconColor="text-blue-600"
               subtitle={`${dashboardData.totalSites > 0 ? 'All operational' : 'No sites configured'}`}
-              onClick={() => console.log('Navigate to sites')}
+              // onClick={() => console.log('Navigate to sites')}
             />
             {/* <DashboardCard
              icon={MapPin}

@@ -184,7 +184,7 @@ const ExitVehicles = () => {
             headers: { Authorization: `Bearer ${token}` },
           },
         );
-        console.log("Active vehicles response:", response.data);
+        // console.log("Active vehicles response:", response.data);
 
         const data = response.data.data || response.data || [];
         const vehiclesArray = Array.isArray(data) ? data : [];

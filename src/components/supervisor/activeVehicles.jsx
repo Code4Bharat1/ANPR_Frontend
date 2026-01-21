@@ -60,8 +60,8 @@ const ActiveVehicles = () => {
       const data = response.data.data || response.data || [];
       const vehiclesArray = Array.isArray(data) ? data : [];
 
-      console.log('📥 Fetched vehicles:', vehiclesArray.length);
-      console.log('📸 Sample vehicle media:', vehiclesArray[0]?.entryMedia);
+      // console.log('📥 Fetched vehicles:', vehiclesArray.length);
+      // console.log('📸 Sample vehicle media:', vehiclesArray[0]?.entryMedia);
 
       const vehiclesWithDuration = vehiclesArray.map(vehicle => {
         const entryTime = vehicle.entryAt || vehicle.entryTime;
@@ -81,7 +81,7 @@ const ActiveVehicles = () => {
         };
       });
 
-      console.log('✅ Vehicles with duration:', vehiclesWithDuration.length);
+      // console.log('✅ Vehicles with duration:', vehiclesWithDuration.length);
       setVehicles(vehiclesWithDuration);
     } catch (error) {
       console.error('❌ Error fetching active vehicles:', error);
@@ -137,9 +137,9 @@ const ActiveVehicles = () => {
   // Replace the handleViewDetails function with this debug version
 
   const handleViewDetails = async (vehicle) => {
-    console.log('🚗 Opening details for vehicle:', vehicle.vehicleNumber);
-    console.log('📦 Entry Media Object:', vehicle.entryMedia);
-    console.log('📦 Exit Media Object:', vehicle.exitMedia);
+    // console.log('🚗 Opening details for vehicle:', vehicle.vehicleNumber);
+    // console.log('📦 Entry Media Object:', vehicle.entryMedia);
+    // console.log('📦 Exit Media Object:', vehicle.exitMedia);
 
     setSelectedVehicle(vehicle);
     setShowDetailsModal(true);
@@ -153,24 +153,24 @@ const ActiveVehicles = () => {
       const entryPhotos = entryMedia.photos || {};
       const resolvedEntryPhotos = {};
 
-      console.log('🔍 Entry Photos Keys:', Object.keys(entryPhotos));
+      // console.log('🔍 Entry Photos Keys:', Object.keys(entryPhotos));
 
       for (const key in entryPhotos) {
         if (entryPhotos[key]) {
           try {
             const fileKey = entryPhotos[key];
-            console.log(`📸 Fetching ${key}:`, fileKey);
+            // console.log(`📸 Fetching ${key}:`, fileKey);
 
             const url = `${API_URL}/api/uploads/get-file`;
-            console.log(`🌐 Request URL:`, url);
-            console.log(`🔑 File Key:`, fileKey);
+            // console.log(`🌐 Request URL:`, url);
+            // console.log(`🔑 File Key:`, fileKey);
 
             const res = await axios.get(url, {
               params: { key: fileKey },
               headers: { Authorization: `Bearer ${token}` }
             });
 
-            console.log(`✅ ${key} loaded:`, res.data.url);
+            // console.log(/`✅ ${key} loaded:`, res.data.url);
             resolvedEntryPhotos[key] = res.data.url;
           } catch (err) {
             console.error(`❌ Failed to load ${key}:`, err.response?.data || err.message);
@@ -187,38 +187,38 @@ const ActiveVehicles = () => {
       let entryVideoUrl = null;
       if (entryMedia.video) {
         try {
-          console.log('🎥 Fetching entry video:', entryMedia.video);
+          // console.log('🎥 Fetching entry video:', entryMedia.video);
           const res = await axios.get(`${API_URL}/api/uploads/get-file`, {
             params: { key: entryMedia.video },
             headers: { Authorization: `Bearer ${token}` }
           });
           entryVideoUrl = res.data.url;
-          console.log('✅ Entry video loaded:', entryVideoUrl);
+          // console.l//og('✅ Entry video loaded:', entryVideoUrl);
         } catch (err) {
           console.error('❌ Failed to load entry video:', err.response?.data || err.message);
         }
       }
 
       setResolvedEntryMedia({ photos: resolvedEntryPhotos, video: entryVideoUrl });
-      console.log('🎨 Resolved Entry Media:', { photos: resolvedEntryPhotos, video: entryVideoUrl });
+      // console.log('🎨 Resolved Entry Media:', { photos: resolvedEntryPhotos, video: entryVideoUrl });
 
       // Exit media
       const exitMedia = vehicle.exitMedia || {};
       const exitPhotos = exitMedia.photos || {};
       const resolvedExitPhotos = {};
 
-      console.log('🔍 Exit Photos Keys:', Object.keys(exitPhotos));
+      // console.log('🔍 Exit Photos Keys:', Object.keys(exitPhotos));
 
       for (const key in exitPhotos) {
         if (exitPhotos[key]) {
           try {
-            console.log(`📸 Fetching exit ${key}:`, exitPhotos[key]);
+            // console.log(`📸 F/etching exit ${key}:`, exitPhotos[key]);
             const res = await axios.get(`${API_URL}/api/uploads/get-file`, {
               params: { key: exitPhotos[key] },
               headers: { Authorization: `Bearer ${token}` }
             });
             resolvedExitPhotos[key] = res.data.url;
-            console.log(`✅ Exit ${key} loaded`);
+            // console.log(`✅ Exit ${key} loaded`);
           } catch (err) {
             console.error(`❌ Failed to load exit ${key}:`, err.response?.data || err.message);
           }
@@ -228,35 +228,35 @@ const ActiveVehicles = () => {
       let exitVideoUrl = null;
       if (exitMedia.video) {
         try {
-          console.log('🎥 Fetching exit video:', exitMedia.video);
+          // console.log('🎥 Fe/tching exit video:', exitMedia.video);
           const res = await axios.get(`${API_URL}/api/uploads/get-file`, {
             params: { key: exitMedia.video },
             headers: { Authorization: `Bearer ${token}` }
           });
           exitVideoUrl = res.data.url;
-          console.log('✅ Exit video loaded');
+          // console.log('✅ Exit video loaded');
         } catch (err) {
           console.error('❌ Failed to load exit video:', err.response?.data || err.message);
         }
       }
 
       setResolvedExitMedia({ photos: resolvedExitPhotos, video: exitVideoUrl });
-      console.log('🎨 Resolved Exit Media:', { photos: resolvedExitPhotos, video: exitVideoUrl });
+      // console.log('🎨 Resolved Exit Media:', { photos: resolvedExitPhotos, video: exitVideoUrl });
 
     } catch (err) {
       console.error('💥 Media resolve failed:', err);
     } finally {
       setMediaLoading(false);
-      console.log('✅ Media loading complete');
+      // console.log('✅ Media loading complete');
     }
   };
 
   // Also add this to check what's stored in the database
   useEffect(() => {
     if (vehicles.length > 0) {
-      console.log('🚛 Sample Vehicle Data:', vehicles[0]);
-      console.log('📸 Sample Entry Media:', vehicles[0]?.entryMedia);
-      console.log('📸 Sample Exit Media:', vehicles[0]?.exitMedia);
+      // console.log('🚛 Sample Vehicle Data:', vehicles[0]);
+      // console.log('📸 Sample Entry Media:', vehicles[0]?.entryMedia);
+      // console.log('📸 Sample Exit Media:', vehicles[0]?.exitMedia);
     }
   }, [vehicles]);
 

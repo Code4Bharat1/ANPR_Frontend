@@ -215,7 +215,7 @@ const PMReports = () => {
 
       if (response.ok) {
         const data = await response.json();
-        console.log(data);
+        // console.log(data);
         setReports(data);
       } else {
         showAlert("error", "Failed to fetch reports");

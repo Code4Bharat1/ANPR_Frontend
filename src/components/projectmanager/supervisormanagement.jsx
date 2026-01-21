@@ -124,7 +124,7 @@ const SupervisorManagement = () => {
     try {
       setLoading(true);
       const response = await api.get('/api/project/supervisors');
-      console.log("res : ", response);
+      // console.log("res : ", response);
       let supervisorsData = response.data.supervisors || response.data.data || response.data || [];
 
       if (!Array.isArray(supervisorsData)) {
@@ -132,7 +132,7 @@ const SupervisorManagement = () => {
       }
 
       setSupervisors(supervisorsData);
-      console.log('Fetched supervisors:', supervisorsData);
+      // console.log('Fetched supervisors:', supervisorsData);
     } catch (err) {
       console.error('Error fetching supervisors:', err);
 

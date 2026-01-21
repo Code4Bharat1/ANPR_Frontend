@@ -1260,7 +1260,7 @@ const OcrScan = () => {
             timeout: 5000,
           });
 
-          console.log(response);
+          // console.log(response);
 
 
           if (response.data && response.data.success) {
@@ -1274,7 +1274,7 @@ const OcrScan = () => {
           }
 
           if (vendorsData.length > 0) {
-            console.log(`Successfully fetched ${vendorsData.length} vendors from ${endpoint}`);
+            // cons/ole.log(`Successfully fetched ${vendorsData.length} vendors from ${endpoint}`);
             break;
           }
         } catch (error) {
@@ -1474,7 +1474,7 @@ const OcrScan = () => {
           `${Date.now()}-challan.jpg`,
         );
 
-        console.log("Challan : ", challanFile);
+        // console.log("Challan : ", challanFile);
 
         challanKey = await uploadToWasabi({
           file: challanFile,

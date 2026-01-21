@@ -56,8 +56,8 @@ const TripHistory = () => {
 
       const data = response.data.data || response.data || [];
       setTrips(data);
-      console.log(data);
-      
+      // console.log(data);
+
       
     } catch (error) {
       console.error('❌ Error fetching trip history:', error);
