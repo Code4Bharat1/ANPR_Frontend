@@ -103,7 +103,7 @@ const PMReports = () => {
               headers: { Authorization: `Bearer ${token}` },
             });
             entryPhotos[key] = res.data.url;
-          } catch {}
+          } catch { }
         }
 
         let entryVideo = null;
@@ -131,7 +131,7 @@ const PMReports = () => {
               headers: { Authorization: `Bearer ${token}` },
             });
             exitPhotos[key] = res.data.url;
-          } catch {}
+          } catch { }
         }
 
         let exitVideo = null;
@@ -325,9 +325,8 @@ const PMReports = () => {
       {/* Alert Notification */}
       {alert && (
         <div
-          className={`fixed top-4 right-4 z-50 flex items-center gap-3 px-6 py-4 rounded-lg shadow-lg ${
-            alert.type === "success" ? "bg-green-500" : "bg-red-500"
-          } text-white animate-slide-in`}
+          className={`fixed top-4 right-4 z-50 flex items-center gap-3 px-6 py-4 rounded-lg shadow-lg ${alert.type === "success" ? "bg-green-500" : "bg-red-500"
+            } text-white animate-slide-in`}
         >
           {alert.type === "success" ? (
             <CheckCircle className="w-5 h-5" />
@@ -526,13 +525,12 @@ const PMReports = () => {
 
                       <td className="px-6 py-4">
                         <span
-                          className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
-                            report.status === "completed"
+                          className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${report.status === "completed"
                               ? "bg-green-100 text-green-700"
                               : report.status === "active"
                                 ? "bg-blue-100 text-blue-700"
                                 : "bg-gray-100 text-gray-700"
-                          }`}
+                            }`}
                         >
                           {report.status === "completed"
                             ? "Completed"
@@ -586,13 +584,12 @@ const PMReports = () => {
                     </div>
                   </div>
                   <span
-                    className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
-                      report.status === "completed"
+                    className={`px-2.5 py-1 rounded-full text-xs font-semibold ${report.status === "completed"
                         ? "bg-green-100 text-green-700"
                         : report.status === "active"
                           ? "bg-blue-100 text-blue-700"
                           : "bg-gray-100 text-gray-700"
-                    }`}
+                      }`}
                   >
                     {report.status === "completed"
                       ? "Completed"
@@ -722,15 +719,11 @@ const PMReports = () => {
                           </div>
                         </div>
                         <div>
-                          <div className="text-xs text-blue-600 font-medium mb-2">
-                            TRIP INFO
-                          </div>
-                          <div className="font-semibold text-gray-900 mb-1">
-                            {selectedTrip.tripId || "N/A"}
-                          </div>
-                          <div className="text-sm text-gray-600">
-                            Material: {selectedTrip.loadStatus || "N/A"}
-                          </div>
+                          <div className="text-xs text-blue-600 font-medium mb-2">TRIP INFO</div>
+                          <div className="font-semibold text-gray-900 mb-1">{selectedTrip.tripId || 'N/A'}</div>
+                          <div className="text-sm text-gray-600">Material: {selectedTrip.loadStatus || 'N/A'}</div>
+                          <div className="text-sm text-gray-600">Type: {selectedTrip.purpose || 'N/A'}</div>
+                          <div className="text-sm text-gray-600">Count: {selectedTrip.countofmaterials || 'N/A'}</div>
                         </div>
                       </div>
                     </div>
@@ -800,20 +793,20 @@ const PMReports = () => {
                             </div>
                             <div className="font-bold text-gray-900">
                               {selectedTrip.exitTime &&
-                              selectedTrip.exitTime !== "--"
+                                selectedTrip.exitTime !== "--"
                                 ? formatDateTime(selectedTrip.exitTime)
-                                    .split(",")[1]
-                                    ?.trim()
+                                  .split(",")[1]
+                                  ?.trim()
                                 : "--"}
                             </div>
                           </div>
                         </div>
                         <div className="text-sm text-gray-600">
                           {selectedTrip.exitTime &&
-                          selectedTrip.exitTime !== "--"
+                            selectedTrip.exitTime !== "--"
                             ? formatDateTime(selectedTrip.exitTime).split(
-                                ",",
-                              )[0]
+                              ",",
+                            )[0]
                             : "Still Inside"}
                         </div>
                       </div>

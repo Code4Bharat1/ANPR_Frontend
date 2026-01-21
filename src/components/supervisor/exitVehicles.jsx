@@ -146,18 +146,18 @@ const ExitVehicles = () => {
   };
 
   useEffect(() => {
-  if (selectedVehicle?.entryMedia) {
-    resolveEntryMedia(selectedVehicle.entryMedia);
-  } else {
-    setResolvedEntryMedia({ photos: {}, video: null });
-  }
+    if (selectedVehicle?.entryMedia) {
+      resolveEntryMedia(selectedVehicle.entryMedia);
+    } else {
+      setResolvedEntryMedia({ photos: {}, video: null });
+    }
 
-  if (selectedVehicle?.exitMedia) {
-    resolveExitMedia(selectedVehicle.exitMedia);
-  } else {
-    setResolvedExitMedia({ photos: {}, video: null });
-  }
-}, [selectedVehicle]);
+    if (selectedVehicle?.exitMedia) {
+      resolveExitMedia(selectedVehicle.exitMedia);
+    } else {
+      setResolvedExitMedia({ photos: {}, video: null });
+    }
+  }, [selectedVehicle]);
 
 
   useEffect(() => {
@@ -605,11 +605,10 @@ const ExitVehicles = () => {
                               <div>
                                 <div className="text-gray-500">Duration</div>
                                 <div
-                                  className={`font-semibold ${
-                                    vehicle.status === "overstay"
+                                  className={`font-semibold ${vehicle.status === "overstay"
                                       ? "text-orange-600"
                                       : "text-gray-900"
-                                  }`}
+                                    }`}
                                 >
                                   {vehicle.duration || "0h 0m"}
                                 </div>
@@ -725,82 +724,82 @@ const ExitVehicles = () => {
             <div className="space-y-6">
               {/* Vehicle Summary */}
               <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
-  <div className="flex items-center justify-between mb-5">
-    <h2 className="text-lg font-bold text-gray-900">
-      Vehicle Summary
-    </h2>
+                <div className="flex items-center justify-between mb-5">
+                  <h2 className="text-lg font-bold text-gray-900">
+                    Vehicle Summary
+                  </h2>
 
-   
-  </div>
 
-  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                </div>
 
-    {/* Vehicle Number */}
-    <div className="bg-gray-50 rounded-xl p-4">
-      <div className="text-xs text-gray-500 mb-1">Vehicle Number</div>
-      <div className="text-xl font-bold text-gray-900">
-        {selectedVehicle.vehicleNumber ?? "N/A"}
-      </div>
-    </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
 
-    {/* Vendor */}
-    <div className="bg-gray-50 rounded-xl p-4">
-      <div className="text-xs text-gray-500 mb-1">Vendor</div>
-      <div className="font-semibold text-gray-900">
-        {selectedVehicle.vendor ?? "Unknown"}
-      </div>
-    </div>
+                  {/* Vehicle Number */}
+                  <div className="bg-gray-50 rounded-xl p-4">
+                    <div className="text-xs text-gray-500 mb-1">Vehicle Number</div>
+                    <div className="text-xl font-bold text-gray-900">
+                      {selectedVehicle.vehicleNumber ?? "N/A"}
+                    </div>
+                  </div>
 
-    {/* Driver */}
-    <div className="bg-gray-50 rounded-xl p-4">
-      <div className="text-xs text-gray-500 mb-1">Driver</div>
-      <div className="font-semibold text-gray-900">
-        {selectedVehicle.driver ?? "N/A"}
-      </div>
-    </div>
+                  {/* Vendor */}
+                  <div className="bg-gray-50 rounded-xl p-4">
+                    <div className="text-xs text-gray-500 mb-1">Vendor</div>
+                    <div className="font-semibold text-gray-900">
+                      {selectedVehicle.vendor ?? "Unknown"}
+                    </div>
+                  </div>
 
-    {/* Material Details */}
-    <div className="bg-gray-50 rounded-xl p-4 c">
-      <div className="text-xs text-gray-500 mb-2">Material Details
-       <span className="px-3 py-1 text-xs rounded-full bg-blue-50 text-blue-700 font-semibold">
-        {selectedVehicle.loadStatus ?? "N/A"}
-    </span>
-</div>
-      <div className="flex flex-wrap gap-4 text-sm">
-        <div>
-          <span className="text-gray-500">Type:</span>{" "}
-          <span className="font-semibold text-gray-900">
-            {selectedVehicle.purpose ?? "N/A"}
-          </span>
-        </div>
+                  {/* Driver */}
+                  <div className="bg-gray-50 rounded-xl p-4">
+                    <div className="text-xs text-gray-500 mb-1">Driver</div>
+                    <div className="font-semibold text-gray-900">
+                      {selectedVehicle.driver ?? "N/A"}
+                    </div>
+                  </div>
 
-        <div>
-          <span className="text-gray-500">Count:</span>{" "}
-          <span className="font-semibold text-gray-900">
-            {selectedVehicle.countofmaterials ?? "N/A"}
-          </span>
-        </div>
-      </div>
-    </div>
+                  {/* Material Details */}
+                  <div className="bg-gray-50 rounded-xl p-4 c">
+                    <div className="text-xs text-gray-500 mb-2">Material Details
+                      <span className="px-3 py-1 text-xs rounded-full bg-blue-50 text-blue-700 font-semibold">
+                        {selectedVehicle.loadStatus ?? "N/A"}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-4 text-sm">
+                      <div>
+                        <span className="text-gray-500">Type:</span>{" "}
+                        <span className="font-semibold text-gray-900">
+                          {selectedVehicle.purpose ?? "N/A"}
+                        </span>
+                      </div>
 
-    {/* Entry Time */}
-    <div className="bg-gray-50 rounded-xl p-4">
-      <div className="text-xs text-gray-500 mb-1">Entry Time</div>
-      <div className="font-semibold text-gray-900">
-        {selectedVehicle.entryTime ?? "N/A"}
-      </div>
-    </div>
+                      <div>
+                        <span className="text-gray-500">Count:</span>{" "}
+                        <span className="font-semibold text-gray-900">
+                          {selectedVehicle.countofmaterials ?? "N/A"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
 
-    {/* Duration */}
-    <div className="bg-gray-50 rounded-xl p-4">
-      <div className="text-xs text-gray-500 mb-1">Duration</div>
-      <div className="font-semibold text-gray-900">
-        {selectedVehicle.duration ?? "0h 0m"}
-      </div>
-    </div>
+                  {/* Entry Time */}
+                  <div className="bg-gray-50 rounded-xl p-4">
+                    <div className="text-xs text-gray-500 mb-1">Entry Time</div>
+                    <div className="font-semibold text-gray-900">
+                      {selectedVehicle.entryTime ?? "N/A"}
+                    </div>
+                  </div>
 
-  </div>
-</div>
+                  {/* Duration */}
+                  <div className="bg-gray-50 rounded-xl p-4">
+                    <div className="text-xs text-gray-500 mb-1">Duration</div>
+                    <div className="font-semibold text-gray-900">
+                      {selectedVehicle.duration ?? "0h 0m"}
+                    </div>
+                  </div>
+
+                </div>
+              </div>
 
 
               {/* Exit Checklist */}
@@ -890,11 +889,10 @@ const ExitVehicles = () => {
                       onClick={() =>
                         setExitData({ ...exitData, exitLoadStatus: status })
                       }
-                      className={`px-4 py-3 rounded-lg font-semibold transition ${
-                        exitData.exitLoadStatus === status
+                      className={`px-4 py-3 rounded-lg font-semibold transition ${exitData.exitLoadStatus === status
                           ? "bg-blue-600 text-white border-2 border-blue-600"
                           : "bg-white text-gray-700 border-2 border-gray-300 hover:border-blue-300"
-                      }`}
+                        }`}
                     >
                       {status.charAt(0).toUpperCase() + status.slice(1)}
                     </button>
@@ -999,11 +997,10 @@ const ExitVehicles = () => {
                     <div
                       key={item.key}
                       onClick={() => startCamera(item.key)}
-                      className={`border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition ${
-                        exitData.exitMedia[item.key]
+                      className={`border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition ${exitData.exitMedia[item.key]
                           ? "border-green-300 bg-green-50"
                           : "border-gray-300 bg-gray-50 hover:bg-gray-100"
-                      }`}
+                        }`}
                     >
                       {exitData.exitMedia[item.key] ? (
                         <div>
