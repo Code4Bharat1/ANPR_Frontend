@@ -52,29 +52,41 @@ const SuperAdminDashboard = () => {
     fetchDashboardData();
   }, []);
 
-  const fetchDashboardData = async () => {
-    try {
-      setLoading(true);
-      const token = localStorage.getItem('accessToken');
+ const fetchDashboardData = async () => {
+  try {
+    setLoading(true);
+    const token = localStorage.getItem('accessToken');
 
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-
-      const res = await api.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/superadmin/dashboard`
-      );
-
-      setDashboardData(res.data);
-      // console.log(res.data);
-      setError(null);
-    } catch (err) {
-      console.error('Error fetching dashboard data:', err);
-      setError(err.response?.data?.message || err.message);
-    } finally {
-      setLoading(false);
+    if (!token) {
+      // Redirect to login if no token found
+      window.location.href = '/login';
+      return; // Important: Stop further execution
     }
-  };
+
+    const res = await api.get(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/superadmin/dashboard`
+    );
+
+    setDashboardData(res.data);
+    // console.log(res.data);
+    setError(null);
+  } catch (err) {
+    console.error('Error fetching dashboard data:', err);
+    
+    // Check for 401 Unauthorized or 403 Forbidden
+    if (err.response?.status === 401 || err.response?.status === 403) {
+      // Clear local storage and redirect to login
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('user');
+      window.location.href = '/login';
+      return;
+    }
+    
+    setError(err.response?.data?.message || err.message);
+  } finally {
+    setLoading(false);
+  }
+};
 
   if (loading) {
     return (
