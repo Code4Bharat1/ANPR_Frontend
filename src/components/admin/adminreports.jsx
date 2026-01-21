@@ -14,7 +14,11 @@ import {
   LogOut,
   Camera,
   Video,
-  Loader2
+  Loader2,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight
 } from 'lucide-react';
 import Sidebar from './sidebar';
 import Header from './header';
@@ -133,6 +137,104 @@ const FilterChip = ({ label, value, onRemove }) => (
   </div>
 );
 
+// Pagination Component
+// Pagination Component को AdminReports function के अंदर लिखें
+const Pagination = ({ currentPage, totalPages, onPageChange, totalItems, itemsPerPage }) => {
+  const getPageNumbers = () => {
+    const delta = 2;
+    const range = [];
+    const rangeWithDots = [];
+    
+    for (let i = 1; i <= totalPages; i++) {
+      if (i === 1 || i === totalPages || (i >= currentPage - delta && i <= currentPage + delta)) {
+        range.push(i);
+      }
+    }
+
+    let prev = 0;
+    for (const i of range) {
+      if (prev) {
+        if (i - prev === 2) {
+          rangeWithDots.push(prev + 1);
+        } else if (i - prev !== 1) {
+          rangeWithDots.push('...');
+        }
+      }
+      rangeWithDots.push(i);
+      prev = i;
+    }
+
+    return rangeWithDots;
+  };
+
+  const startItem = ((currentPage - 1) * itemsPerPage) + 1;
+  const endItem = Math.min(currentPage * itemsPerPage, totalItems);
+
+  return (
+    <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200 bg-white">
+      <div className="flex items-center gap-2 text-sm text-gray-700">
+        <span>Page {currentPage} of {totalPages}</span>
+      </div>
+      
+      <div className="flex items-center gap-1">
+        <button
+          onClick={() => onPageChange(1)}
+          disabled={currentPage === 1}
+          className="p-2 rounded-md border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <ChevronsLeft className="w-4 h-4" />
+        </button>
+        
+        <button
+          onClick={() => onPageChange(currentPage - 1)}
+          disabled={currentPage === 1}
+          className="p-2 rounded-md border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <ChevronLeft className="w-4 h-4" />
+        </button>
+
+        {getPageNumbers().map((pageNum, index) => (
+          pageNum === '...' ? (
+            <span key={`dots-${index}`} className="px-2 text-gray-500">...</span>
+          ) : (
+            <button
+              key={pageNum}
+              onClick={() => onPageChange(pageNum)}
+              className={`min-w-[40px] h-10 px-3 rounded-md border font-medium transition-colors ${
+                currentPage === pageNum
+                  ? 'bg-blue-600 text-white border-blue-600'
+                  : 'border-gray-300 hover:bg-gray-50 text-gray-700'
+              }`}
+            >
+              {pageNum}
+            </button>
+          )
+        ))}
+
+        <button
+          onClick={() => onPageChange(currentPage + 1)}
+          disabled={currentPage === totalPages}
+          className="p-2 rounded-md border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <ChevronRight className="w-4 h-4" />
+        </button>
+        
+        <button
+          onClick={() => onPageChange(totalPages)}
+          disabled={currentPage === totalPages}
+          className="p-2 rounded-md border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <ChevronsRight className="w-4 h-4" />
+        </button>
+      </div>
+
+      <div className="text-sm text-gray-700">
+        Showing {startItem} to {endItem} of {totalItems} results
+      </div>
+    </div>
+  );
+};
+
 const AdminReports = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [trips, setTrips] = useState([]);
@@ -170,6 +272,11 @@ const AdminReports = () => {
     video: null,
   });
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [filteredTrips, setFilteredTrips] = useState([]);
+
   const [expandedSections, setExpandedSections] = useState({
     entryEvidence: true,
     exitEvidence: true,
@@ -189,6 +296,7 @@ const AdminReports = () => {
       description: "Driver identification",
     },
   ];
+
   const getUserRole = () => {
     if (typeof window !== 'undefined') {
       const userData = localStorage.getItem('user');
@@ -203,11 +311,11 @@ const AdminReports = () => {
     }
     return 'client';
   };
+
   useEffect(() => {
     const fetchSites = async () => {
       try {
         setLoadingSites(true);
-
         const res = await axios.get(
           `${process.env.NEXT_PUBLIC_API_URL}/api/client-admin/sites`,
           {
@@ -216,10 +324,7 @@ const AdminReports = () => {
             },
           }
         );
-
         setSites(res.data.data || res.data);
-        // console.log(res.data);
-        
       } catch (error) {
         console.error(
           "Failed to fetch sites:",
@@ -230,13 +335,8 @@ const AdminReports = () => {
         setLoadingSites(false);
       }
     };
-
     fetchSites();
   }, []);
-
-
-
-
 
   const fetchReports = async () => {
     try {
@@ -244,7 +344,6 @@ const AdminReports = () => {
       const token = localStorage.getItem('accessToken');
       const userRole = getUserRole();
 
-      // Build params object
       const params = {
         startDate: dateRange.start,
         endDate: dateRange.end
@@ -257,7 +356,6 @@ const AdminReports = () => {
         params.site = filterSite;
       }
 
-      // Choose endpoint based on role
       const apiEndpoint = userRole === 'project_manager'
         ? `${process.env.NEXT_PUBLIC_API_URL}/api/client-admin/trips/reports`
         : `${process.env.NEXT_PUBLIC_API_URL}/api/client-admin/reports`;
@@ -270,7 +368,6 @@ const AdminReports = () => {
         params: params
       });
 
-      // Format trips
       const formattedTrips = (response.data || []).map(trip => {
         const vehicleNumber = trip.vehicleNumber ||
           trip.vehicle ||
@@ -308,7 +405,7 @@ const AdminReports = () => {
       });
 
       setTrips(formattedTrips);
-      console.log('Fetched trips:', formattedTrips);
+      
       // Update active filters
       const filters = [];
       if (filterStatus !== 'All Status') {
@@ -325,6 +422,7 @@ const AdminReports = () => {
         });
       }
       setActiveFilters(filters);
+      setCurrentPage(1); // Reset to first page when new data loads
 
     } catch (err) {
       console.error('Error fetching reports:', err);
@@ -333,6 +431,56 @@ const AdminReports = () => {
       setLoading(false);
     }
   };
+
+  // Filter and sort trips based on search and filters
+  useEffect(() => {
+    let result = trips.filter(trip => {
+      const matchesSearch = trip.vehicleNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        trip.id?.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesStatus = filterStatus === 'All Status' || trip.status === filterStatus;
+      const matchesSite = filterSite === 'All Sites' || trip.site === filterSite;
+      return matchesSearch && matchesStatus && matchesSite;
+    });
+
+    // Apply sorting
+    if (sortConfig.key) {
+      result.sort((a, b) => {
+        const aVal = a[sortConfig.key];
+        const bVal = b[sortConfig.key];
+
+        if (aVal < bVal) {
+          return sortConfig.direction === 'asc' ? -1 : 1;
+        }
+        if (aVal > bVal) {
+          return sortConfig.direction === 'asc' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+
+    setFilteredTrips(result);
+    setCurrentPage(1); // Reset to first page when filters change
+  }, [trips, searchTerm, filterStatus, filterSite, sortConfig]);
+
+  // Calculate pagination values
+  const totalPages = Math.ceil(filteredTrips.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentTrips = filteredTrips.slice(startIndex, endIndex);
+
+  const handlePageChange = (page) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const handleItemsPerPageChange = (e) => {
+    const value = parseInt(e.target.value);
+    setItemsPerPage(value);
+    setCurrentPage(1); // Reset to first page when items per page changes
+  };
+
   const handleViewDetails = async (report) => {
     setSelectedTrip(report);
     setShowDetailsModal(true);
@@ -457,7 +605,6 @@ const AdminReports = () => {
     return `${hours}h ${minutes}m`;
   };
 
-
   const handleSort = (key) => {
     let direction = 'asc';
     if (sortConfig.key === key && sortConfig.direction === 'asc') {
@@ -511,14 +658,6 @@ const AdminReports = () => {
     }
   };
 
-  // const handleExportPDF = () => {
-  //   alert('PDF export feature coming soon!');
-  // };
-
-  // const handlePrint = () => {
-  //   window.print();
-  // };
-
   const handleShare = () => {
     if (navigator.share) {
       navigator.share({
@@ -564,14 +703,12 @@ const AdminReports = () => {
     setActiveFilters(newFilters);
   };
 
-
   const toggleSection = (section) => {
     setExpandedSections((prev) => ({
       ...prev,
       [section]: !prev[section],
     }));
   };
-
 
   const getStatusBadge = (status) => {
     const configs = {
@@ -608,7 +745,6 @@ const AdminReports = () => {
     );
   };
 
-
   // Fetch reports on mount and when date range changes
   useEffect(() => {
     fetchReports();
@@ -621,40 +757,9 @@ const AdminReports = () => {
     }
   }, [filterStatus, filterSite]);
 
-  // Filter trips based on search and filters
-  const filteredTrips = trips.filter(trip => {
-    const matchesSearch = trip.vehicleNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      trip.id?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = filterStatus === 'All Status' || trip.status === filterStatus;
-    const matchesSite = filterSite === 'All Sites' || trip.site === filterSite;
-    return matchesSearch && matchesStatus && matchesSite;
-  });
-
-  // Sort trips AFTER filteredTrips is defined
-  const sortedTrips = [...filteredTrips].sort((a, b) => {
-    if (!sortConfig.key) return 0;
-
-    const aVal = a[sortConfig.key];
-    const bVal = b[sortConfig.key];
-
-    if (aVal < bVal) {
-      return sortConfig.direction === 'asc' ? -1 : 1;
-    }
-    if (aVal > bVal) {
-      return sortConfig.direction === 'asc' ? 1 : -1;
-    }
-    return 0;
-  });
-
   const totalTrips = trips.length;
   const completedTrips = trips.filter(t => t.status === 'Completed').length;
   const activeTrips = trips.filter(t => t.status === 'Active').length;
-  const avgDuration = trips.length > 0
-    ? Math.round(trips.reduce((acc, trip) => {
-      const duration = trip.duration ? parseInt(trip.duration) : 0;
-      return acc + duration;
-    }, 0) / trips.length)
-    : 0;
 
   if (loading) {
     return (
@@ -690,11 +795,10 @@ const AdminReports = () => {
       />
 
       <main className="lg:ml-72 max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
-
         {/* Stats Overview */}
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Reports Overview</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             <StatCard
               title="Total Trips"
               value={totalTrips}
@@ -716,13 +820,6 @@ const AdminReports = () => {
               icon={Clock}
               color={{ bg: 'bg-orange-50', icon: 'text-orange-600' }}
               subtitle="Currently in progress"
-            />
-            <StatCard
-              title="Avg Duration"
-              value={avgDuration ? `${avgDuration}m` : 'N/A'}
-              icon={Clock}
-              color={{ bg: 'bg-purple-50', icon: 'text-purple-600' }}
-              subtitle="Average trip duration"
             />
           </div>
         </div>
@@ -771,7 +868,7 @@ const AdminReports = () => {
 
           {/* Filter Controls */}
           {showFilters && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
                   <Calendar className="w-4 h-4" />
@@ -796,31 +893,6 @@ const AdminReports = () => {
                   className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Site
-                </label>
-
-                <select
-                  value={filterSite}
-                  onChange={(e) => setFilterSite(e.target.value)}
-                  className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg
-               focus:ring-2 focus:ring-blue-500 focus:border-blue-500
-               outline-none transition bg-white"
-                >
-                  <option value="all">All Sites</option>
-
-                  {loadingSites ? (
-                    <option disabled>Loading sites...</option>
-                  ) : (
-                    sites.map((site) => (
-                      <option key={site._id} value={site._id}>
-                        {site.name}
-                      </option>
-                    ))
-                  )}
-                </select>
-              </div>
 
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">Status</label>
@@ -832,8 +904,6 @@ const AdminReports = () => {
                   <option value="All Status">All Status</option>
                   <option value="Active">Active</option>
                   <option value="Completed">Completed</option>
-                  <option value="Pending">Pending</option>
-                  <option value="Cancelled">Cancelled</option>
                 </select>
               </div>
             </div>
@@ -871,34 +941,6 @@ const AdminReports = () => {
                   </>
                 )}
               </button>
-              {/* <div className="relative group">
-                <button className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2.5 px-3 rounded-lg transition-colors">
-                  <MoreVertical className="w-4 h-4" />
-                </button>
-                <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 hidden group-hover:block z-10">
-                  <button
-                    onClick={handleExportPDF}
-                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
-                  >
-                    <FileText className="w-4 h-4" />
-                    Export as PDF
-                  </button>
-                  <button
-                    onClick={handlePrint}
-                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
-                  >
-                    <Printer className="w-4 h-4" />
-                    Print Report
-                  </button>
-                  <button
-                    onClick={handleShare}
-                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
-                  >
-                    <Share2 className="w-4 h-4" />
-                    Share Report
-                  </button>
-                </div>
-              </div> */}
             </div>
           </div>
         </div>
@@ -908,251 +950,216 @@ const AdminReports = () => {
           <div>
             <h3 className="text-lg font-semibold text-gray-900">Trip Records</h3>
             <p className="text-sm text-gray-600">
-              Showing {filteredTrips.length} of {totalTrips} trips
+              Showing {startIndex + 1} to {Math.min(endIndex, filteredTrips.length)} of {filteredTrips.length} trips
               {activeFilters.length > 0 && ' with applied filters'}
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600">View:</span>
-            <div className="flex bg-gray-100 rounded-lg p-1">
-              <button
-                onClick={() => setViewMode('table')}
-                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${viewMode === 'table' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-600'
-                  }`}
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-600">Items per page:</span>
+              <select
+                value={itemsPerPage}
+                onChange={handleItemsPerPageChange}
+                className="px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500"
               >
-                Table
-              </button>
-              <button
-                onClick={() => setViewMode('card')}
-                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${viewMode === 'card' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-600'
-                  }`}
-              >
-                Cards
-              </button>
+                <option value="5">5</option>
+                <option value="10">10</option>
+                <option value="20">20</option>
+                <option value="50">50</option>
+              </select>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-600">View:</span>
+              <div className="flex bg-gray-100 rounded-lg p-1">
+                <button
+                  onClick={() => setViewMode('table')}
+                  className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${viewMode === 'table' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-600'
+                    }`}
+                >
+                  Table
+                </button>
+                <button
+                  onClick={() => setViewMode('card')}
+                  className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${viewMode === 'card' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-600'
+                    }`}
+                >
+                  Cards
+                </button>
+              </div>
             </div>
           </div>
         </div>
 
         {/* Table View */}
         {viewMode === 'table' && (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-200">
-                  <tr>
-                    <th className="px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase w-20">
-                      S.No.
-                    </th>
-                    <TableHeader
-                      sortable
-                      onSort={() => handleSort('vehicleNumber')}
-                      sortDirection={sortConfig.key === 'vehicleNumber' ? sortConfig.direction : null}
-                    >
-                      Vehicle
-                    </TableHeader>
-                    <TableHeader
-                      sortable
-                      onSort={() => handleSort('entryAt')}
-                      sortDirection={sortConfig.key === 'entryAt' ? sortConfig.direction : null}
-                    >
-                      Entry Time
-                    </TableHeader>
-                    <TableHeader
-                      sortable
-                      onSort={() => handleSort('exitAt')}
-                      sortDirection={sortConfig.key === 'exitAt' ? sortConfig.direction : null}
-                    >
-                      Exit Time
-                    </TableHeader>
-                    <TableHeader
-                      sortable
-                      onSort={() => handleSort('status')}
-                      sortDirection={sortConfig.key === 'status' ? sortConfig.direction : null}
-                    >
-                      Status
-                    </TableHeader>
-                    <TableHeader
-                      sortable
-                      onSort={() => handleSort('site')}
-                      sortDirection={sortConfig.key === 'site' ? sortConfig.direction : null}
-                    >
-                      Site
-                    </TableHeader>
-                    <TableHeader>Duration</TableHeader>
-                    <TableHeader>Project Managar</TableHeader>
-                    <TableHeader>Superviosr</TableHeader>
-                    <TableHeader>Action</TableHeader>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {sortedTrips.map((trip, index) => (
-                    <tr key={trip.id} className="hover:bg-gray-50 transition-colors group">
-                      <td className="px-6 py-4 text-center">
-                        <div className="text-sm font-medium text-gray-900">
-                          {index + 1}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
-                            <Car className="w-5 h-5 text-blue-600" />
-                          </div>
-                          <div>
-                            <div className="font-semibold text-gray-900">{trip.vehicleNumber}</div>
-                            {/* <div className="text-xs text-gray-500">ID: {trip.id.substring(0, 8)}...</div> */}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <TimeBadge
-                          time={trip.entryTime.split(',')[0]}
-                          label="Entry"
-                          variant="entry"
-                        />
-                      </td>
-                      <td className="px-6 py-4">
-                        <TimeBadge
-                          time={trip.exitTime === '-' ? '--:--' : trip.exitTime.split(',')[0]}
-                          label="Exit"
-                          variant={trip.exitTime === '-' ? 'warning' : 'exit'}
-                        />
-                      </td>
-                      <td className="px-6 py-4">
-                        <StatusBadge status={trip.status} />
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-                          <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                          <span className="text-sm text-gray-900 truncate max-w-[200px]">
-                            {trip.site}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex flex-col">
-                          <span className="text-sm font-medium text-gray-900">
-                            {trip.duration || 'Ongoing'}
-                          </span>
-                          <span className="text-xs text-gray-500">Duration</span>
-                        </div>
-                      </td><td className="px-6 py-4">
-                        <div className="flex flex-col">
-                          <span className="text-sm font-medium text-gray-900">
-                            {trip.rawData?.projectManager?.name || '--'}
-                          </span>
-                          <span className="text-xs text-gray-500">Project Manager</span>
-                        </div>
-                      </td><td className="px-6 py-4">
-                        <div className="flex flex-col">
-                          <span className="text-sm font-medium text-gray-900">
-                            {trip.rawData?.createdBy?.name || '--'}
-                          </span>
-                          <span className="text-xs text-gray-500">Supervisor</span>
-                        </div>
-                      </td>
-                      <td>
-                        <button
-                          onClick={() => handleViewDetails(trip)}
-                          className="mt-4 w-full px-4 py-2.5 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition font-medium text-sm flex items-center justify-center gap-2"
-                        >
-                          <Eye className="w-4 h-4" />
-                          View Details
-                        </button>
-                      </td>
+          <>
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50 border-b border-gray-200">
+                    <tr>
+                      <th className="px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase w-20">
+                        S.No.
+                      </th>
+                      <TableHeader
+                        sortable
+                        onSort={() => handleSort('vehicleNumber')}
+                        sortDirection={sortConfig.key === 'vehicleNumber' ? sortConfig.direction : null}
+                      >
+                        Vehicle
+                      </TableHeader>
+                      <TableHeader
+                        sortable
+                        onSort={() => handleSort('entryAt')}
+                        sortDirection={sortConfig.key === 'entryAt' ? sortConfig.direction : null}
+                      >
+                        Entry Time
+                      </TableHeader>
+                      <TableHeader
+                        sortable
+                        onSort={() => handleSort('exitAt')}
+                        sortDirection={sortConfig.key === 'exitAt' ? sortConfig.direction : null}
+                      >
+                        Exit Time
+                      </TableHeader>
+                      <TableHeader
+                        sortable
+                        onSort={() => handleSort('status')}
+                        sortDirection={sortConfig.key === 'status' ? sortConfig.direction : null}
+                      >
+                        Status
+                      </TableHeader>
+                      <TableHeader
+                        sortable
+                        onSort={() => handleSort('site')}
+                        sortDirection={sortConfig.key === 'site' ? sortConfig.direction : null}
+                      >
+                        Site
+                      </TableHeader>
+                      <TableHeader>Duration</TableHeader>
+                      <TableHeader>Project Manager</TableHeader>
+                      <TableHeader>Supervisor</TableHeader>
+                      <TableHeader>Action</TableHeader>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {sortedTrips.length === 0 && (
-              <div className="text-center py-16">
-                <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <FileText className="w-10 h-10 text-gray-400" />
-                </div>
-                <h4 className="text-xl font-semibold text-gray-900 mb-2">No trips found</h4>
-                <p className="text-gray-600 max-w-md mx-auto mb-6">
-                  No trips match your current filters. Try adjusting your search criteria or date range.
-                </p>
-                <button
-                  onClick={handleClearFilters}
-                  className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-lg transition-colors"
-                >
-                  <X className="w-4 h-4" />
-                  Clear All Filters
-                </button>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {currentTrips.map((trip, index) => (
+                      <tr key={trip.id} className="hover:bg-gray-50 transition-colors group">
+                        <td className="px-6 py-4 text-center">
+                          <div className="text-sm font-medium text-gray-900">
+                            {startIndex + index + 1}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
+                              <Car className="w-5 h-5 text-blue-600" />
+                            </div>
+                            <div>
+                              <div className="font-semibold text-gray-900">{trip.vehicleNumber}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <TimeBadge
+                            time={trip.entryTime.split(',')[0]}
+                            label="Entry"
+                            variant="entry"
+                          />
+                        </td>
+                        <td className="px-6 py-4">
+                          <TimeBadge
+                            time={trip.exitTime === '-' ? '--:--' : trip.exitTime.split(',')[0]}
+                            label="Exit"
+                            variant={trip.exitTime === '-' ? 'warning' : 'exit'}
+                          />
+                        </td>
+                        <td className="px-6 py-4">
+                          <StatusBadge status={trip.status} />
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-2">
+                            <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                            <span className="text-sm text-gray-900 truncate max-w-[200px]">
+                              {trip.site}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex flex-col">
+                            <span className="text-sm font-medium text-gray-900">
+                              {trip.duration || 'Ongoing'}
+                            </span>
+                            <span className="text-xs text-gray-500">Duration</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex flex-col">
+                            <span className="text-sm font-medium text-gray-900">
+                              {trip.rawData?.projectManager?.name || '--'}
+                            </span>
+                            <span className="text-xs text-gray-500">Project Manager</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex flex-col">
+                            <span className="text-sm font-medium text-gray-900">
+                              {trip.rawData?.createdBy?.name || '--'}
+                            </span>
+                            <span className="text-xs text-gray-500">Supervisor</span>
+                          </div>
+                        </td>
+                        <td>
+                          <button
+                            onClick={() => handleViewDetails(trip)}
+                            className="mt-4 w-full px-4 py-2.5 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition font-medium text-sm flex items-center justify-center gap-2"
+                          >
+                            <Eye className="w-4 h-4" />
+                            View Details
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-            )}
-          </div>
+
+              {/* Pagination */}
+              {filteredTrips.length > 0 && (
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={handlePageChange}
+                />
+              )}
+
+              {currentTrips.length === 0 && (
+                <div className="text-center py-16">
+                  <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <FileText className="w-10 h-10 text-gray-400" />
+                  </div>
+                  <h4 className="text-xl font-semibold text-gray-900 mb-2">No trips found</h4>
+                  <p className="text-gray-600 max-w-md mx-auto mb-6">
+                    No trips match your current filters. Try adjusting your search criteria or date range.
+                  </p>
+                  <button
+                    onClick={handleClearFilters}
+                    className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-lg transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                    Clear All Filters
+                  </button>
+                </div>
+              )}
+            </div>
+          </>
         )}
 
         {/* Card View */}
-        {/* {viewMode === 'card' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {sortedTrips.map((trip, index) => (
-              <div key={trip.id} className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center">
-                      <Car className="w-6 h-6 text-blue-600" />
-                    </div>
-                    <div>
-                      <div className="text-lg font-bold text-gray-900">{trip.vehicleNumber}</div>
-                      <div className="text-xs text-gray-500">#{index + 1}</div>
-                    </div>
-                  </div>
-                  <StatusBadge status={trip.status} />
-                </div>
-                
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <div className="text-xs text-gray-500 mb-1">Entry Time</div>
-                      <div className="text-sm font-medium text-gray-900">{trip.entryTime.split(',')[0]}</div>
-                      <div className="text-xs text-green-600 mt-1">Entry</div>
-                    </div>
-                    <div>
-                      <div className="text-xs text-gray-500 mb-1">Exit Time</div>
-                      <div className="text-sm font-medium text-gray-900">
-                        {trip.exitTime === '-' ? '--:--' : trip.exitTime.split(',')[0]}
-                      </div>
-                      <div className={`text-xs mt-1 ${
-                        trip.exitTime === '-' ? 'text-orange-600' : 'text-blue-600'
-                      }`}>
-                        {trip.exitTime === '-' ? 'Not Exited' : 'Exit'}
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                    <div className="flex items-center gap-2">
-                      <MapPin className="w-4 h-4 text-gray-400" />
-                      <span className="text-sm text-gray-900">{trip.site}</span>
-                    </div>
-                    <div className="text-sm font-medium text-gray-700">
-                      {trip.duration || '--:--'}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-
-            {sortedTrips.length === 0 && (
-              <div className="md:col-span-2 lg:col-span-3">
-                <div className="bg-white rounded-xl p-12 text-center">
-                  <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                  <p className="text-gray-500 font-medium">No trips found</p>
-                  <p className="text-sm text-gray-400 mt-2">Try adjusting your filters</p>
-                </div>
-              </div>
-            )}
-          </div>
-        )} */}
-
         {viewMode === 'card' && (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {sortedTrips.map((trip, index) => (
+              {currentTrips.map((trip, index) => (
                 <div
                   key={trip.id}
                   className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all"
@@ -1167,7 +1174,7 @@ const AdminReports = () => {
                         <div className="text-lg font-bold text-gray-900">
                           {trip.vehicleNumber}
                         </div>
-                        <div className="text-xs text-gray-500">#{index + 1}</div>
+                        <div className="text-xs text-gray-500">#{startIndex + index + 1}</div>
                       </div>
                     </div>
                     <StatusBadge status={trip.status} />
@@ -1227,7 +1234,7 @@ const AdminReports = () => {
                       <div className="text-sm font-medium text-gray-700">
                         {trip.duration || 'Ongoing'}
                       </div>
-                      <div className="flex justify-end  ">
+                      <div className="flex justify-end">
                         <button
                           onClick={() => handleViewDetails(trip)}
                           className="px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50"
@@ -1236,16 +1243,42 @@ const AdminReports = () => {
                         </button>
                       </div>
                     </div>
-
-                    {/* Actions */}
-
                   </div>
                 </div>
               ))}
             </div>
 
-            {/* ✅ Empty State — map ke bahar */}
-            {sortedTrips.length === 0 && (
+            {/* Pagination for Card View */}
+            {filteredTrips.length > 0 && (
+              <div className="mt-6">
+                <div className="flex items-center justify-between bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+                  <div className="flex items-center gap-2 text-sm text-gray-700">
+                    <span>Showing {startIndex + 1} to {Math.min(endIndex, filteredTrips.length)} of {filteredTrips.length} trips</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage === 1}
+                      className="p-2 rounded-md border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    <span className="text-sm font-medium text-gray-700">
+                      Page {currentPage} of {totalPages}
+                    </span>
+                    <button
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                      className="p-2 rounded-md border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {currentTrips.length === 0 && (
               <div className="bg-white rounded-xl p-12 text-center">
                 <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                 <p className="text-gray-500 font-medium">No trips found</p>
@@ -1256,7 +1289,6 @@ const AdminReports = () => {
             )}
           </>
         )}
-
 
         {/* Enhanced Details Modal */}
         {showDetailsModal && selectedTrip && (
@@ -1363,7 +1395,6 @@ const AdminReports = () => {
                               Duration
                             </div>
                             <div className="font-bold text-gray-900">
-                              {/* {selectedTrip.duration || "N/A"} */}
                               {calculateDuration(
                                 selectedTrip.entryTime,
                                 selectedTrip.exitTime,

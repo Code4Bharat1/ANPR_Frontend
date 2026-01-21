@@ -2,24 +2,38 @@
 import React, { useState, useEffect } from 'react';
 import {
   TrendingUp, TrendingDown, Users, MapPin, Camera, Activity,
-  Download, Calendar, BarChart3, ChevronRight, RefreshCw,
-  Sparkles, Target, Zap, Award, Building2
+  Download, Calendar, BarChart3, RefreshCw, Sparkles, 
+  Target, Award, Building2, AlertCircle, Loader2
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, Legend
+  PieChart, Pie, Cell, Legend, LineChart, Line
 } from 'recharts';
 import SuperAdminLayout from './layout';
 import api from '@/lib/axios';
 
-// Enhanced Stat Card
-const StatCard = ({ icon: Icon, title, value, trend, trendValue, bgColor, iconColor, subtitle }) => (
+// Enhanced Stat Card with better loading and error states
+const StatCard = ({ 
+  icon: Icon, 
+  title, 
+  value, 
+  trend, 
+  trendValue, 
+  bgColor, 
+  iconColor, 
+  subtitle,
+  loading = false 
+}) => (
   <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200 hover:shadow-lg transition-all duration-300 hover:border-purple-200 group">
     <div className="flex items-start justify-between mb-4">
       <div className={`w-14 h-14 ${bgColor} rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-sm`}>
-        <Icon className={`w-7 h-7 ${iconColor}`} />
+        {loading ? (
+          <Loader2 className="w-7 h-7 animate-spin text-gray-400" />
+        ) : (
+          <Icon className={`w-7 h-7 ${iconColor}`} />
+        )}
       </div>
-      {trend && (
+      {!loading && trend && (
         <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold shadow-sm ${
           trend === 'up' 
             ? 'bg-green-50 text-green-700 border border-green-200' 
@@ -31,18 +45,46 @@ const StatCard = ({ icon: Icon, title, value, trend, trendValue, bgColor, iconCo
       )}
     </div>
     <div className="text-sm text-gray-600 mb-2 font-medium">{title}</div>
-    <div className="text-4xl font-bold text-gray-900 mb-2">{value.toLocaleString()}</div>
-    {subtitle && (
-      <div className="text-xs text-gray-500 flex items-center gap-1.5 mt-2">
-        <div className="w-1.5 h-1.5 bg-purple-500 rounded-full"></div>
-        {subtitle}
+    {loading ? (
+      <div className="h-12 flex items-center">
+        <div className="w-32 h-8 bg-gray-200 rounded-lg animate-pulse"></div>
       </div>
+    ) : (
+      <>
+        <div className="text-4xl font-bold text-gray-900 mb-2">
+          {typeof value === 'number' ? value.toLocaleString() : value}
+        </div>
+        {subtitle && (
+          <div className="text-xs text-gray-500 flex items-center gap-1.5 mt-2">
+            <div className="w-1.5 h-1.5 bg-purple-500 rounded-full"></div>
+            {subtitle}
+          </div>
+        )}
+      </>
     )}
   </div>
 );
 
-// Top Client Card - Redesigned
-const TopClientCard = ({ client, rank }) => {
+// Top Client Card with loading state
+const TopClientCard = ({ client, rank, loading = false }) => {
+  if (loading) {
+    return (
+      <div className="bg-gradient-to-r from-white to-gray-50 rounded-xl p-5 border border-gray-200">
+        <div className="flex items-center gap-4">
+          <div className="w-16 h-16 bg-gray-200 rounded-2xl animate-pulse"></div>
+          <div className="flex-1 space-y-2">
+            <div className="h-4 bg-gray-200 rounded w-3/4 animate-pulse"></div>
+            <div className="flex gap-4">
+              <div className="h-3 bg-gray-200 rounded w-16 animate-pulse"></div>
+              <div className="h-3 bg-gray-200 rounded w-20 animate-pulse"></div>
+            </div>
+          </div>
+          <div className="w-16 h-8 bg-gray-200 rounded animate-pulse"></div>
+        </div>
+      </div>
+    );
+  }
+
   const getRankBadge = (rank) => {
     switch(rank) {
       case 1: return { bg: 'bg-gradient-to-r from-yellow-400 to-yellow-500', icon: '🥇', color: 'text-yellow-700' };
@@ -90,8 +132,20 @@ const TopClientCard = ({ client, rank }) => {
   );
 };
 
-// Enhanced Trip Trend Chart with Recharts
-const TripTrendChart = ({ data, period }) => {
+// Enhanced Trip Trend Chart with better error handling
+const TripTrendChart = ({ data, period, loading = false }) => {
+  if (loading) {
+    return (
+      <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-sm">
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-200 rounded w-48 mb-6"></div>
+          <div className="h-64 bg-gray-200 rounded mb-4"></div>
+          <div className="h-4 bg-gray-200 rounded w-32 mx-auto"></div>
+        </div>
+      </div>
+    );
+  }
+
   if (!data || data.length === 0) {
     return (
       <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-sm text-center">
@@ -104,9 +158,27 @@ const TripTrendChart = ({ data, period }) => {
 
   // Transform data for recharts
   const chartData = data.map(item => ({
-    name: item.day,
-    trips: item.value
+    name: item.day || item.date,
+    trips: item.value || item.trips || 0
   }));
+
+  // Custom tooltip component
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-gray-900 text-white p-3 rounded-lg shadow-xl">
+          <p className="font-bold text-sm mb-1">{label}</p>
+          <p className="text-purple-300 font-semibold">
+            {payload[0].value.toLocaleString()} trips
+          </p>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  const totalTrips = chartData.reduce((sum, item) => sum + item.trips, 0);
+  const maxTrips = Math.max(...chartData.map(item => item.trips));
 
   return (
     <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
@@ -120,39 +192,38 @@ const TripTrendChart = ({ data, period }) => {
           </h3>
           <p className="text-sm text-gray-600 ml-12">Daily trip activity monitoring</p>
         </div>
-        <div className="bg-gradient-to-r from-purple-50 to-purple-100 text-purple-700 px-4 py-2 rounded-xl font-semibold text-sm flex items-center gap-2 border border-purple-200">
-          <Target className="w-4 h-4" />
-          {period}
+        <div className="flex items-center gap-4">
+          <div className="bg-gradient-to-r from-purple-50 to-purple-100 text-purple-700 px-4 py-2 rounded-xl font-semibold text-sm flex items-center gap-2 border border-purple-200">
+            <Target className="w-4 h-4" />
+            {period}
+          </div>
+          <div className="hidden sm:block text-sm text-gray-500">
+            Total: <span className="font-bold">{totalTrips.toLocaleString()}</span> trips
+          </div>
         </div>
       </div>
       
       <ResponsiveContainer width="100%" height={300}>
-        <BarChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 20 }}>
+        <BarChart 
+          data={chartData} 
+          margin={{ top: 10, right: 10, left: 0, bottom: 20 }}
+        >
           <XAxis 
             dataKey="name" 
             stroke="#6b7280"
-            style={{ fontSize: '12px', fontWeight: '500' }}
+            fontSize={12}
+            tick={{ fill: '#6b7280' }}
           />
           <YAxis 
             stroke="#6b7280"
-            style={{ fontSize: '12px', fontWeight: '500' }}
+            fontSize={12}
             allowDecimals={false}
+            tick={{ fill: '#6b7280' }}
           />
-          <Tooltip 
-            contentStyle={{ 
-              backgroundColor: '#1f2937', 
-              border: 'none',
-              borderRadius: '12px',
-              color: '#fff',
-              boxShadow: '0 10px 25px rgba(0,0,0,0.2)',
-              padding: '12px'
-            }}
-            labelStyle={{ color: '#fff', fontWeight: 'bold', marginBottom: '4px' }}
-            itemStyle={{ color: '#c084fc' }}
-            cursor={{ fill: 'rgba(139, 92, 246, 0.1)' }}
-          />
+          <Tooltip content={<CustomTooltip />} />
           <Bar 
             dataKey="trips" 
+            name="Trips"
             fill="url(#colorGradient)" 
             radius={[8, 8, 0, 0]}
             maxBarSize={60}
@@ -166,18 +237,37 @@ const TripTrendChart = ({ data, period }) => {
         </BarChart>
       </ResponsiveContainer>
 
-      <div className="flex items-center justify-center gap-6 mt-6 pt-6 border-t border-gray-100">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 pt-6 border-t border-gray-100">
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 rounded bg-gradient-to-r from-purple-500 to-purple-600"></div>
           <span className="text-sm text-gray-600 font-medium">Daily Trips</span>
+        </div>
+        <div className="flex items-center gap-6 text-sm text-gray-500">
+          <div>Total: <span className="font-bold">{totalTrips.toLocaleString()}</span></div>
+          <div>Peak: <span className="font-bold">{maxTrips.toLocaleString()}</span></div>
+          <div>Avg: <span className="font-bold">
+            {Math.round(totalTrips / chartData.length).toLocaleString()}
+          </span></div>
         </div>
       </div>
     </div>
   );
 };
 
-// Client Distribution Component with Recharts Pie
-const ClientDistribution = ({ data }) => {
+// Enhanced Client Distribution Component
+const ClientDistribution = ({ data, loading = false }) => {
+  if (loading) {
+    return (
+      <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-200 rounded w-48 mb-6"></div>
+          <div className="h-64 bg-gray-200 rounded mb-4"></div>
+          <div className="h-4 bg-gray-200 rounded w-32 mx-auto"></div>
+        </div>
+      </div>
+    );
+  }
+
   if (!data || data.length === 0) {
     return (
       <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-sm text-center">
@@ -188,19 +278,36 @@ const ClientDistribution = ({ data }) => {
     );
   }
 
-  const totalClients = data.reduce((sum, item) => sum + item.count, 0);
-  
-  const COLORS = ['#8b5cf6', '#3b82f6', '#6366f1', '#ec4899', '#10b981', '#f59e0b'];
+  const totalClients = data.reduce((sum, item) => sum + (item.count || 0), 0);
+  const COLORS = ['#8b5cf6', '#3b82f6', '#6366f1', '#ec4899', '#10b981', '#f59e0b', '#ef4444', '#84cc16'];
   
   const pieData = data.map((item, index) => ({
     name: item.label || 'Unknown',
-    value: item.count,
-    percent: Math.round((item.count / totalClients) * 100)
+    value: item.count || 0,
+    percent: item.percent || 0
   }));
+
+  // Custom tooltip for pie chart
+  const CustomPieTooltip = ({ active, payload }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-gray-900 text-white p-3 rounded-lg shadow-xl">
+          <p className="font-bold text-sm mb-1">{payload[0].name}</p>
+          <p className="text-blue-300 font-semibold">
+            {payload[0].value.toLocaleString()} clients
+          </p>
+          <p className="text-gray-300 text-xs">
+            {payload[0].payload.percent}% of total
+          </p>
+        </div>
+      );
+    }
+    return null;
+  };
 
   return (
     <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
           <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2 mb-1">
             <div className="w-10 h-10 bg-gradient-to-br from-blue-100 to-blue-200 rounded-xl flex items-center justify-center">
@@ -211,7 +318,7 @@ const ClientDistribution = ({ data }) => {
           <p className="text-sm text-gray-600 ml-12">By package type</p>
         </div>
         <div className="bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 px-4 py-2 rounded-xl font-bold text-sm border border-blue-200">
-          {totalClients} Total
+          {totalClients} Total Clients
         </div>
       </div>
       
@@ -224,34 +331,45 @@ const ClientDistribution = ({ data }) => {
             labelLine={false}
             label={({ name, percent }) => `${name}: ${percent}%`}
             outerRadius={100}
-            fill="#8884d8"
+            innerRadius={40}
+            paddingAngle={2}
             dataKey="value"
           >
             {pieData.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+              <Cell 
+                key={`cell-${index}`} 
+                fill={COLORS[index % COLORS.length]} 
+                stroke="#fff"
+                strokeWidth={2}
+              />
             ))}
           </Pie>
-          <Tooltip 
-            contentStyle={{ 
-              backgroundColor: '#1f2937', 
-              border: 'none',
-              borderRadius: '12px',
-              color: '#fff',
-              padding: '12px'
-            }}
-          />
+          <Tooltip content={<CustomPieTooltip />} />
           <Legend 
             verticalAlign="bottom" 
             height={36}
             iconType="circle"
+            formatter={(value, entry) => (
+              <span className="text-sm text-gray-700">{value}</span>
+            )}
           />
         </PieChart>
       </ResponsiveContainer>
+      
+      <div className="mt-6 pt-6 border-t border-gray-100 grid grid-cols-2 sm:grid-cols-4 gap-4">
+        {pieData.slice(0, 4).map((item, index) => (
+          <div key={index} className="text-center">
+            <div className="text-2xl font-bold text-gray-900">{item.value}</div>
+            <div className="text-xs text-gray-500 truncate">{item.name}</div>
+            <div className="text-xs font-medium text-gray-700">{item.percent}%</div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 };
 
-// Main Component
+// Main Analytics Component
 const SuperAdminAnalytics = () => {
   const [analyticsData, setAnalyticsData] = useState({
     totalTrips: 0,
@@ -263,9 +381,12 @@ const SuperAdminAnalytics = () => {
     clientDistribution: [],
     topClients: []
   });
+  
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
   const [dateRange, setDateRange] = useState('7days');
+  const [error, setError] = useState(null);
+  const [refreshKey, setRefreshKey] = useState(0);
   
   const periodMap = {
     today: "today",
@@ -283,117 +404,177 @@ const SuperAdminAnalytics = () => {
 
   useEffect(() => {
     fetchAnalytics();
-  }, [dateRange]);
+  }, [dateRange, refreshKey]);
 
   const fetchAnalytics = async () => {
     try {
       setLoading(true);
+      setError(null);
       const period = periodMap[dateRange] || "7d";
 
+      console.log(`Fetching analytics for period: ${period}`);
+
       const [summaryRes, tripsRes, clientsRes] = await Promise.all([
-        api.get(`/api/superadmin/analytics/summary?period=${period}`),
-        api.get(`/api/superadmin/analytics/trips?period=${period}`),
-        api.get(`/api/superadmin/analytics/clients?period=${period}`),
+        api.get(`/api/superadmin/analytics/summary?period=${period}`).catch(err => {
+          console.error('Summary API error:', err);
+          return { data: {} };
+        }),
+        api.get(`/api/superadmin/analytics/trips?period=${period}`).catch(err => {
+          console.error('Trips API error:', err);
+          return { data: [] };
+        }),
+        api.get(`/api/superadmin/analytics/clients?period=${period}`).catch(err => {
+          console.error('Clients API error:', err);
+          return { data: [] };
+        })
       ]);
 
-      const tripTrends = tripsRes.data.map(t => ({
-        day: t.date,
-        value: t.trips || 0
-      }));
+      console.log('API Responses:', {
+        summary: summaryRes.data,
+        trips: tripsRes.data,
+        clients: clientsRes.data
+      });
 
-      const clientDistribution = clientsRes.data.map(d => ({
-        label: d.label || 'Others',
-        count: d.percent ? Math.round((d.percent / 100) * summaryRes.data.totalClients) : 0,
-        percent: d.percent || 0
-      }));
+      // Format trip trends
+      const tripTrends = Array.isArray(tripsRes.data) 
+        ? tripsRes.data.map(t => ({
+            day: t.date,
+            value: t.trips || 0
+          }))
+        : [];
 
-      const topClients = (summaryRes.data.topClients || []).map(client => ({
-        name: client.name || 'Unknown Client',
-        sites: client.sites || 0,
-        devices: client.devices || 0,
-        trips: client.trips || 0
-      }));
+      // Format client distribution
+      const clientDistribution = Array.isArray(clientsRes.data)
+        ? clientsRes.data.map(d => ({
+            label: d.label || 'Others',
+            count: d.count || 0,
+            percent: d.percent || 0
+          }))
+        : [];
+
+      // Format top clients
+      const topClients = Array.isArray(summaryRes.data.topClients)
+        ? summaryRes.data.topClients.map(client => ({
+            name: client.name || 'Unknown Client',
+            sites: client.sites || 0,
+            devices: client.devices || 0,
+            trips: client.trips || 0
+          }))
+        : [];
 
       setAnalyticsData({
-        ...summaryRes.data,
+        totalTrips: summaryRes.data.totalTrips || 0,
+        totalClients: summaryRes.data.totalClients || 0,
+        totalSites: summaryRes.data.totalSites || 0,
+        totalDevices: summaryRes.data.totalDevices || 0,
+        growth: summaryRes.data.growth || { trips: 0, clients: 0 },
         tripTrends,
         clientDistribution,
-        topClients,
-        growth: summaryRes.data.growth || { trips: 0, clients: 0 }
+        topClients
       });
 
     } catch (error) {
       console.error('Error fetching analytics:', error);
+      setError('Failed to load analytics data. Please try again.');
+      
+      // Set default data structure
+      setAnalyticsData({
+        totalTrips: 0,
+        totalClients: 0,
+        totalSites: 0,
+        totalDevices: 0,
+        growth: { trips: 0, clients: 0 },
+        tripTrends: [],
+        clientDistribution: [],
+        topClients: []
+      });
     } finally {
       setLoading(false);
     }
   };
 
+  const handleRefresh = () => {
+    setRefreshKey(prev => prev + 1);
+  };
+
   const exportToCSV = () => {
-    if (!analyticsData) return;
+    if (!analyticsData || loading) return;
     setExporting(true);
 
     try {
-      let csvContent = "data:text/csv;charset=utf-8,";
-      csvContent += "System Analytics Report\n";
-      csvContent += `Generated on:,${new Date().toLocaleString()}\n`;
-      csvContent += `Date Range:,${periodLabels[dateRange]}\n\n`;
+      const csvRows = [];
       
-      csvContent += "Key Metrics\n";
-      csvContent += "Metric,Value\n";
-      csvContent += `Active Clients,${analyticsData.totalClients}\n`;
-      csvContent += `Total Sites,${analyticsData.totalSites}\n`;
-      csvContent += `Total Devices,${analyticsData.totalDevices}\n`;
-      csvContent += `Total Trips,${analyticsData.totalTrips}\n\n`;
+      // Header
+      csvRows.push('System Analytics Report');
+      csvRows.push(`Generated on:,${new Date().toLocaleString()}`);
+      csvRows.push(`Date Range:,${periodLabels[dateRange]}`);
+      csvRows.push('');
       
-      csvContent += "Trip Trends\n";
-      csvContent += "Date,Trips\n";
+      // Key Metrics
+      csvRows.push('Key Metrics');
+      csvRows.push('Metric,Value,Growth');
+      csvRows.push(`Active Clients,${analyticsData.totalClients},${analyticsData.growth.clients}%`);
+      csvRows.push(`Total Sites,${analyticsData.totalSites},-`);
+      csvRows.push(`Total Devices,${analyticsData.totalDevices},-`);
+      csvRows.push(`Total Trips,${analyticsData.totalTrips},${analyticsData.growth.trips}%`);
+      csvRows.push('');
+      
+      // Trip Trends
+      csvRows.push('Trip Trends');
+      csvRows.push('Date,Trips');
       analyticsData.tripTrends.forEach(item => {
-        csvContent += `${item.day},${item.value}\n`;
+        csvRows.push(`${item.day},${item.value}`);
       });
-      csvContent += "\n";
-
-      csvContent += "Client Distribution\n";
-      csvContent += "Package Type,Count,Percentage\n";
+      csvRows.push('');
+      
+      // Client Distribution
+      csvRows.push('Client Distribution');
+      csvRows.push('Package Type,Count,Percentage');
       analyticsData.clientDistribution.forEach(item => {
-        csvContent += `${item.label},${item.count},${item.percent}%\n`;
+        csvRows.push(`${item.label},${item.count},${item.percent}%`);
       });
-      csvContent += "\n";
-
-      csvContent += "Top Performing Clients\n";
-      csvContent += "Rank,Client Name,Sites,Devices,Total Trips\n";
+      csvRows.push('');
+      
+      // Top Clients
+      csvRows.push('Top Performing Clients');
+      csvRows.push('Rank,Client Name,Sites,Devices,Total Trips');
       analyticsData.topClients.forEach((client, index) => {
-        csvContent += `${index + 1},${client.name},${client.sites},${client.devices},${client.trips}\n`;
+        csvRows.push(`${index + 1},${client.name},${client.sites},${client.devices},${client.trips}`);
       });
 
-      const encodedUri = encodeURI(csvContent);
+      const csvContent = csvRows.join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement("a");
-      link.setAttribute("href", encodedUri);
-      const timestamp = new Date().toISOString().split('T')[0];
-      link.setAttribute("download", `Analytics_Report_${timestamp}_${dateRange}.csv`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      setExporting(false);
+      
+      if (link.download !== undefined) {
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        const timestamp = new Date().toISOString().split('T')[0];
+        link.setAttribute("download", `Analytics_Report_${timestamp}_${dateRange}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+
     } catch (err) {
       console.error('Error exporting to CSV:', err);
       alert('Error exporting report. Please try again.');
+    } finally {
       setExporting(false);
     }
   };
 
-  if (loading) {
+  if (loading && refreshKey === 0) {
     return (
       <SuperAdminLayout title="Analytics">
-        <div className="flex items-center justify-center min-h-[70vh]">
-          <div className="text-center">
-            <div className="relative w-20 h-20 mx-auto mb-6">
-              <div className="w-20 h-20 border-4 border-purple-200 rounded-full"></div>
-              <div className="w-20 h-20 border-4 border-purple-600 border-t-transparent rounded-full animate-spin absolute top-0"></div>
-            </div>
-            <p className="text-gray-700 font-semibold text-lg">Loading Analytics...</p>
-            <p className="text-gray-500 text-sm mt-2">Fetching real-time data</p>
+        <div className="flex flex-col items-center justify-center min-h-[70vh]">
+          <div className="relative w-24 h-24 mb-8">
+            <div className="w-24 h-24 border-4 border-purple-200 rounded-full"></div>
+            <div className="w-24 h-24 border-4 border-purple-600 border-t-transparent rounded-full animate-spin absolute top-0"></div>
           </div>
+          <p className="text-gray-800 font-semibold text-lg mb-2">Loading Analytics Dashboard</p>
+          <p className="text-gray-500 text-sm">Fetching real-time data...</p>
         </div>
       </SuperAdminLayout>
     );
@@ -401,16 +582,17 @@ const SuperAdminAnalytics = () => {
 
   return (
     <SuperAdminLayout title="Analytics">
-      <div className="max-w-7xl mx-auto">
-        {/* Controls */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Header with controls */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 bg-white rounded-xl p-2 border border-gray-200 shadow-sm">
-              <Calendar className="w-5 h-5 text-purple-600 ml-2" />
+              <Calendar className="w-5 h-5 text-purple-600" />
               <select
                 value={dateRange}
                 onChange={(e) => setDateRange(e.target.value)}
-                className="px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm font-medium bg-transparent"
+                className="px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm font-medium bg-transparent min-w-[140px]"
+                disabled={loading}
               >
                 <option value="today">Today</option>
                 <option value="7days">Last 7 Days</option>
@@ -418,23 +600,35 @@ const SuperAdminAnalytics = () => {
                 <option value="90days">Last 90 Days</option>
               </select>
             </div>
-            {/* <button
-              onClick={fetchAnalytics}
-              className="flex items-center gap-2 px-4 py-3 bg-white text-gray-700 rounded-xl hover:bg-gray-50 transition-colors font-medium text-sm border border-gray-200 shadow-sm"
+            
+            <button
+              onClick={handleRefresh}
+              disabled={loading}
+              className="flex items-center gap-2 px-4 py-3 bg-white text-gray-700 rounded-xl hover:bg-gray-50 transition-colors font-medium text-sm border border-gray-200 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <RefreshCw className="w-4 h-4" />
-              Refresh
-            </button> */}
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              {loading ? 'Refreshing...' : 'Refresh'}
+            </button>
           </div>
+          
           <button
             onClick={exportToCSV}
-            disabled={exporting}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-xl hover:from-purple-700 hover:to-purple-800 transition-all font-semibold text-sm disabled:opacity-50 shadow-lg hover:shadow-xl"
+            disabled={exporting || loading}
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-xl hover:from-purple-700 hover:to-purple-800 transition-all font-semibold text-sm disabled:opacity-50 shadow-lg hover:shadow-xl disabled:cursor-not-allowed"
           >
             <Download className="w-4 h-4" />
             {exporting ? 'Exporting...' : 'Export Report'}
           </button>
         </div>
+
+        {error && (
+          <div className="mb-8 p-4 bg-red-50 border border-red-200 rounded-xl">
+            <div className="flex items-center gap-2 text-red-700">
+              <AlertCircle className="w-5 h-5" />
+              <p className="font-medium">{error}</p>
+            </div>
+          </div>
+        )}
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -446,8 +640,10 @@ const SuperAdminAnalytics = () => {
             trendValue={Math.abs(analyticsData.growth?.clients || 0)}
             bgColor="bg-gradient-to-br from-purple-100 to-purple-200"
             iconColor="text-purple-600"
-            subtitle="Growing network"
+            subtitle="Total registered clients"
+            loading={loading}
           />
+          
           <StatCard
             icon={MapPin}
             title="Total Sites"
@@ -455,7 +651,9 @@ const SuperAdminAnalytics = () => {
             bgColor="bg-gradient-to-br from-blue-100 to-blue-200"
             iconColor="text-blue-600"
             subtitle="Monitored locations"
+            loading={loading}
           />
+          
           <StatCard
             icon={Camera}
             title="Total Devices"
@@ -463,7 +661,9 @@ const SuperAdminAnalytics = () => {
             bgColor="bg-gradient-to-br from-indigo-100 to-indigo-200"
             iconColor="text-indigo-600"
             subtitle="Active cameras"
+            loading={loading}
           />
+          
           <StatCard
             icon={Activity}
             title="Total Trips"
@@ -473,45 +673,66 @@ const SuperAdminAnalytics = () => {
             bgColor="bg-gradient-to-br from-green-100 to-green-200"
             iconColor="text-green-600"
             subtitle={`in ${periodLabels[dateRange]}`}
+            loading={loading}
           />
         </div>
 
-        {/* Chart */}
+        {/* Trip Trends Chart */}
         <div className="mb-8">
           <TripTrendChart 
             data={analyticsData.tripTrends} 
-            period={periodLabels[dateRange]} 
+            period={periodLabels[dateRange]}
+            loading={loading}
           />
         </div>
 
         {/* Distribution & Top Clients */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <ClientDistribution data={analyticsData.clientDistribution} />
+          <ClientDistribution 
+            data={analyticsData.clientDistribution} 
+            loading={loading}
+          />
           
           <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
               <div>
                 <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2 mb-1">
                   <div className="w-10 h-10 bg-gradient-to-br from-yellow-100 to-yellow-200 rounded-xl flex items-center justify-center">
                     <Award className="w-5 h-5 text-yellow-600" />
                   </div>
-                  Top Clients
+                  Top Performing Clients
                 </h3>
-                <p className="text-sm text-gray-600 ml-12">By total trips</p>
+                <p className="text-sm text-gray-600 ml-12">By total trips in selected period</p>
+              </div>
+              
+              <div className="text-sm text-gray-500">
+                Showing top {Math.min(analyticsData.topClients.length, 5)} clients
               </div>
             </div>
             
-            {analyticsData.topClients.length > 0 ? (
+            {loading ? (
+              <div className="space-y-3">
+                {[1, 2, 3, 4, 5].map(i => (
+                  <TopClientCard key={i} loading={true} />
+                ))}
+              </div>
+            ) : analyticsData.topClients.length > 0 ? (
               <div className="space-y-3">
                 {analyticsData.topClients.map((client, index) => (
-                  <TopClientCard key={index} client={client} rank={index + 1} />
+                  <TopClientCard 
+                    key={client.name + index} 
+                    client={client} 
+                    rank={index + 1} 
+                  />
                 ))}
               </div>
             ) : (
               <div className="text-center py-12">
                 <Users className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-                <p className="text-gray-500 font-medium">No client data available</p>
-                <p className="text-sm text-gray-400 mt-1">Try a different time period</p>
+                <p className="text-gray-600 font-medium">No trip data available for clients</p>
+                <p className="text-sm text-gray-500 mt-1">
+                  Clients will appear here once they have trip activity
+                </p>
               </div>
             )}
           </div>

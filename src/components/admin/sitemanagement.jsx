@@ -26,6 +26,7 @@ const SiteModal = ({ isOpen, onClose, site, onSave, mode }) => {
   });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
+  const [touched, setTouched] = useState({});
 
   useEffect(() => {
     if (site && mode === 'edit') {
@@ -54,34 +55,224 @@ const SiteModal = ({ isOpen, onClose, site, onSave, mode }) => {
       });
     }
     setErrors({});
+    setTouched({});
   }, [site, mode, isOpen]);
 
+  // Real-time validation on field blur
+  const handleBlur = (e) => {
+    const { name } = e.target;
+    setTouched({ ...touched, [name]: true });
+    validateField(name);
+  };
+
+  // Validate single field
+  const validateField = (fieldName) => {
+    let newErrors = { ...errors };
+    const value = formData[fieldName];
+
+    switch (fieldName) {
+      case 'name':
+        if (!value.trim()) {
+          newErrors.name = 'Site name is required';
+        } else if (value.trim().length < 3) {
+          newErrors.name = 'Site name must be at least 3 characters';
+        } else if (value.trim().length > 100) {
+          newErrors.name = 'Site name cannot exceed 100 characters';
+        } else {
+          delete newErrors.name;
+        }
+        break;
+
+      case 'location':
+        if (!value.trim()) {
+          newErrors.location = 'Location is required';
+        } else if (value.trim().length < 3) {
+          newErrors.location = 'Location must be at least 3 characters';
+        } else if (value.trim().length > 100) {
+          newErrors.location = 'Location cannot exceed 100 characters';
+        } else {
+          delete newErrors.location;
+        }
+        break;
+
+      case 'address':
+        if (value.trim() && value.trim().length > 500) {
+          newErrors.address = 'Address cannot exceed 500 characters';
+        } else {
+          delete newErrors.address;
+        }
+        break;
+
+      case 'contactPerson':
+        if (!value.trim()) {
+          newErrors.contactPerson = 'Contact person is required';
+        } else if (value.trim().length < 3) {
+          newErrors.contactPerson = 'Contact name must be at least 3 characters';
+        } else if (value.trim().length > 100) {
+          newErrors.contactPerson = 'Contact name cannot exceed 100 characters';
+        } else if (!/^[A-Za-z\s]+$/.test(value.trim())) {
+          newErrors.contactPerson = 'Contact name can only contain letters and spaces';
+        } else {
+          delete newErrors.contactPerson;
+        }
+        break;
+
+      case 'contactPhone':
+        if (!value.trim()) {
+          newErrors.contactPhone = 'Phone number is required';
+        } else {
+          const phoneDigits = value.replace(/\D/g, '');
+          if (phoneDigits.length < 10) {
+            newErrors.contactPhone = 'Phone number must have at least 10 digits';
+          } else if (phoneDigits.length > 15) {
+            newErrors.contactPhone = 'Phone number cannot exceed 15 digits';
+          } else if (!/^[+]?[0-9\s\-()]+$/.test(value)) {
+            newErrors.contactPhone = 'Invalid phone number format';
+          } else {
+            delete newErrors.contactPhone;
+          }
+        }
+        break;
+
+      case 'contactEmail':
+        if (!value.trim()) {
+          newErrors.contactEmail = 'Email is required';
+        } else if (!/\S+@\S+\.\S+/.test(value)) {
+          newErrors.contactEmail = 'Invalid email format';
+        } else if (value.length > 100) {
+          newErrors.contactEmail = 'Email cannot exceed 100 characters';
+        } else {
+          delete newErrors.contactEmail;
+        }
+        break;
+
+      case 'description':
+        if (value.trim().length > 1000) {
+          newErrors.description = 'Description cannot exceed 1000 characters';
+        } else {
+          delete newErrors.description;
+        }
+        break;
+
+      default:
+        break;
+    }
+
+    // Validate gates if field is related to gates
+    if (fieldName === 'gates' || formData.gates.length > 0) {
+      const gatesError = validateGates();
+      if (gatesError) {
+        newErrors.gates = gatesError;
+      } else {
+        delete newErrors.gates;
+      }
+    }
+
+    setErrors(newErrors);
+  };
+
+  // Validate gates
+  const validateGates = () => {
+    if (formData.gates.length === 0) return null;
+
+    const mainGateCount = formData.gates.filter(g => g.isMainGate).length;
+    if (mainGateCount > 1) {
+      return 'Only one gate can be marked as main gate';
+    }
+
+    const hasEmptyGateName = formData.gates.some(g => !g.gateName || !g.gateName.trim());
+    if (hasEmptyGateName) {
+      return 'All gates must have a name';
+    }
+
+    const hasLongGateName = formData.gates.some(g => g.gateName.trim().length > 50);
+    if (hasLongGateName) {
+      return 'Gate names cannot exceed 50 characters';
+    }
+
+    // Check for duplicate gate names
+    const gateNames = formData.gates.map(g => g.gateName.trim().toLowerCase());
+    const uniqueGateNames = new Set(gateNames);
+    if (gateNames.length !== uniqueGateNames.size) {
+      return 'Gate names must be unique';
+    }
+
+    return null;
+  };
+
+  // Full form validation
   const validateForm = () => {
     const newErrors = {};
-    if (!formData.name.trim()) newErrors.name = 'Site name is required';
-    if (!formData.location.trim()) newErrors.location = 'Location is required';
-    if (!formData.contactPerson.trim()) newErrors.contactPerson = 'Contact person is required';
+
+    // Site name validation
+    if (!formData.name.trim()) {
+      newErrors.name = 'Site name is required';
+    } else if (formData.name.trim().length < 3) {
+      newErrors.name = 'Site name must be at least 3 characters';
+    } else if (formData.name.trim().length > 100) {
+      newErrors.name = 'Site name cannot exceed 100 characters';
+    }
+
+    // Location validation
+    if (!formData.location.trim()) {
+      newErrors.location = 'Location is required';
+    } else if (formData.location.trim().length < 3) {
+      newErrors.location = 'Location must be at least 3 characters';
+    } else if (formData.location.trim().length > 100) {
+      newErrors.location = 'Location cannot exceed 100 characters';
+    }
+
+    // Address validation
+    if (!formData.address || !formData.address.trim()) {
+      newErrors.address = 'Address is required';
+    } else if (formData.address.trim().length > 500) {
+      newErrors.address = 'Address cannot exceed 500 characters';
+    }
+
+
+    // Contact person validation
+    if (!formData.contactPerson.trim()) {
+      newErrors.contactPerson = 'Contact person is required';
+    } else if (formData.contactPerson.trim().length < 3) {
+      newErrors.contactPerson = 'Contact name must be at least 3 characters';
+    } else if (formData.contactPerson.trim().length > 100) {
+      newErrors.contactPerson = 'Contact name cannot exceed 100 characters';
+    } else if (!/^[A-Za-z\s]+$/.test(formData.contactPerson.trim())) {
+      newErrors.contactPerson = 'Contact name can only contain letters and spaces';
+    }
+
+    // Phone validation
     if (!formData.contactPhone.trim()) {
       newErrors.contactPhone = 'Phone number is required';
+    } else {
+      const phoneDigits = formData.contactPhone.replace(/\D/g, '');
+      if (phoneDigits.length < 10) {
+        newErrors.contactPhone = 'Phone number must have at least 10 digits';
+      } else if (phoneDigits.length > 15) {
+        newErrors.contactPhone = 'Phone number cannot exceed 15 digits';
+      } else if (!/^[+]?[0-9\s\-()]+$/.test(formData.contactPhone)) {
+        newErrors.contactPhone = 'Invalid phone number format';
+      }
     }
+
+    // Email validation
     if (!formData.contactEmail.trim()) {
       newErrors.contactEmail = 'Email is required';
     } else if (!/\S+@\S+\.\S+/.test(formData.contactEmail)) {
       newErrors.contactEmail = 'Invalid email format';
+    } else if (formData.contactEmail.length > 100) {
+      newErrors.contactEmail = 'Email cannot exceed 100 characters';
     }
 
-    // Validate gates
-    if (formData.gates.length > 0) {
-      const mainGateCount = formData.gates.filter(g => g.isMainGate).length;
-      if (mainGateCount > 1) {
-        newErrors.gates = 'Only one gate can be marked as main gate';
-      }
+    // Description validation
+    if (formData.description.trim().length > 1000) {
+      newErrors.description = 'Description cannot exceed 1000 characters';
+    }
 
-      // Check if any gate has empty name
-      const hasEmptyGateName = formData.gates.some(g => !g.gateName || !g.gateName.trim());
-      if (hasEmptyGateName) {
-        newErrors.gates = 'All gates must have a name';
-      }
+    // Gates validation
+    const gatesError = validateGates();
+    if (gatesError) {
+      newErrors.gates = gatesError;
     }
 
     setErrors(newErrors);
@@ -119,10 +310,31 @@ const SiteModal = ({ isOpen, onClose, site, onSave, mode }) => {
 
     newGates[index] = { ...newGates[index], [field]: value };
     setFormData({ ...formData, gates: newGates });
+
+    // Revalidate gates
+    validateField('gates');
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+
+    // Real-time validation for already touched fields
+    if (touched[name]) {
+      validateField(name);
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Mark all fields as touched for validation
+    const allTouched = Object.keys(formData).reduce((acc, key) => {
+      acc[key] = true;
+      return acc;
+    }, {});
+    setTouched(allTouched);
+
     if (!validateForm()) return;
 
     setLoading(true);
@@ -140,7 +352,7 @@ const SiteModal = ({ isOpen, onClose, site, onSave, mode }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4  overflow-y-auto">
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto">
       <div className="bg-white rounded-2xl max-w-2xl w-full my-4 shadow-2xl max-h-[95vh] overflow-y-auto">
         <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 flex items-center justify-between z-10">
           <h2 className="text-2xl font-bold text-white">
@@ -150,6 +362,7 @@ const SiteModal = ({ isOpen, onClose, site, onSave, mode }) => {
             onClick={() => {
               onClose();
               setErrors({});
+              setTouched({});
             }}
             className="p-2 hover:bg-white/20 rounded-lg transition text-white"
           >
@@ -165,21 +378,25 @@ const SiteModal = ({ isOpen, onClose, site, onSave, mode }) => {
             </label>
             <input
               type="text"
+              name="name"
               value={formData.name}
-              onChange={(e) => {
-                setFormData({ ...formData, name: e.target.value });
-                if (errors.name) setErrors({ ...errors, name: null });
-              }}
+              onChange={handleChange}
+              onBlur={handleBlur}
               className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition ${errors.name ? 'border-red-500' : 'border-gray-300'
                 }`}
               placeholder="Enter site name"
             />
-            {errors.name && (
-              <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
-                <AlertCircle className="w-4 h-4" />
-                {errors.name}
+            <div className="flex justify-between items-center mt-1">
+              {errors.name && (
+                <p className="text-red-500 text-sm flex items-center gap-1">
+                  <AlertCircle className="w-4 h-4" />
+                  {errors.name}
+                </p>
+              )}
+              <p className={`text-xs ${formData.name.length > 90 ? 'text-orange-500' : 'text-gray-500'}`}>
+                {formData.name.length}/100
               </p>
-            )}
+            </div>
           </div>
 
           {/* Location & Status */}
@@ -190,18 +407,22 @@ const SiteModal = ({ isOpen, onClose, site, onSave, mode }) => {
               </label>
               <input
                 type="text"
+                name="location"
                 value={formData.location}
-                onChange={(e) => {
-                  setFormData({ ...formData, location: e.target.value });
-                  if (errors.location) setErrors({ ...errors, location: null });
-                }}
+                onChange={handleChange}
+                onBlur={handleBlur}
                 className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition ${errors.location ? 'border-red-500' : 'border-gray-300'
                   }`}
                 placeholder="e.g., Mumbai, Maharashtra"
               />
-              {errors.location && (
-                <p className="text-red-500 text-sm mt-1">{errors.location}</p>
-              )}
+              <div className="flex justify-between items-center mt-1">
+                {errors.location && (
+                  <p className="text-red-500 text-sm">{errors.location}</p>
+                )}
+                <p className={`text-xs ${formData.location.length > 90 ? 'text-orange-500' : 'text-gray-500'}`}>
+                  {formData.location.length}/100
+                </p>
+              </div>
             </div>
 
             <div>
@@ -209,8 +430,9 @@ const SiteModal = ({ isOpen, onClose, site, onSave, mode }) => {
                 Status
               </label>
               <select
+                name="status"
                 value={formData.status}
-                onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                onChange={handleChange}
                 className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition"
               >
                 <option value="Active">Active</option>
@@ -223,15 +445,26 @@ const SiteModal = ({ isOpen, onClose, site, onSave, mode }) => {
           {/* Full Address */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Full Address
+              Full Address <span className="text-red-500">*</span>
             </label>
             <textarea
+              name="address"
               value={formData.address}
-              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+              onChange={handleChange}
+              onBlur={handleBlur}
               rows={3}
-              className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition"
+              className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition ${errors.address ? 'border-red-500' : 'border-gray-300'
+                }`}
               placeholder="Enter complete address"
             />
+            <div className="flex justify-between items-center mt-1">
+              {errors.address && (
+                <p className="text-red-500 text-sm">{errors.address}</p>
+              )}
+              <p className={`text-xs ${formData.address.length > 450 ? 'text-orange-500' : 'text-gray-500'}`}>
+                {formData.address.length}/500
+              </p>
+            </div>
           </div>
 
           {/* Contact Person */}
@@ -241,18 +474,22 @@ const SiteModal = ({ isOpen, onClose, site, onSave, mode }) => {
             </label>
             <input
               type="text"
+              name="contactPerson"
               value={formData.contactPerson}
-              onChange={(e) => {
-                setFormData({ ...formData, contactPerson: e.target.value });
-                if (errors.contactPerson) setErrors({ ...errors, contactPerson: null });
-              }}
+              onChange={handleChange}
+              onBlur={handleBlur}
               className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition ${errors.contactPerson ? 'border-red-500' : 'border-gray-300'
                 }`}
               placeholder="Enter contact person name"
             />
-            {errors.contactPerson && (
-              <p className="text-red-500 text-sm mt-1">{errors.contactPerson}</p>
-            )}
+            <div className="flex justify-between items-center mt-1">
+              {errors.contactPerson && (
+                <p className="text-red-500 text-sm">{errors.contactPerson}</p>
+              )}
+              <p className={`text-xs ${formData.contactPerson.length > 90 ? 'text-orange-500' : 'text-gray-500'}`}>
+                {formData.contactPerson.length}/100
+              </p>
+            </div>
           </div>
 
           {/* Contact Details */}
@@ -263,11 +500,10 @@ const SiteModal = ({ isOpen, onClose, site, onSave, mode }) => {
               </label>
               <input
                 type="tel"
+                name="contactPhone"
                 value={formData.contactPhone}
-                onChange={(e) => {
-                  setFormData({ ...formData, contactPhone: e.target.value });
-                  if (errors.contactPhone) setErrors({ ...errors, contactPhone: null });
-                }}
+                onChange={handleChange}
+                onBlur={handleBlur}
                 className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition ${errors.contactPhone ? 'border-red-500' : 'border-gray-300'
                   }`}
                 placeholder="+91 98765 43210"
@@ -283,11 +519,10 @@ const SiteModal = ({ isOpen, onClose, site, onSave, mode }) => {
               </label>
               <input
                 type="email"
+                name="contactEmail"
                 value={formData.contactEmail}
-                onChange={(e) => {
-                  setFormData({ ...formData, contactEmail: e.target.value });
-                  if (errors.contactEmail) setErrors({ ...errors, contactEmail: null });
-                }}
+                onChange={handleChange}
+                onBlur={handleBlur}
                 className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition ${errors.contactEmail ? 'border-red-500' : 'border-gray-300'
                   }`}
                 placeholder="email@example.com"
@@ -304,12 +539,23 @@ const SiteModal = ({ isOpen, onClose, site, onSave, mode }) => {
               Description
             </label>
             <textarea
+              name="description"
               value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              onChange={handleChange}
+              onBlur={handleBlur}
               rows={3}
-              className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition"
+              className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition ${errors.description ? 'border-red-500' : 'border-gray-300'
+                }`}
               placeholder="Additional notes or description"
             />
+            <div className="flex justify-between items-center mt-1">
+              {errors.description && (
+                <p className="text-red-500 text-sm">{errors.description}</p>
+              )}
+              <p className={`text-xs ${formData.description.length > 900 ? 'text-orange-500' : 'text-gray-500'}`}>
+                {formData.description.length}/1000
+              </p>
+            </div>
           </div>
 
           {/* Gates Management */}
@@ -349,16 +595,27 @@ const SiteModal = ({ isOpen, onClose, site, onSave, mode }) => {
                   <div key={index} className="bg-gray-50 p-4 rounded-xl border-2 border-gray-200">
                     <div className="flex items-start gap-3">
                       <div className="flex-1 space-y-3">
-                        <input
-                          type="text"
-                          value={gate.gateName}
-                          onChange={(e) => {
-                            updateGate(index, 'gateName', e.target.value);
-                            if (errors.gates) setErrors({ ...errors, gates: null });
-                          }}
-                          placeholder={`Gate ${index + 1} name (e.g., Main Entrance, Back Gate)`}
-                          className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
-                        />
+                        <div>
+                          <input
+                            type="text"
+                            value={gate.gateName}
+                            onChange={(e) => {
+                              updateGate(index, 'gateName', e.target.value);
+                              if (errors.gates) setErrors({ ...errors, gates: null });
+                            }}
+                            onBlur={() => validateField('gates')}
+                            placeholder={`Gate ${index + 1} name (e.g., Main Entrance, Back Gate)`}
+                            className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                          />
+                          <div className="flex justify-between items-center mt-1">
+                            {!gate.gateName.trim() && touched.gates && (
+                              <p className="text-red-500 text-xs">Gate name is required</p>
+                            )}
+                            <p className={`text-xs ${gate.gateName.length > 45 ? 'text-orange-500' : 'text-gray-500'}`}>
+                              {gate.gateName.length}/50
+                            </p>
+                          </div>
+                        </div>
 
                         <div className="flex items-center gap-4">
                           <label className="flex items-center gap-2 cursor-pointer">
@@ -420,6 +677,7 @@ const SiteModal = ({ isOpen, onClose, site, onSave, mode }) => {
               onClick={() => {
                 onClose();
                 setErrors({});
+                setTouched({});
               }}
               disabled={loading}
               className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition font-semibold disabled:opacity-50"
@@ -428,7 +686,7 @@ const SiteModal = ({ isOpen, onClose, site, onSave, mode }) => {
             </button>
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || Object.keys(errors).length > 0}
               className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {loading ? (
@@ -558,7 +816,7 @@ const ViewSiteModal = ({ isOpen, onClose, site }) => {
               <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-4 rounded-xl border border-orange-200 text-center">
                 <div className="text-3xl font-black text-orange-700">{site.gates?.length || 0}</div>
                 <div className="text-sm text-orange-700 font-semibold mt-1">Gates</div>
-              </div> 
+              </div>
             </div>
           </div>
 
@@ -723,7 +981,7 @@ const SiteCard = ({ site, onEdit, onView, onDelete }) => (
 
     </div>
 
-    <div className="grid grid-cols-2 gap-3 mb-4 pb-4 border-b border-gray-100"> 
+    <div className="grid grid-cols-2 gap-3 mb-4 pb-4 border-b border-gray-100">
       <div className="text-center">
         <div className="text-xs text-gray-500 mb-1">PMs</div>
         <div className="font-bold text-blue-600 text-lg">{site.assignedPMs || 0}</div>

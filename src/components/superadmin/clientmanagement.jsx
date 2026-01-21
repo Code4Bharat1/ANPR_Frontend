@@ -302,14 +302,166 @@ const AddClientModal = ({ isOpen, onClose, onSubmit, loading }) => {
     address: ''
   });
 
+  const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
+  const [touched, setTouched] = useState({});
+
+  // Real-time validation on field blur
+  const handleBlur = (e) => {
+    const { name } = e.target;
+    setTouched({ ...touched, [name]: true });
+    validateField(name);
+  };
+
+  // Validate single field
+  const validateField = (fieldName) => {
+    let newErrors = { ...errors };
+    const value = formData[fieldName];
+
+    switch (fieldName) {
+      case 'clientname':
+        if (value.trim().length < 3) {
+          newErrors.clientname = "Client name must be at least 3 characters";
+        } else {
+          delete newErrors.clientname;
+        }
+        break;
+
+      case 'companyName':
+        if (value.trim().length < 3) {
+          newErrors.companyName = "Company name must be at least 3 characters";
+        } else {
+          delete newErrors.companyName;
+        }
+        break;
+
+      case 'email':
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+          newErrors.email = "Enter a valid email address";
+        } else {
+          delete newErrors.email;
+        }
+        break;
+
+      case 'phone':
+        if (value && !/^\d{10}$/.test(value.replace(/\D/g, ''))) {
+          newErrors.phone = "Phone number must be 10 digits";
+        } else {
+          delete newErrors.phone;
+        }
+        break;
+
+      case 'password':
+        if (value.length < 8) {
+          newErrors.password = "Password must be at least 8 characters";
+        } else {
+          delete newErrors.password;
+        }
+        break;
+
+      case 'packageStart':
+        if (!value) {
+          newErrors.packageStart = "Start date is required";
+        } else {
+          delete newErrors.packageStart;
+        }
+        break;
+
+      case 'packageEnd':
+        if (!value) {
+          newErrors.packageEnd = "End date is required";
+        } else if (formData.packageStart && new Date(value) <= new Date(formData.packageStart)) {
+          newErrors.packageEnd = "End date must be after start date";
+        } else {
+          delete newErrors.packageEnd;
+        }
+        break;
+
+      case 'address':
+        if (value.trim().length < 10) {
+          newErrors.address = "Address must be at least 10 characters";
+        } else {
+          delete newErrors.address;
+        }
+        break;
+
+      default:
+        break;
+    }
+
+    setErrors(newErrors);
+  };
+
+  // Full form validation
+  const validate = () => {
+    const newErrors = {};
+
+    if (formData.clientname.trim().length < 3) {
+      newErrors.clientname = "Client name must be at least 3 characters";
+    }
+
+    if (formData.companyName.trim().length < 3) {
+      newErrors.companyName = "Company name must be at least 3 characters";
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = "Enter a valid email address";
+    }
+
+    if (formData.phone && !/^\d{10}$/.test(formData.phone.replace(/\D/g, ''))) {
+      newErrors.phone = "Phone number must be 10 digits";
+    }
+
+    if (formData.password.length < 8) {
+      newErrors.password = "Password must be at least 8 characters";
+    }
+
+    if (!formData.packageStart) {
+      newErrors.packageStart = "Start date is required";
+    }
+
+    if (!formData.packageEnd) {
+      newErrors.packageEnd = "End date is required";
+    }
+
+    if (
+      formData.packageStart &&
+      formData.packageEnd &&
+      new Date(formData.packageEnd) <= new Date(formData.packageStart)
+    ) {
+      newErrors.packageEnd = "End date must be after start date";
+    }
+
+    if (formData.address.trim().length < 10) {
+      newErrors.address = "Address must be at least 10 characters";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+    
+    // Real-time validation for already touched fields
+    if (touched[name]) {
+      validateField(name);
+    }
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    
+    // Mark all fields as touched for validation
+    const allTouched = Object.keys(formData).reduce((acc, key) => {
+      acc[key] = true;
+      return acc;
+    }, {});
+    setTouched(allTouched);
+
+    if (!validate()) return;
+
     onSubmit(formData);
   };
 
@@ -325,6 +477,8 @@ const AddClientModal = ({ isOpen, onClose, onSubmit, loading }) => {
       packageEnd: '',
       address: ''
     });
+    setErrors({});
+    setTouched({});
     setShowPassword(false);
   };
 
@@ -342,6 +496,7 @@ const AddClientModal = ({ isOpen, onClose, onSubmit, loading }) => {
 
         <form onSubmit={handleSubmit} className="p-4 md:p-6">
           <div className="space-y-4">
+            {/* Client Name Field with Error */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Client Name *
@@ -351,11 +506,19 @@ const AddClientModal = ({ isOpen, onClose, onSubmit, loading }) => {
                 name="clientname"
                 value={formData.clientname}
                 onChange={handleChange}
+                onBlur={handleBlur}
                 required
                 placeholder="e.g., John Doe"
-                className="w-full px-3 md:px-4 py-2 md:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base"
+                className={`w-full px-3 md:px-4 py-2 md:py-2.5 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base ${
+                  errors.clientname ? 'border-red-500' : 'border-gray-300'
+                }`}
               />
+              {errors.clientname && (
+                <p className="text-red-500 text-xs mt-1">{errors.clientname}</p>
+              )}
             </div>
+
+            {/* Company Name Field with Error */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Company Name *
@@ -365,13 +528,20 @@ const AddClientModal = ({ isOpen, onClose, onSubmit, loading }) => {
                 name="companyName"
                 value={formData.companyName}
                 onChange={handleChange}
+                onBlur={handleBlur}
                 required
                 placeholder="e.g., Acme Corporation"
-                className="w-full px-3 md:px-4 py-2 md:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base"
+                className={`w-full px-3 md:px-4 py-2 md:py-2.5 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base ${
+                  errors.companyName ? 'border-red-500' : 'border-gray-300'
+                }`}
               />
+              {errors.companyName && (
+                <p className="text-red-500 text-xs mt-1">{errors.companyName}</p>
+              )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Email Field with Error */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Email *
@@ -381,11 +551,19 @@ const AddClientModal = ({ isOpen, onClose, onSubmit, loading }) => {
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
+                  onBlur={handleBlur}
                   required
                   placeholder="client@company.com"
-                  className="w-full px-3 md:px-4 py-2 md:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base"
+                  className={`w-full px-3 md:px-4 py-2 md:py-2.5 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base ${
+                    errors.email ? 'border-red-500' : 'border-gray-300'
+                  }`}
                 />
+                {errors.email && (
+                  <p className="text-red-500 text-xs mt-1">{errors.email}</p>
+                )}
               </div>
+
+              {/* Phone Field with Error */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Phone
@@ -395,12 +573,19 @@ const AddClientModal = ({ isOpen, onClose, onSubmit, loading }) => {
                   name="phone"
                   value={formData.phone}
                   onChange={handleChange}
+                  onBlur={handleBlur}
                   placeholder="+1 234 567 8900"
-                  className="w-full px-3 md:px-4 py-2 md:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base"
+                  className={`w-full px-3 md:px-4 py-2 md:py-2.5 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base ${
+                    errors.phone ? 'border-red-500' : 'border-gray-300'
+                  }`}
                 />
+                {errors.phone && (
+                  <p className="text-red-500 text-xs mt-1">{errors.phone}</p>
+                )}
               </div>
             </div>
 
+            {/* Password Field with Error */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Password *
@@ -411,9 +596,12 @@ const AddClientModal = ({ isOpen, onClose, onSubmit, loading }) => {
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
+                  onBlur={handleBlur}
                   required
                   placeholder="Minimum 8 characters"
-                  className="w-full px-3 md:px-4 py-2 md:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent pr-10 text-sm md:text-base"
+                  className={`w-full px-3 md:px-4 py-2 md:py-2.5 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent pr-10 text-sm md:text-base ${
+                    errors.password ? 'border-red-500' : 'border-gray-300'
+                  }`}
                 />
                 <button
                   type="button"
@@ -427,7 +615,11 @@ const AddClientModal = ({ isOpen, onClose, onSubmit, loading }) => {
                   )}
                 </button>
               </div>
-              <p className="text-xs text-gray-500 mt-1">Password must be at least 8 characters long</p>
+              {errors.password ? (
+                <p className="text-red-500 text-xs mt-1">{errors.password}</p>
+              ) : (
+                <p className="text-xs text-gray-500 mt-1">Password must be at least 8 characters long</p>
+              )}
             </div>
 
             <div className="border-t border-gray-200 pt-4">
@@ -453,6 +645,7 @@ const AddClientModal = ({ isOpen, onClose, onSubmit, loading }) => {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Package Start Date with Error */}
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
                       Start Date *
@@ -462,10 +655,18 @@ const AddClientModal = ({ isOpen, onClose, onSubmit, loading }) => {
                       name="packageStart"
                       value={formData.packageStart}
                       onChange={handleChange}
+                      onBlur={handleBlur}
                       required
-                      className="w-full px-3 md:px-4 py-2 md:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base"
+                      className={`w-full px-3 md:px-4 py-2 md:py-2.5 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base ${
+                        errors.packageStart ? 'border-red-500' : 'border-gray-300'
+                      }`}
                     />
+                    {errors.packageStart && (
+                      <p className="text-red-500 text-xs mt-1">{errors.packageStart}</p>
+                    )}
                   </div>
+
+                  {/* Package End Date with Error */}
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
                       End Date *
@@ -475,14 +676,21 @@ const AddClientModal = ({ isOpen, onClose, onSubmit, loading }) => {
                       name="packageEnd"
                       value={formData.packageEnd}
                       onChange={handleChange}
+                      onBlur={handleBlur}
                       required
-                      className="w-full px-3 md:px-4 py-2 md:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base"
+                      className={`w-full px-3 md:px-4 py-2 md:py-2.5 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base ${
+                        errors.packageEnd ? 'border-red-500' : 'border-gray-300'
+                      }`}
                     />
+                    {errors.packageEnd && (
+                      <p className="text-red-500 text-xs mt-1">{errors.packageEnd}</p>
+                    )}
                   </div>
                 </div>
               </div>
             </div>
 
+            {/* Address Field with Error */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Address *
@@ -491,14 +699,21 @@ const AddClientModal = ({ isOpen, onClose, onSubmit, loading }) => {
                 name="address"
                 value={formData.address}
                 onChange={handleChange}
+                onBlur={handleBlur}
                 rows={2}
                 required
                 placeholder="Full address"
-                className="w-full px-3 md:px-4 py-2 md:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base"
+                className={`w-full px-3 md:px-4 py-2 md:py-2.5 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base ${
+                  errors.address ? 'border-red-500' : 'border-gray-300'
+                }`}
               />
+              {errors.address && (
+                <p className="text-red-500 text-xs mt-1">{errors.address}</p>
+              )}
             </div>
           </div>
 
+          {/* Submit Button - Disable if there are errors */}
           <div className="flex flex-col sm:flex-row gap-3 mt-6">
             <button
               type="button"
@@ -509,7 +724,7 @@ const AddClientModal = ({ isOpen, onClose, onSubmit, loading }) => {
             </button>
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || Object.keys(errors).length > 0}
               className="flex-1 px-4 md:px-6 py-2.5 md:py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed text-sm md:text-base"
             >
               {loading ? 'Creating...' : 'Create Client'}
@@ -532,6 +747,7 @@ const ClientManagement = () => {
   const [selectedClient, setSelectedClient] = useState(null);
   const [submitLoading, setSubmitLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+
   const [totalPages, setTotalPages] = useState(1);
   const [filterStatus, setFilterStatus] = useState('all');
 
@@ -567,6 +783,7 @@ const ClientManagement = () => {
       setLoading(false);
     }
   };
+  
 
   const handleAddClient = async (formData) => {
     try {
@@ -701,19 +918,21 @@ const handleDeactivate = async (client) => {
 
 
   const filteredClients = clients.filter(client => {
-    const searchTerm = searchQuery.toLowerCase();
-    const matchesSearch =
-      client.companyName?.toLowerCase().includes(searchTerm) ||
-      client.name?.toLowerCase().includes(searchTerm) ||
-      client.email?.toLowerCase().includes(searchTerm);
+  const searchTerm = searchQuery.toLowerCase();
 
-    const matchesFilter =
-      filterStatus === 'all' ||
-      (filterStatus === 'active' && client.isActive) ||
-      (filterStatus === 'inactive' && !client.isActive);
+  const matchesSearch =
+    client.companyName?.toLowerCase().includes(searchTerm) ||
+    client.clientname?.toLowerCase().includes(searchTerm) ||
+    client.email?.toLowerCase().includes(searchTerm);
 
-    return matchesSearch && matchesFilter;
-  });
+  const matchesFilter =
+    filterStatus === 'all' ||
+    (filterStatus === 'active' && client.isActive) ||
+    (filterStatus === 'inactive' && !client.isActive);
+
+  return matchesSearch && matchesFilter;
+});
+
 
   // Calculate stats
   const totalClients = clients.length;

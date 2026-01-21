@@ -268,12 +268,186 @@ const AddDeviceModal = ({ isOpen, onClose, onSubmit, loading, clients, sites }) 
     notes: ''
   });
 
+  const [errors, setErrors] = useState({});
+  const [touched, setTouched] = useState({});
+
+  // Real-time validation on field blur
+  const handleBlur = (e) => {
+    const { name } = e.target;
+    setTouched({ ...touched, [name]: true });
+    validateField(name);
+  };
+
+  // Validate single field
+  const validateField = (fieldName) => {
+    let newErrors = { ...errors };
+    const value = formData[fieldName];
+
+    switch (fieldName) {
+      case 'deviceName':
+        if (!value.trim()) {
+          newErrors.deviceName = "Device name is required";
+        } else if (value.trim().length < 3) {
+          newErrors.deviceName = "Device name must be at least 3 characters";
+        } else {
+          delete newErrors.deviceName;
+        }
+        break;
+
+      case 'serialNumber':
+        if (!value.trim()) {
+          newErrors.serialNumber = "Serial number is required";
+        } else if (value.trim().length < 5) {
+          newErrors.serialNumber = "Serial number must be at least 5 characters";
+        } else {
+          delete newErrors.serialNumber;
+        }
+        break;
+
+      case 'deviceType':
+        if (!value) {
+          newErrors.deviceType = "Device type is required";
+        } else {
+          delete newErrors.deviceType;
+        }
+        break;
+
+      case 'clientId':
+        if (!value) {
+          newErrors.clientId = "Client selection is required";
+        } else {
+          delete newErrors.clientId;
+        }
+        break;
+
+      case 'siteId':
+        if (!value) {
+          newErrors.siteId = "Site selection is required";
+        } else {
+          delete newErrors.siteId;
+        }
+        break;
+
+      case 'ipAddress':
+        if (!value.trim()) {
+          newErrors.ipAddress = "IP address is required";
+        } else if (!/^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(value)) {
+          newErrors.ipAddress = "Enter a valid IP address (e.g., 192.168.1.100)";
+        } else {
+          // Validate each octet is between 0-255
+          const octets = value.split('.');
+          const isValid = octets.length === 4 && 
+            octets.every(octet => {
+              const num = parseInt(octet, 10);
+              return num >= 0 && num <= 255 && octet === num.toString();
+            });
+          
+          if (!isValid) {
+            newErrors.ipAddress = "Invalid IP address format";
+          } else {
+            delete newErrors.ipAddress;
+          }
+        }
+        break;
+
+      case 'notes':
+        if (value.trim().length > 500) {
+          newErrors.notes = "Notes cannot exceed 500 characters";
+        } else {
+          delete newErrors.notes;
+        }
+        break;
+
+      default:
+        break;
+    }
+
+    setErrors(newErrors);
+  };
+
+  // Full form validation
+  const validate = () => {
+    const newErrors = {};
+
+    // Device Name validation
+    if (!formData.deviceName.trim()) {
+      newErrors.deviceName = "Device name is required";
+    } else if (formData.deviceName.trim().length < 3) {
+      newErrors.deviceName = "Device name must be at least 3 characters";
+    }
+
+    // Serial Number validation
+    if (!formData.serialNumber.trim()) {
+      newErrors.serialNumber = "Serial number is required";
+    } else if (formData.serialNumber.trim().length < 5) {
+      newErrors.serialNumber = "Serial number must be at least 5 characters";
+    }
+
+    // Device Type validation
+    if (!formData.deviceType) {
+      newErrors.deviceType = "Device type is required";
+    }
+
+    // Client validation
+    if (!formData.clientId) {
+      newErrors.clientId = "Client selection is required";
+    }
+
+    // Site validation
+    if (!formData.siteId) {
+      newErrors.siteId = "Site selection is required";
+    }
+
+    // IP Address validation
+    if (!formData.ipAddress.trim()) {
+      newErrors.ipAddress = "IP address is required";
+    } else if (!/^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(formData.ipAddress)) {
+      newErrors.ipAddress = "Enter a valid IP address (e.g., 192.168.1.100)";
+    } else {
+      // Validate each octet is between 0-255
+      const octets = formData.ipAddress.split('.');
+      const isValid = octets.length === 4 && 
+        octets.every(octet => {
+          const num = parseInt(octet, 10);
+          return num >= 0 && num <= 255 && octet === num.toString();
+        });
+      
+      if (!isValid) {
+        newErrors.ipAddress = "Invalid IP address format";
+      }
+    }
+
+    // Notes validation
+    if (formData.notes.trim().length > 500) {
+      newErrors.notes = "Notes cannot exceed 500 characters";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+    
+    // Real-time validation for already touched fields
+    if (touched[name]) {
+      validateField(name);
+    }
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    
+    // Mark all fields as touched for validation
+    const allTouched = Object.keys(formData).reduce((acc, key) => {
+      acc[key] = true;
+      return acc;
+    }, {});
+    setTouched(allTouched);
+
+    if (!validate()) return;
+
     onSubmit(formData);
   };
 
@@ -287,6 +461,8 @@ const AddDeviceModal = ({ isOpen, onClose, onSubmit, loading, clients, sites }) 
       ipAddress: '',
       notes: ''
     });
+    setErrors({});
+    setTouched({});
   };
 
   if (!isOpen) return null;
@@ -305,6 +481,7 @@ const AddDeviceModal = ({ isOpen, onClose, onSubmit, loading, clients, sites }) 
           <div className="space-y-4">
             {/* Device Information Section */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Device Name */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Device Name *
@@ -314,12 +491,19 @@ const AddDeviceModal = ({ isOpen, onClose, onSubmit, loading, clients, sites }) 
                   name="deviceName"
                   value={formData.deviceName}
                   onChange={handleChange}
+                  onBlur={handleBlur}
                   required
                   placeholder="e.g., Entrance Camera"
-                  className="w-full px-3 md:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base"
+                  className={`w-full px-3 md:px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base ${
+                    errors.deviceName ? 'border-red-500' : 'border-gray-300'
+                  }`}
                 />
+                {errors.deviceName && (
+                  <p className="text-red-500 text-xs mt-1">{errors.deviceName}</p>
+                )}
               </div>
 
+              {/* Serial Number */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Serial Number *
@@ -329,12 +513,19 @@ const AddDeviceModal = ({ isOpen, onClose, onSubmit, loading, clients, sites }) 
                   name="serialNumber"
                   value={formData.serialNumber}
                   onChange={handleChange}
+                  onBlur={handleBlur}
                   required
                   placeholder="e.g., DEV-2024-001"
-                  className="w-full px-3 md:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base"
+                  className={`w-full px-3 md:px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base ${
+                    errors.serialNumber ? 'border-red-500' : 'border-gray-300'
+                  }`}
                 />
+                {errors.serialNumber && (
+                  <p className="text-red-500 text-xs mt-1">{errors.serialNumber}</p>
+                )}
               </div>
 
+              {/* Device Type */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Device Type *
@@ -343,12 +534,18 @@ const AddDeviceModal = ({ isOpen, onClose, onSubmit, loading, clients, sites }) 
                   name="deviceType"
                   value={formData.deviceType}
                   onChange={handleChange}
+                  onBlur={handleBlur}
                   required
-                  className="w-full px-3 md:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base"
+                  className={`w-full px-3 md:px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base ${
+                    errors.deviceType ? 'border-red-500' : 'border-gray-300'
+                  }`}
                 >
                   <option value="ANPR">ANPR Camera</option>
                   <option value="BARRIER">Barrier</option>
                 </select>
+                {errors.deviceType && (
+                  <p className="text-red-500 text-xs mt-1">{errors.deviceType}</p>
+                )}
               </div>
             </div>
 
@@ -357,6 +554,7 @@ const AddDeviceModal = ({ isOpen, onClose, onSubmit, loading, clients, sites }) 
               <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-4">Assignment</h3>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Client Selection */}
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
                     Assign to Client *
@@ -365,8 +563,11 @@ const AddDeviceModal = ({ isOpen, onClose, onSubmit, loading, clients, sites }) 
                     name="clientId"
                     value={formData.clientId}
                     onChange={handleChange}
+                    onBlur={handleBlur}
                     required
-                    className="w-full px-3 md:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base"
+                    className={`w-full px-3 md:px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base ${
+                      errors.clientId ? 'border-red-500' : 'border-gray-300'
+                    }`}
                   >
                     <option value="">Select Client</option>
                     {clients.map(client => (
@@ -375,8 +576,12 @@ const AddDeviceModal = ({ isOpen, onClose, onSubmit, loading, clients, sites }) 
                       </option>
                     ))}
                   </select>
+                  {errors.clientId && (
+                    <p className="text-red-500 text-xs mt-1">{errors.clientId}</p>
+                  )}
                 </div>
 
+                {/* Site Selection */}
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
                     Assign to Site *
@@ -385,8 +590,11 @@ const AddDeviceModal = ({ isOpen, onClose, onSubmit, loading, clients, sites }) 
                     name="siteId"
                     value={formData.siteId}
                     onChange={handleChange}
+                    onBlur={handleBlur}
                     required
-                    className="w-full px-3 md:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base"
+                    className={`w-full px-3 md:px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base ${
+                      errors.siteId ? 'border-red-500' : 'border-gray-300'
+                    }`}
                   >
                     <option value="">Select Site</option>
                     {sites.map(site => (
@@ -395,6 +603,9 @@ const AddDeviceModal = ({ isOpen, onClose, onSubmit, loading, clients, sites }) 
                       </option>
                     ))}
                   </select>
+                  {errors.siteId && (
+                    <p className="text-red-500 text-xs mt-1">{errors.siteId}</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -409,10 +620,18 @@ const AddDeviceModal = ({ isOpen, onClose, onSubmit, loading, clients, sites }) 
                 name="ipAddress"
                 value={formData.ipAddress}
                 onChange={handleChange}
+                onBlur={handleBlur}
                 required
                 placeholder="e.g., 192.168.1.100"
-                className="w-full px-3 md:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base"
+                className={`w-full px-3 md:px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base ${
+                  errors.ipAddress ? 'border-red-500' : 'border-gray-300'
+                }`}
               />
+              {errors.ipAddress ? (
+                <p className="text-red-500 text-xs mt-1">{errors.ipAddress}</p>
+              ) : (
+                <p className="text-xs text-gray-500 mt-1">Format: xxx.xxx.xxx.xxx (0-255 per octet)</p>
+              )}
             </div>
 
             {/* Notes */}
@@ -424,10 +643,23 @@ const AddDeviceModal = ({ isOpen, onClose, onSubmit, loading, clients, sites }) 
                 name="notes"
                 value={formData.notes}
                 onChange={handleChange}
+                onBlur={handleBlur}
                 rows={3}
                 placeholder="Additional notes about the device"
-                className="w-full px-3 md:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base"
+                className={`w-full px-3 md:px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base ${
+                  errors.notes ? 'border-red-500' : 'border-gray-300'
+                }`}
               />
+              <div className="flex justify-between items-center mt-1">
+                {errors.notes ? (
+                  <p className="text-red-500 text-xs">{errors.notes}</p>
+                ) : (
+                  <p className="text-xs text-gray-500">Optional - Maximum 500 characters</p>
+                )}
+                <p className={`text-xs ${formData.notes.length > 450 ? 'text-orange-500' : 'text-gray-500'}`}>
+                  {formData.notes.length}/500
+                </p>
+              </div>
             </div>
 
             {/* Action Buttons */}
@@ -441,7 +673,7 @@ const AddDeviceModal = ({ isOpen, onClose, onSubmit, loading, clients, sites }) 
               </button>
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || Object.keys(errors).length > 0}
                 className="flex-1 px-4 md:px-6 py-2.5 md:py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed text-sm md:text-base"
               >
                 {loading ? 'Registering...' : 'Register Device'}
@@ -453,6 +685,7 @@ const AddDeviceModal = ({ isOpen, onClose, onSubmit, loading, clients, sites }) 
     </div>
   );
 };
+
 const DeviceManagement = () => {
   const [devices, setDevices] = useState([]);
   const [clients, setClients] = useState([]);
@@ -605,12 +838,19 @@ const DeviceManagement = () => {
   };
 
   const filteredDevices = devices.filter(device => {
-    const matchesSearch = device.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      device.deviceId?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesType = filterType === 'all' || device.type === filterType;
-    const matchesStatus = filterStatus === 'all' || device.status === filterStatus;
-    return matchesSearch && matchesType && matchesStatus;
-  });
+  const query = searchQuery.toLowerCase();
+
+  const matchesSearch =
+    device.name?.toLowerCase().includes(query) ||          // device name
+    device.deviceId?.toLowerCase().includes(query) ||      // device id
+    device.clientName?.toLowerCase().includes(query) ||    // client name
+    device.siteName?.toLowerCase().includes(query);        // site name
+
+  const matchesType = filterType === 'all' || device.type === filterType;
+  const matchesStatus = filterStatus === 'all' || device.status === filterStatus;
+
+  return matchesSearch && matchesType && matchesStatus;
+});
 
   const stats = {
     total: devices.length,
