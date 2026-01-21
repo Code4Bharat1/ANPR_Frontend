@@ -2,7 +2,10 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { 
-  Search, Plus, Package, Eye, Edit, Mail, Phone, X, AlertCircle, CheckCircle, Building, Trash2
+  Search, Plus, Package, Eye, Edit, Mail, Phone, X, AlertCircle, CheckCircle, Building, Trash2,
+  Calendar,
+  MapPin,
+  Users
 } from 'lucide-react';
 import Sidebar from './sidebar';
 import Header from './header';  // ✅ Import Header
@@ -737,76 +740,311 @@ const VendorManagement = () => {
         </div>
       )}
 
-      {/* View Vendor Modal */}
+      {/* View Vendor Modal - Enhanced */}
       {showViewModal && selectedVendor && (
-        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl max-w-lg w-full shadow-2xl">
+        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl animate-modal-in">
+            {/* Modal Header */}
             <div className="flex items-center justify-between p-6 border-b border-gray-200">
-              <h2 className="text-xl font-bold text-gray-900">Vendor Details</h2>
-              <button 
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Vendor Details</h2>
+                <p className="text-sm text-gray-600 mt-1">Complete vendor information with trip statistics</p>
+              </div>
+              <button
                 onClick={() => { setShowViewModal(false); setSelectedVendor(null); }}
-                className="p-2 hover:bg-gray-100 rounded-lg transition"
+                className="p-2 hover:bg-gray-100 rounded-xl transition"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
-            
-            <div className="p-6 space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-                  <Package className="w-6 h-6 text-purple-600" />
+
+            {/* Modal Content */}
+            <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto">
+              {/* Vendor Header with Stats */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-2xl">
+                <div className="w-16 h-16 bg-gradient-to-br from-purple-100 to-indigo-100 rounded-2xl flex items-center justify-center flex-shrink-0">
+                  <Package className="w-8 h-8 text-purple-600" />
                 </div>
-                <div>
-                  <h3 className="text-lg font-bold text-gray-900">{selectedVendor.name}</h3>
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                    selectedVendor.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
-                  }`}>
-                    {selectedVendor.isActive ? 'Active' : 'Inactive'}
-                  </span>
-                </div>
-              </div>
-              
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <Mail className="w-4 h-4 text-gray-400" />
-                  <span className="text-gray-700">{selectedVendor.email}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Phone className="w-4 h-4 text-gray-400" />
-                  <span className="text-gray-700">{selectedVendor.phone}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Building className="w-4 h-4 text-gray-400" />
-                  <span className="text-gray-700">{selectedVendor.address}</span>
-                </div>
-              </div>
-              
-              <div>
-                <h4 className="font-semibold text-gray-900 mb-2">Assigned Sites:</h4>
-                <div className="flex flex-wrap gap-2">
-                  {selectedVendor.assignedSites?.map(site => (
-                    <span key={site._id} className="inline-flex items-center px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm">
-                      <Building className="w-3 h-3 mr-1" />
-                      {site.name}
+                <div className="flex-1">
+                  <h3 className="text-xl font-bold text-gray-900">{selectedVendor.name}</h3>
+                  <div className="flex flex-wrap items-center gap-3 mt-2">
+                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold ${selectedVendor.isActive
+                        ? "bg-gradient-to-r from-green-100 to-emerald-100 text-green-700"
+                        : "bg-gradient-to-r from-gray-100 to-slate-100 text-gray-700"
+                      }`}>
+                      <span className={`w-2 h-2 rounded-full mr-2 ${selectedVendor.isActive ? 'bg-green-500' : 'bg-gray-400'}`}></span>
+                      {selectedVendor.isActive ? "Active" : "Inactive"}
                     </span>
-                  ))}
+
+                    {/* Quick Stats */}
+                    <div className="flex items-center gap-4 text-sm">
+                      <span className="flex items-center gap-1">
+                        <Building className="w-4 h-4 text-gray-500" />
+                        {selectedVendor.assignedSites?.length || 0} sites
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Calendar className="w-4 h-4 text-gray-500" />
+                        {selectedVendor.totalTrips || 0} trips
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
-              
-              <div className="pt-4 border-t border-gray-200">
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Total Trips:</span>
-                  <span className="text-lg font-bold text-gray-900">{selectedVendor.totalTrips || 0}</span>
+
+              {/* Contact & Basic Info */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-4 bg-gray-50 rounded-xl">
+                  <div className="flex items-center gap-3 mb-3">
+                    <Mail className="w-5 h-5 text-gray-500" />
+                    <h4 className="font-semibold text-gray-900">Email</h4>
+                  </div>
+                  <p className="text-gray-700 break-all">{selectedVendor.email || "—"}</p>
+                </div>
+
+                <div className="p-4 bg-gray-50 rounded-xl">
+                  <div className="flex items-center gap-3 mb-3">
+                    <Phone className="w-5 h-5 text-gray-500" />
+                    <h4 className="font-semibold text-gray-900">Phone</h4>
+                  </div>
+                  <p className="text-gray-700">{selectedVendor.phone || "—"}</p>
                 </div>
               </div>
+
+              {/* Address */}
+              <div className="p-4 bg-gray-50 rounded-xl">
+                <div className="flex items-center gap-3 mb-3">
+                  <MapPin  className="w-5 h-5 text-gray-500" />
+                  <h4 className="font-semibold text-gray-900">Address</h4>
+                </div>
+                <p className="text-gray-700">{selectedVendor.address || "—"}</p>
+              </div>
+
+              {/* Overall Trip Statistics */}
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <Calendar className="w-5 h-5" />
+                  Trip Statistics Overview
+                </h4>
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="p-4 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl text-center">
+                    <div className="text-2xl lg:text-3xl font-bold text-gray-900">
+                      {selectedVendor.totalTrips || 0}
+                    </div>
+                    <div className="text-sm text-gray-600 mt-1">Total Trips</div>
+                    <div className="text-xs text-gray-500 mt-1">All time</div>
+                  </div>
+
+                  <div className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl text-center">
+                    <div className="text-2xl lg:text-3xl font-bold text-green-600">
+                      {selectedVendor.activeTrips || 0}
+                    </div>
+                    <div className="text-sm text-gray-600 mt-1">Active Trips</div>
+                    <div className="text-xs text-gray-500 mt-1">Currently inside</div>
+                  </div>
+
+                  <div className="p-4 bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl text-center">
+                    <div className="text-2xl lg:text-3xl font-bold text-amber-600">
+                      {selectedVendor.todayTrips || 0}
+                    </div>
+                    <div className="text-sm text-gray-600 mt-1">Today's Trips</div>
+                    <div className="text-xs text-gray-500 mt-1">Last 24 hours</div>
+                  </div>
+
+                  <div className="p-4 bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl text-center">
+                    <div className="text-2xl lg:text-3xl font-bold text-purple-600">
+                      {selectedVendor.assignedSites?.length || 0}
+                    </div>
+                    <div className="text-sm text-gray-600 mt-1">Assigned Sites</div>
+                    <div className="text-xs text-gray-500 mt-1">Active locations</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Assigned Sites */}
+              {selectedVendor.assignedSites?.length > 0 && (
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <Building className="w-5 h-5" />
+                    Assigned Sites ({selectedVendor.assignedSites.length})
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {selectedVendor.assignedSites.map(site => (
+                      <div key={site._id} className="p-4 bg-gray-50 rounded-xl border border-gray-200 hover:border-indigo-300 transition-colors">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <div className="font-semibold text-gray-900">{site.name}</div>
+                            {site.location && (
+                              <div className="text-sm text-gray-600 mt-1 truncate">{site.location}</div>
+                            )}
+                          </div>
+                          <Building className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                        </div>
+
+                        {/* Site-wise trip stats if available */}
+                        {selectedVendor.siteWiseTrips && selectedVendor.siteWiseTrips.length > 0 && (
+                          <div className="mt-3 pt-3 border-t border-gray-200">
+                            <div className="grid grid-cols-3 gap-2 text-xs">
+                              {(() => {
+                                const siteTrip = selectedVendor.siteWiseTrips.find(t => t.siteId === site._id);
+                                return siteTrip ? (
+                                  <>
+                                    <div className="text-center">
+                                      <div className="font-semibold text-gray-900">{siteTrip.totalTrips || 0}</div>
+                                      <div className="text-gray-500">Total</div>
+                                    </div>
+                                    <div className="text-center">
+                                      <div className="font-semibold text-amber-600">{siteTrip.todayTrips || 0}</div>
+                                      <div className="text-gray-500">Today</div>
+                                    </div>
+                                    <div className="text-center">
+                                      <div className="font-semibold text-green-600">{siteTrip.activeTrips || 0}</div>
+                                      <div className="text-gray-500">Active</div>
+                                    </div>
+                                  </>
+                                ) : (
+                                  <div className="col-span-3 text-center text-gray-500 text-sm">
+                                    No trips recorded
+                                  </div>
+                                );
+                              })()}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Detailed Site-wise Trip Statistics */}
+              {/* {selectedVendor.siteWiseTrips && selectedVendor.siteWiseTrips.length > 0 && (
+          <div>
+            <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <Calendar className="w-5 h-5" />
+              Site-wise Trip Details
+            </h4>
+            <div className="space-y-3">
+              {selectedVendor.siteWiseTrips.map((siteTrip, index) => {
+                // Find site name from assignedSites array
+                const site = selectedVendor.assignedSites?.find(s => s._id === siteTrip.siteId);
+                const siteName = site?.name || `Site ${index + 1}`;
+                
+                return (
+                  <div key={siteTrip.siteId || index} className="p-4 bg-white rounded-xl border border-gray-200 hover:shadow-sm transition-shadow">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-3">
+                        <Building className="w-5 h-5 text-indigo-500" />
+                        <div>
+                          <div className="font-semibold text-gray-900">{siteName}</div>
+                          {site?.location && (
+                            <div className="text-xs text-gray-500">{site.location}</div>
+                          )}
+                        </div>
+                      </div>
+                      { <span className="text-xs px-2 py-1 bg-indigo-100 text-indigo-700 rounded-full font-medium">
+                        Site ID: {siteTrip.siteId?.substring(0, 6)}...
+                      </span> }
+                    </div>
+                    
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="text-center p-3 bg-blue-50 rounded-lg">
+                        <div className="text-2xl font-bold text-gray-900">{siteTrip.totalTrips || 0}</div>
+                        <div className="text-sm text-gray-600">Total Trips</div>
+                        <div className="text-xs text-gray-500 mt-1">All time</div>
+                      </div>
+                      
+                      <div className="text-center p-3 bg-amber-50 rounded-lg">
+                        <div className="text-2xl font-bold text-amber-600">{siteTrip.todayTrips || 0}</div>
+                        <div className="text-sm text-gray-600">Today's Trips</div>
+                        <div className="text-xs text-gray-500 mt-1">Last 24 hours</div>
+                      </div>
+                      
+                      <div className="text-center p-3 bg-green-50 rounded-lg">
+                        <div className="text-2xl font-bold text-green-600">{siteTrip.activeTrips || 0}</div>
+                        <div className="text-sm text-gray-600">Active Trips</div>
+                        <div className="text-xs text-gray-500 mt-1">Currently inside</div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-            
-            <div className="p-6 border-t border-gray-200">
+          </div>
+        )} */}
+
+              {/* Additional Vendor Info */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Project Manager (if available) */}
+                {selectedVendor.projectManagerId && (
+                  <div className="p-4 bg-gray-50 rounded-xl">
+                    <div className="flex items-center gap-3 mb-3">
+                      <Users className="w-5 h-5 text-gray-500" />
+                      <h4 className="font-semibold text-gray-900">Project Manager</h4>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-gray-900 font-medium">{selectedVendor.projectManagerId.name}</p>
+                      <p className="text-gray-600 text-sm">{selectedVendor.projectManagerId.email}</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Created Date */}
+                <div className="p-4 bg-gray-50 rounded-xl">
+                  <div className="flex items-center gap-3 mb-3">
+                    <Calendar className="w-5 h-5 text-gray-500" />
+                    <h4 className="font-semibold text-gray-900">Joined Date</h4>
+                  </div>
+                  <p className="text-gray-700">
+                    {selectedVendor.createdAt
+                      ? new Date(selectedVendor.createdAt).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })
+                      : "—"
+                    }
+                  </p>
+                  {selectedVendor.createdAt && (
+                    <p className="text-gray-500 text-sm mt-1">
+                      {new Date(selectedVendor.createdAt).toLocaleTimeString('en-US', {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* No Data Messages */}
+              {(!selectedVendor.siteWiseTrips || selectedVendor.siteWiseTrips.length === 0) && (
+                <div className="p-4 bg-amber-50 rounded-xl border border-amber-200">
+                  <div className="flex items-center gap-3">
+                    <AlertCircle className="w-5 h-5 text-amber-600" />
+                    <div>
+                      <h5 className="font-semibold text-amber-800">No Trip Data Available</h5>
+                      <p className="text-amber-700 text-sm mt-1">
+                        This vendor hasn't recorded any trips yet. Trip statistics will appear here once trips are logged.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-6 border-t border-gray-200 flex gap-3">
+              {/* <button
+                onClick={() => handleEditVendor(selectedVendor)}
+                className="flex-1 px-4 py-3 border-2 border-indigo-600 text-indigo-600 rounded-xl hover:bg-indigo-50 transition font-semibold flex items-center justify-center gap-2"
+              >
+                <Edit className="w-5 h-5" />
+                Edit Vendor
+              </button> */}
               <button
                 onClick={() => { setShowViewModal(false); setSelectedVendor(null); }}
-                className="w-full px-4 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-semibold"
+                className="flex-1 px-4 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 transition font-semibold"
               >
-                Close
+                Close Details
               </button>
             </div>
           </div>

@@ -1047,7 +1047,7 @@ const ExitVehicles = () => {
                 </div>
 
                 {/* Video Evidence (Optional) */}
-                <div className="mt-8">
+                {/* <div className="mt-8">
                   <h3 className="text-md font-semibold text-gray-900 mb-3">
                     Video Evidence{" "}
                     <span className="text-gray-400 font-normal text-sm">
@@ -1086,7 +1086,7 @@ const ExitVehicles = () => {
                       Video recording is optional. You can proceed without it.
                     </div>
                   )}
-                </div>
+                </div> */}
               </div>
 
               {/* Supervisor Remarks */}
