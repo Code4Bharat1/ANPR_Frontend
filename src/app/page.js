@@ -1,18 +1,14 @@
-"use client";
+import Image from "next/image";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+export default async function Home() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("accessToken");
 
-export default function Home() {
-  const router = useRouter();
-
-  useEffect(() => {
-    const user = localStorage.getItem("accessToken"); // ya accessToken
-
-    if (!user) {
-      router.replace("/login");
-    }
-  }, [router]);
+  if (!token) {
+    redirect("/login");
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center">
