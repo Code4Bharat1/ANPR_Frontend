@@ -70,27 +70,31 @@ const TripHistory = () => {
   };
 
   const applyFilters = () => {
-    let filtered = [...trips];
+  let filtered = [...trips];
 
-    if (searchQuery.trim()) {
-      filtered = filtered.filter(trip => {
-        const searchLower = searchQuery.toLowerCase();
-        return (
-          (trip.vehicleNumber || '').toLowerCase().includes(searchLower) ||
-          (trip.vendor || '').toLowerCase().includes(searchLower) ||
-          (trip.tripId || '').toLowerCase().includes(searchLower)
-        );
-      });
-    }
+  if (searchQuery.trim()) {
+    const searchLower = searchQuery.toLowerCase().trim();
+    
+    filtered = filtered.filter(trip => {
+      // Check all fields for search
+      const vehicleMatch = (trip.vehicleNumber || '').toLowerCase().includes(searchLower);
+      const vendorMatch = (trip.vendor || '').toLowerCase().includes(searchLower);
+      const tripIdMatch = (trip.tripId || '').toLowerCase().includes(searchLower);
+      const driverMatch = (trip.driver || '').toLowerCase().includes(searchLower);
+      const materialMatch = (trip.materialType || '').toLowerCase().includes(searchLower);
+      
+      // Return true if ANY field matches
+      return vehicleMatch || vendorMatch || tripIdMatch || driverMatch || materialMatch;
+    });
+  }
 
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter(trip => trip.status === statusFilter);
-    }
+  if (statusFilter !== 'all') {
+    filtered = filtered.filter(trip => trip.status === statusFilter);
+  }
 
-    setFilteredTrips(filtered);
-    setCurrentPage(1);
-  };
-
+  setFilteredTrips(filtered);
+  setCurrentPage(1);
+};
   const handleViewDetails = async (trip) => {
     setSelectedTrip(trip);
     setShowDetailsModal(true);
