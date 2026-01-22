@@ -433,10 +433,22 @@ const AdminReports = () => {
   };
 
   // Filter and sort trips based on search and filters
+// Filter and sort trips based on search and filters
   useEffect(() => {
     let result = trips.filter(trip => {
-      const matchesSearch = trip.vehicleNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        trip.id?.toLowerCase().includes(searchTerm.toLowerCase());
+      const searchLower = searchTerm.toLowerCase();
+      
+      // Search across multiple fields
+      const matchesSearch = searchTerm === '' || 
+        trip.vehicleNumber?.toLowerCase().includes(searchLower) ||
+        trip.id?.toLowerCase().includes(searchLower) ||
+        trip.site?.toLowerCase().includes(searchLower) ||
+        trip.rawData?.tripId?.toLowerCase().includes(searchLower) ||
+        trip.rawData?.projectManager?.name?.toLowerCase().includes(searchLower) ||
+        trip.rawData?.createdBy?.name?.toLowerCase().includes(searchLower) ||
+        trip.rawData?.vendorId?.name?.toLowerCase().includes(searchLower) ||
+        trip.rawData?.vehicleId?.driverName?.toLowerCase().includes(searchLower);
+      
       const matchesStatus = filterStatus === 'All Status' || trip.status === filterStatus;
       const matchesSite = filterSite === 'All Sites' || trip.site === filterSite;
       return matchesSearch && matchesStatus && matchesSite;
@@ -825,126 +837,320 @@ const AdminReports = () => {
         </div>
 
         {/* Filters Section */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-6">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-              <Filter className="w-5 h-5 text-blue-600" />
-              Filters & Controls
-            </h3>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setShowFilters(!showFilters)}
-                className="text-sm text-gray-600 hover:text-gray-900 font-medium flex items-center gap-1"
-              >
-                {showFilters ? 'Hide Filters' : 'Show Filters'}
-                {showFilters ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-              </button>
-              <button
-                onClick={handleClearFilters}
-                className="text-sm text-red-600 hover:text-red-700 font-medium flex items-center gap-1"
-              >
-                <X className="w-4 h-4" />
-                Clear All
-              </button>
-            </div>
-          </div>
+<div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-6">
+  <div className="flex items-center justify-between mb-6">
+    <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+      <Filter className="w-5 h-5 text-blue-600" />
+      Filters & Controls
+    </h3>
+    <div className="flex items-center gap-2">
+      <button
+        onClick={() => setShowFilters(!showFilters)}
+        className="text-sm text-gray-600 hover:text-gray-900 font-medium flex items-center gap-1"
+      >
+        {showFilters ? 'Hide Filters' : 'Show Filters'}
+        {showFilters ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+      </button>
+      <button
+        onClick={handleClearFilters}
+        className="text-sm text-red-600 hover:text-red-700 font-medium flex items-center gap-1"
+      >
+        <X className="w-4 h-4" />
+        Clear All
+      </button>
+    </div>
+  </div>
 
-          {/* Active Filters */}
-          {activeFilters.length > 0 && (
-            <div className="mb-6">
-              <div className="text-sm text-gray-600 mb-3">Active Filters:</div>
-              <div className="flex flex-wrap gap-2">
-                {activeFilters.map((filter, index) => (
-                  <FilterChip
-                    key={index}
-                    label={filter.label}
-                    value={filter.value}
-                    onRemove={() => handleRemoveFilter(index)}
-                  />
-                ))}
-              </div>
-            </div>
+  {/* Active Filters */}
+  {activeFilters.length > 0 && (
+    <div className="mb-6">
+      <div className="text-sm text-gray-600 mb-3">Active Filters:</div>
+      <div className="flex flex-wrap gap-2">
+        {activeFilters.map((filter, index) => (
+          <FilterChip
+            key={index}
+            label={filter.label}
+            value={filter.value}
+            onRemove={() => handleRemoveFilter(index)}
+          />
+        ))}
+      </div>
+    </div>
+  )}
+
+  {/* Filter Controls */}
+  {showFilters && (
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+            <Calendar className="w-4 h-4" />
+            Start Date
+          </label>
+          <input
+            type="date"
+            value={dateRange.start}
+            max={dateRange.end || new Date().toISOString().split('T')[0]}
+            onChange={(e) => {
+              const newStart = e.target.value;
+              const today = new Date().toISOString().split('T')[0];
+              
+              // Future date नहीं select कर सकते
+              if (newStart > today) {
+                setDateRange({ ...dateRange, start: today });
+                return;
+              }
+              
+              setDateRange({ ...dateRange, start: newStart });
+              
+              // अगर end date start से पहले है, तो end date को update करें
+              if (dateRange.end && newStart > dateRange.end) {
+                setDateRange(prev => ({ 
+                  ...prev, 
+                  end: newStart 
+                }));
+              }
+            }}
+            className={`w-full px-3 py-2.5 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition ${
+              dateRange.start > (dateRange.end || '') || 
+              dateRange.start > new Date().toISOString().split('T')[0]
+                ? 'border-red-300 bg-red-50' 
+                : 'border-gray-300'
+            }`}
+          />
+          {(dateRange.start > (dateRange.end || '') || 
+            dateRange.start > new Date().toISOString().split('T')[0]) && (
+            <p className="text-xs text-red-600 mt-1">
+              {dateRange.start > new Date().toISOString().split('T')[0] 
+                ? "Cannot select future dates" 
+                : "Start date cannot be after end date"}
+            </p>
           )}
-
-          {/* Filter Controls */}
-          {showFilters && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                  <Calendar className="w-4 h-4" />
-                  Start Date
-                </label>
-                <input
-                  type="date"
-                  value={dateRange.start}
-                  onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
-                  className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                  <Calendar className="w-4 h-4" />
-                  End Date
-                </label>
-                <input
-                  type="date"
-                  value={dateRange.end}
-                  onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
-                  className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Status</label>
-                <select
-                  value={filterStatus}
-                  onChange={(e) => setFilterStatus(e.target.value)}
-                  className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition bg-white"
-                >
-                  <option value="All Status">All Status</option>
-                  <option value="Active">Active</option>
-                  <option value="Completed">Completed</option>
-                </select>
-              </div>
-            </div>
+        </div>
+        
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+            <Calendar className="w-4 h-4" />
+            End Date
+          </label>
+          <input
+            type="date"
+            value={dateRange.end}
+            min={dateRange.start}
+            max={new Date().toISOString().split('T')[0]}
+            onChange={(e) => {
+              const newEnd = e.target.value;
+              const today = new Date().toISOString().split('T')[0];
+              
+              // Future date नहीं select कर सकते
+              if (newEnd > today) {
+                setDateRange({ ...dateRange, end: today });
+                return;
+              }
+              
+              // End date start date से पहले नहीं हो सकती
+              if (newEnd < dateRange.start) {
+                setDateRange({ ...dateRange, end: dateRange.start });
+                return;
+              }
+              
+              setDateRange({ ...dateRange, end: newEnd });
+            }}
+            className={`w-full px-3 py-2.5 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition ${
+              dateRange.end < dateRange.start || 
+              dateRange.end > new Date().toISOString().split('T')[0]
+                ? 'border-red-300 bg-red-50' 
+                : 'border-gray-300'
+            }`}
+          />
+          {(dateRange.end < dateRange.start || 
+            dateRange.end > new Date().toISOString().split('T')[0]) && (
+            <p className="text-xs text-red-600 mt-1">
+              {dateRange.end > new Date().toISOString().split('T')[0]
+                ? "Cannot select future dates"
+                : "End date cannot be before start date"}
+            </p>
           )}
+        </div>
 
-          {/* Search and Action Buttons */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-6">
-            <div className="lg:col-span-2">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
-                  type="text"
-                  placeholder="Search by vehicle number, trip ID, or site..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
-                />
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={handleExportExcel}
-                disabled={exporting || filteredTrips.length === 0}
-                className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-2.5 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                {exporting ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    Exporting...
-                  </>
-                ) : (
-                  <>
-                    <Download className="w-4 h-4" />
-                    Excel
-                  </>
-                )}
-              </button>
-            </div>
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">Site</label>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <select
+              value={filterSite}
+              onChange={(e) => setFilterSite(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition bg-white appearance-none"
+            >
+              <option value="All Sites">All Sites</option>
+              {sites.map((site) => (
+                <option key={site._id} value={site._id}>
+                  {site.name}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none" />
           </div>
         </div>
 
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">Status</label>
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition bg-white"
+          >
+            <option value="All Status">All Status</option>
+            <option value="Active">Active</option>
+            <option value="Completed">Completed</option>
+          </select>
+        </div>
+      </div>
+      
+      {/* Date validation message */}
+      {(dateRange.start > dateRange.end || 
+        dateRange.start > new Date().toISOString().split('T')[0] || 
+        dateRange.end > new Date().toISOString().split('T')[0]) && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+          <div className="flex items-start gap-2">
+            <AlertCircle className="w-4 h-4 text-yellow-600 flex-shrink-0 mt-0.5" />
+            <div className="text-sm text-yellow-800">
+              <p className="font-medium">Please fix the following date issues:</p>
+              <ul className="list-disc pl-4 mt-1 space-y-1">
+                {dateRange.start > dateRange.end && (
+                  <li>End date cannot be earlier than start date</li>
+                )}
+                {dateRange.start > new Date().toISOString().split('T')[0] && (
+                  <li>Start date cannot be in the future</li>
+                )}
+                {dateRange.end > new Date().toISOString().split('T')[0] && (
+                  <li>End date cannot be in the future</li>
+                )}
+              </ul>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Quick date range buttons */}
+      <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-gray-100">
+        <span className="text-sm text-gray-700 font-medium">Quick Select:</span>
+        <button
+          type="button"
+          onClick={() => {
+            const today = new Date().toISOString().split('T')[0];
+            setDateRange({ start: today, end: today });
+          }}
+          className="px-3 py-1.5 text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg transition border border-blue-200"
+        >
+          Today
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            const end = new Date().toISOString().split('T')[0];
+            const start = new Date();
+            start.setDate(start.getDate() - 7);
+            setDateRange({ 
+              start: start.toISOString().split('T')[0], 
+              end 
+            });
+          }}
+          className="px-3 py-1.5 text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg transition border border-blue-200"
+        >
+          Last 7 Days
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            const end = new Date().toISOString().split('T')[0];
+            const start = new Date();
+            start.setDate(start.getDate() - 30);
+            setDateRange({ 
+              start: start.toISOString().split('T')[0], 
+              end 
+            });
+          }}
+          className="px-3 py-1.5 text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg transition border border-blue-200"
+        >
+          Last 30 Days
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            const end = new Date().toISOString().split('T')[0];
+            const start = new Date();
+            start.setMonth(start.getMonth() - 1);
+            setDateRange({ 
+              start: start.toISOString().split('T')[0], 
+              end 
+            });
+          }}
+          className="px-3 py-1.5 text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg transition border border-blue-200"
+        >
+          Last Month
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            const end = new Date().toISOString().split('T')[0];
+            const start = new Date(new Date().getFullYear(), 0, 1);
+            setDateRange({ 
+              start: start.toISOString().split('T')[0], 
+              end 
+            });
+          }}
+          className="px-3 py-1.5 text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg transition border border-blue-200"
+        >
+          This Year
+        </button>
+      </div>
+    </div>
+  )}
+
+  {/* Search and Action Buttons */}
+  <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-6">
+    <div className="lg:col-span-2">
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+        <input
+          type="text"
+          placeholder="Search by vehicle number, trip ID, site name, or driver..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full pl-10 pr-4 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+        />
+      </div>
+    </div>
+    <div className="flex gap-2">
+      <button
+        onClick={handleExportExcel}
+        disabled={exporting || filteredTrips.length === 0}
+        className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-2.5 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+      >
+        {exporting ? (
+          <>
+            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+            Exporting...
+          </>
+        ) : (
+          <>
+            <Download className="w-4 h-4" />
+            Excel
+          </>
+        )}
+      </button>
+      <button
+        onClick={handleRefresh}
+        disabled={loading}
+        className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+      >
+        <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+        Refresh
+      </button>
+    </div>
+  </div>
+</div>
         {/* Results Summary */}
         <div className="flex items-center justify-between mb-6">
           <div>
