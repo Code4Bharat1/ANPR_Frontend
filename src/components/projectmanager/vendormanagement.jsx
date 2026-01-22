@@ -244,11 +244,12 @@ const VendorManagement = () => {
     vendor.email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const stats = {
-    total: vendors.length,
-    active: vendors.filter(v => v.isActive).length,
-    trips: vendors.reduce((sum, v) => sum + (v.totalTrips || 0), 0)
-  };
+ const stats = {
+  total: vendors.length,
+  active: vendors.filter(v => v.isActive).length,
+  inactive: vendors.filter(v => !v.isActive).length,
+  trips: vendors.reduce((sum, v) => sum + (v.totalTrips || 0), 0),
+};
 
   if (loading) {
     return (
@@ -282,7 +283,7 @@ const VendorManagement = () => {
       <main className="lg:ml-72 max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
           <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
             <div className="text-sm text-gray-600 mb-1">Total Vendors</div>
             <div className="text-3xl font-bold text-gray-900">{stats.total}</div>
@@ -290,6 +291,10 @@ const VendorManagement = () => {
           <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
             <div className="text-sm text-gray-600 mb-1">Active Vendors</div>
             <div className="text-3xl font-bold text-green-600">{stats.active}</div>
+          </div>
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+            <div className="text-sm text-gray-600 mb-1">Inactive Vendors</div>
+            <div className="text-3xl font-bold text-green-600">{stats.inactive}</div>
           </div>
           <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 sm:col-span-2 lg:col-span-1">
             <div className="text-sm text-gray-600 mb-1">Total Trips</div>

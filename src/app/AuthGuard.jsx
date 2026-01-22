@@ -10,23 +10,19 @@ export default function AuthGuard({ children }) {
 
   useEffect(() => {
     setIsClient(true);
-    
-    // Sirf client side pe hi check kare
+
     if (typeof window !== "undefined") {
       const accessToken = localStorage.getItem("accessToken");
-      const isPublicPath = ["/login", "/register", "/forgot-password"].includes(pathname);
+      const publicPaths = ["/login"];
 
-      if (!accessToken && !isPublicPath) {
+      // ❌ No token & protected route → login
+      if (!accessToken && !publicPaths.includes(pathname)) {
         router.replace("/login");
-      }
-      
-      if (accessToken && pathname === "/login") {
-        router.replace("/admin/dashboard");
       }
     }
   }, [router, pathname]);
 
-  // Server-side rendering ke liye kuch nahi dikhaye
+  // Prevent hydration mismatch
   if (!isClient) {
     return (
       <div className="flex min-h-screen items-center justify-center">

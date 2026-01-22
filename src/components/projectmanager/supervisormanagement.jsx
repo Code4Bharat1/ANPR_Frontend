@@ -35,10 +35,6 @@ const validatePhone = (phone) => {
   return phoneRegex.test(phone);
 };
 
-const validatePassword = (password) => {
-  return password.length >= 6;
-};
-
 const validateEmail = (email) => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(email);
@@ -55,8 +51,6 @@ const SupervisorManagement = () => {
   const [showAdd, setShowAdd] = useState(false);
   const [showView, setShowView] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [showEditPassword, setShowEditPassword] = useState(false);
   const [selectedSupervisor, setSelectedSupervisor] = useState(null);
   const [currentProjectManager, setCurrentProjectManager] = useState(null);
   const [loadingCurrentPM, setLoadingCurrentPM] = useState(false);
@@ -69,7 +63,6 @@ const SupervisorManagement = () => {
     email: '',
     mobile: '',
     address: '',
-    password: '',
     siteId: '',
     projectManagerId: '',
   });
@@ -82,7 +75,6 @@ const SupervisorManagement = () => {
 
   // Show toast notification
   const showToast = (message, type = 'success') => {
-    // You can replace this with react-hot-toast or any toast library
     if (type === 'error') {
       alert(`❌ ${message}`);
     } else {
@@ -94,21 +86,8 @@ const SupervisorManagement = () => {
   const fetchCurrentProjectManager = async () => {
     try {
       setLoadingCurrentPM(true);
-      // console.log('Fetching PM profile...');
-
       const response = await api.get('/api/project/profile');
-      // console.log('Full API Response:', response.data);
-
-      // Store the response as-is
       setCurrentProjectManager(response.data);
-
-      // The PM data might be in response.data.data or response.data
-      const pmData = response.data.data || response.data;
-      // console.log('PM Data for display:', pmData);
-
-      // IMPORTANT: We might not get _id from this endpoint
-      // So we need to get it from elsewhere or the backend will handle it
-
       return response.data;
     } catch (err) {
       console.error('Error fetching current project manager:', err);
@@ -124,7 +103,6 @@ const SupervisorManagement = () => {
     try {
       setLoading(true);
       const response = await api.get('/api/project/supervisors');
-      // console.log("res : ", response);
       let supervisorsData = response.data.supervisors || response.data.data || response.data || [];
 
       if (!Array.isArray(supervisorsData)) {
@@ -132,13 +110,10 @@ const SupervisorManagement = () => {
       }
 
       setSupervisors(supervisorsData);
-      // console.log('Fetched supervisors:', supervisorsData);
     } catch (err) {
       console.error('Error fetching supervisors:', err);
 
-      // Retry logic for network errors
       if (retryCount < 2 && (!err.response || err.code === 'ECONNABORTED')) {
-        // console.log(`Retrying fetchSupervisors (attempt ${retryCount + 1})`);
         setTimeout(() => fetchSupervisors(retryCount + 1), 1000);
         return;
       }
@@ -154,8 +129,6 @@ const SupervisorManagement = () => {
   const fetchSites = async () => {
     try {
       setLoadingSites(true);
-
-      // Race condition prevention
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 15000);
 
@@ -164,7 +137,6 @@ const SupervisorManagement = () => {
       });
 
       clearTimeout(timeoutId);
-
       let sitesData = response.data.data || response.data || [];
 
       if (!Array.isArray(sitesData)) {
@@ -181,8 +153,6 @@ const SupervisorManagement = () => {
         showToast('Site loading timed out. Please try again.', 'error');
       } else if (err.response?.status === 401) {
         showToast('Session expired. Please login again.', 'error');
-        // Optional: redirect to login
-        // window.location.href = '/login';
       } else {
         showToast(err.response?.data?.message || 'Failed to fetch your assigned sites', 'error');
       }
@@ -205,12 +175,6 @@ const SupervisorManagement = () => {
       errors.email = 'Email is required';
     } else if (!validateEmail(formData.email)) {
       errors.email = 'Please enter a valid email address';
-    }
-
-    if (!isEdit && !formData.password) {
-      errors.password = 'Password is required';
-    } else if (formData.password && !validatePassword(formData.password)) {
-      errors.password = 'Password must be at least 6 characters';
     }
 
     if (!formData.siteId) {
@@ -237,7 +201,6 @@ const SupervisorManagement = () => {
       email: '',
       mobile: '',
       address: '',
-      password: '',
       siteId: '',
       projectManagerId: currentProjectManager?._id || '',
     });
@@ -249,8 +212,8 @@ const SupervisorManagement = () => {
 
   const handleCreateSupervisor = async () => {
     try {
-      // console.log('=== Starting supervisor creation ===');
-
+      setIsCreating(true);
+      
       // Validation
       if (!formData.name?.trim()) {
         alert('Please enter supervisor name');
@@ -264,31 +227,21 @@ const SupervisorManagement = () => {
         alert('Please enter a valid email address');
         return;
       }
-      if (!formData.password) {
-        alert('Please enter password');
-        return;
-      }
       if (!formData.siteId) {
         alert('Please select a site');
         return;
       }
 
-      // Prepare payload WITHOUT projectManagerId
+      // Prepare payload
       const payload = {
         name: formData.name.trim(),
         email: formData.email.trim().toLowerCase(),
         mobile: formData.mobile || '',
         address: formData.address || '',
-        password: formData.password,
         siteId: formData.siteId
-        // NO projectManagerId here - backend uses req.user.id
       };
 
-      // console.log('Sending payload:', payload);
-
       const response = await api.post('/api/project/supervisors', payload);
-
-      // console.log('Success! Response:', response.data);
       alert('Supervisor created successfully!');
 
       // Close modal and reset
@@ -298,9 +251,8 @@ const SupervisorManagement = () => {
         email: '',
         mobile: '',
         address: '',
-        password: '',
         siteId: '',
-        projectManagerId: '', // Not needed
+        projectManagerId: '',
       });
 
       // Refresh the list
@@ -319,8 +271,11 @@ const SupervisorManagement = () => {
       }
 
       alert(`Error: ${errorMessage}`);
+    } finally {
+      setIsCreating(false);
     }
   };
+
   // Update supervisor
   const handleUpdateSupervisor = async () => {
     if (!selectedSupervisor?._id) {
@@ -344,17 +299,6 @@ const SupervisorManagement = () => {
         siteId: formData.siteId,
       };
 
-      // Only include password if provided
-      if (formData.password && formData.password.trim() !== '') {
-        if (!validatePassword(formData.password)) {
-          showToast('Password must be at least 6 characters', 'error');
-          setIsUpdating(false);
-          return;
-        }
-        payload.password = formData.password;
-      }
-
-      // console.log('Updating supervisor:', payload);
       await api.put(`/api/project/supervisors/${selectedSupervisor._id}`, payload);
 
       // Success
@@ -365,14 +309,12 @@ const SupervisorManagement = () => {
         email: '',
         mobile: '',
         address: '',
-        password: '',
         siteId: '',
         projectManagerId: currentProjectManager?._id || '',
       });
       setValidationErrors({});
 
       await fetchSupervisors();
-
       showToast('Supervisor updated successfully!');
 
     } catch (err) {
@@ -404,7 +346,6 @@ const SupervisorManagement = () => {
 
     try {
       await api.patch(`/api/project/supervisors/${supervisorId}/enable-disable`);
-
       showToast(`Supervisor ${currentStatus ? 'disabled' : 'enabled'} successfully!`);
       await fetchSupervisors();
 
@@ -504,7 +445,6 @@ const SupervisorManagement = () => {
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Name</th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Assigned Site</th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
-                  {/* <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Today's Trips</th> */}
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
@@ -531,9 +471,6 @@ const SupervisorManagement = () => {
                         {supervisor.isActive ? 'Active' : 'Inactive'}
                       </span>
                     </td>
-                    {/* <td className="px-6 py-4 text-sm text-gray-900 font-semibold">
-                      {supervisor.todayTrips || 0}
-                    </td> */}
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
                         <button
@@ -554,7 +491,6 @@ const SupervisorManagement = () => {
                               email: supervisor.email || '',
                               mobile: supervisor.mobile || '',
                               address: supervisor.address || '',
-                              password: '',
                               siteId: supervisor.siteId?._id || supervisor.siteId || '',
                               projectManagerId: supervisor.projectManagerId?._id || supervisor.projectManagerId || '',
                             });
@@ -619,10 +555,6 @@ const SupervisorManagement = () => {
                   <Building2 className="w-4 h-4 inline mr-1" />
                   {supervisor.siteId?.name || '-'}
                 </div>
-                <div className="text-sm text-gray-600">
-                  <Clock className="w-4 h-4 inline mr-1" />
-                  Today's Trips: <span className="font-semibold">{supervisor.todayTrips || 0}</span>
-                </div>
               </div>
 
               <div className="flex gap-2">
@@ -644,7 +576,6 @@ const SupervisorManagement = () => {
                       email: supervisor.email || '',
                       mobile: supervisor.mobile || '',
                       address: supervisor.address || '',
-                      password: '',
                       siteId: supervisor.siteId?._id || supervisor.siteId || '',
                       projectManagerId: supervisor.projectManagerId?._id || supervisor.projectManagerId || '',
                     });
@@ -739,13 +670,6 @@ const SupervisorManagement = () => {
                 </p>
               </div>
 
-              <div>
-                <label className="text-sm font-medium text-gray-500">Today's Trips</label>
-                <p className="text-2xl font-bold text-gray-900 mt-1">
-                  {selectedSupervisor.todayTrips || 0}
-                </p>
-              </div>
-
               {selectedSupervisor.projectManagerId && (
                 <div>
                   <label className="text-sm font-medium text-gray-500">Project Manager</label>
@@ -772,432 +696,518 @@ const SupervisorManagement = () => {
       )}
 
       {/* Add Supervisor Modal */}
-      {showAdd && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white flex items-center justify-between p-4 sm:p-6 border-b border-gray-200">
-              <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
-                Add Supervisor
-              </h2>
-              <button
-                onClick={() => setShowAdd(false)}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
+{showAdd && (
+  <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+    <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
+      <div className="sticky top-0 bg-white flex items-center justify-between p-4 sm:p-6 border-b border-gray-200">
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
+          Add Supervisor
+        </h2>
+        <button
+          onClick={() => setShowAdd(false)}
+          className="text-gray-400 hover:text-gray-600 transition-colors"
+        >
+          <X className="w-6 h-6" />
+        </button>
+      </div>
 
-            <div className="p-4 sm:p-6 space-y-4">
-              {/* Name Field */}
-              <div>
-                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                  <User className="w-4 h-4" />
-                  Full Name <span className="text-red-500">*</span>
-                </label>
-                <input
-                  placeholder="Enter supervisor name"
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className={`w-full px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent border ${validationErrors.name ? 'border-red-300 bg-red-50' : 'border-gray-300'}`}
-                />
-                {validationErrors.name && (
-                  <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-                    <AlertCircle className="w-3 h-3" />
-                    {validationErrors.name}
-                  </p>
-                )}
-              </div>
-
-              {/* Email Field */}
-              <div>
-                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                  <Mail className="w-4 h-4" />
-                  Email Address <span className="text-red-500">*</span>
-                </label>
-                <input
-                  placeholder="supervisor@example.com"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className={`w-full px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent border ${validationErrors.email ? 'border-red-300 bg-red-50' : 'border-gray-300'}`}
-                />
-                {validationErrors.email && (
-                  <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-                    <AlertCircle className="w-3 h-3" />
-                    {validationErrors.email}
-                  </p>
-                )}
-              </div>
-
-              {/* Phone Field */}
-              <div>
-                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                  <Phone className="w-4 h-4" />
-                  Phone Number
-                </label>
-                <input
-                  placeholder="9876543210"
-                  type="tel"
-                  value={formData.mobile}
-                  onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
-                  className={`w-full px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent border ${validationErrors.mobile ? 'border-red-300 bg-red-50' : 'border-gray-300'}`}
-                />
-                {validationErrors.mobile && (
-                  <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-                    <AlertCircle className="w-3 h-3" />
-                    {validationErrors.mobile}
-                  </p>
-                )}
-                <p className="text-xs text-gray-400 mt-1">Enter 10-digit number (optional)</p>
-              </div>
-
-              {/* Address Field */}
-              <div>
-                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                  <MapPin className="w-4 h-4" />
-                  Address
-                </label>
-                <textarea
-                  placeholder="Enter full address"
-                  value={formData.address}
-                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                  rows={3}
-                  className="w-full border border-gray-300 px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                />
-              </div>
-
-              {/* Password Field */}
-              <div>
-                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                  <Lock className="w-4 h-4" />
-                  Password <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <input
-                    placeholder="Enter password (min. 6 characters)"
-                    type={showPassword ? "text" : "password"}
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    className={`w-full px-4 py-2.5 pr-12 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent border ${validationErrors.password ? 'border-red-300 bg-red-50' : 'border-gray-300'}`}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                  >
-                    <Eye className="w-5 h-5" />
-                  </button>
-                </div>
-                {validationErrors.password && (
-                  <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-                    <AlertCircle className="w-3 h-3" />
-                    {validationErrors.password}
-                  </p>
-                )}
-              </div>
-
-              {/* Project Manager Info */}
-              <div>
-                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                  <UserCheck className="w-4 h-4" />
-                  Your Profile (Project Manager)
-                </label>
-                {loadingCurrentPM ? (
-                  <div className="w-full border border-gray-300 px-4 py-3 rounded-lg bg-gray-50 flex items-center justify-center">
-                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                    <span className="text-sm text-gray-600">Loading your profile...</span>
-                  </div>
-                ) : currentProjectManager ? (
-                  <div className="w-full border border-gray-300 bg-blue-50 px-4 py-3 rounded-lg">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="font-semibold text-blue-700">{currentProjectManager.name}</div>
-                        <div className="text-sm text-blue-600">{currentProjectManager.email}</div>
-                      </div>
-                      <Check className="w-5 h-5 text-green-500" />
-                    </div>
-                    <div className="text-xs text-blue-500 mt-1">
-                      You are creating a supervisor under your management
-                    </div>
-                  </div>
-                ) : (
-                  <div className="w-full border border-gray-300 px-4 py-3 rounded-lg bg-yellow-50 text-yellow-700 text-sm">
-                    Unable to load your profile. Supervisor will be created under your account.
-                  </div>
-                )}
-              </div>
-
-              {/* Site Selection */}
-              <div>
-                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                  <Building2 className="w-4 h-4" />
-                  Assigned Site <span className="text-red-500">*</span>
-                </label>
-                {loadingSites ? (
-                  <div className="w-full border border-gray-300 px-4 py-3 rounded-lg bg-gray-50 flex items-center justify-center">
-                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                    <span className="text-sm text-gray-600">Loading sites...</span>
-                  </div>
-                ) : sites.length === 0 ? (
-                  <div className="border border-gray-300 rounded-lg p-4 text-center">
-                    <Building2 className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                    <p className="text-sm text-gray-500 mb-1">No sites assigned to you</p>
-                    <p className="text-xs text-gray-400">Contact admin to get sites assigned</p>
-                  </div>
-                ) : (
-                  <>
-                    <select
-                      value={formData.siteId}
-                      onChange={(e) => setFormData({ ...formData, siteId: e.target.value })}
-                      className={`w-full px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent border ${validationErrors.siteId ? 'border-red-300 bg-red-50' : 'border-gray-300'}`}
-                    >
-                      <option value="">Select Site</option>
-                      {sites.map((site) => (
-                        <option key={site._id || site.id} value={site._id || site.id}>
-                          {site.name || site.siteName}
-                        </option>
-                      ))}
-                    </select>
-                    {validationErrors.siteId && (
-                      <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-                        <AlertCircle className="w-3 h-3" />
-                        {validationErrors.siteId}
-                      </p>
-                    )}
-                  </>
-                )}
-              </div>
-            </div>
-
-            <div className="sticky bottom-0 bg-gray-50 flex flex-col sm:flex-row justify-end gap-3 p-4 sm:p-6 border-t border-gray-200">
-              <button
-                onClick={() => setShowAdd(false)}
-                className="w-full sm:w-auto px-6 py-2.5 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-100 transition-colors disabled:bg-gray-100 disabled:cursor-not-allowed"
-                disabled={isCreating}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleCreateSupervisor}
-                disabled={
-                  !formData.name?.trim() ||
-                  !formData.email?.trim() ||
-                  !formData.password ||
-                  !formData.siteId
-                  // REMOVED: !formData.projectManagerId
-                }
-                className="w-full sm:w-auto px-6 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200 disabled:bg-gray-300 disabled:cursor-not-allowed disabled:shadow-none"
-              >
-                Create Supervisor
-              </button> 
-            </div>
-          </div>
+      <div className="p-4 sm:p-6 space-y-4">
+        {/* Name Field */}
+        <div>
+          <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+            <User className="w-4 h-4" />
+            Full Name <span className="text-red-500">*</span>
+          </label>
+          <input
+            placeholder="Enter supervisor name"
+            type="text"
+            value={formData.name}
+            onChange={(e) => {
+              setFormData({ ...formData, name: e.target.value });
+              // Clear validation error when user starts typing
+              if (validationErrors.name) {
+                setValidationErrors({ ...validationErrors, name: '' });
+              }
+            }}
+            className={`w-full px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent border ${validationErrors.name ? 'border-red-300 bg-red-50' : 'border-gray-300'}`}
+          />
+          {validationErrors.name && (
+            <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+              <AlertCircle className="w-3 h-3" />
+              {validationErrors.name}
+            </p>
+          )}
         </div>
-      )}
 
-      {/* Edit Supervisor Modal */}
-      {showEdit && selectedSupervisor && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white flex items-center justify-between p-4 sm:p-6 border-b border-gray-200">
-              <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
-                Edit Supervisor
-              </h2>
-              <button
-                onClick={() => {
-                  setShowEdit(false);
-                  setSelectedSupervisor(null);
-                  setValidationErrors({});
-                }}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-
-            <div className="p-4 sm:p-6 space-y-4">
-              <div>
-                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                  <User className="w-4 h-4" />
-                  Full Name <span className="text-red-500">*</span>
-                </label>
-                <input
-                  placeholder="John Doe"
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className={`w-full px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent border ${validationErrors.name ? 'border-red-300 bg-red-50' : 'border-gray-300'}`}
-                />
-                {validationErrors.name && (
-                  <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-                    <AlertCircle className="w-3 h-3" />
-                    {validationErrors.name}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                  <Mail className="w-4 h-4" />
-                  Email Address <span className="text-red-500">*</span>
-                </label>
-                <input
-                  placeholder="john@example.com"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className={`w-full px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent border ${validationErrors.email ? 'border-red-300 bg-red-50' : 'border-gray-300'}`}
-                />
-                {validationErrors.email && (
-                  <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-                    <AlertCircle className="w-3 h-3" />
-                    {validationErrors.email}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                  <Phone className="w-4 h-4" />
-                  Phone Number
-                </label>
-                <input
-                  placeholder="9876543210"
-                  type="tel"
-                  value={formData.mobile}
-                  onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
-                  className={`w-full px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent border ${validationErrors.mobile ? 'border-red-300 bg-red-50' : 'border-gray-300'}`}
-                />
-                {validationErrors.mobile && (
-                  <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-                    <AlertCircle className="w-3 h-3" />
-                    {validationErrors.mobile}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                  <MapPin className="w-4 h-4" />
-                  Address
-                </label>
-                <textarea
-                  placeholder="Enter full address"
-                  value={formData.address}
-                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                  rows={3}
-                  className="w-full border border-gray-300 px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                />
-              </div>
-
-              {/* Password Field */}
-              <div>
-                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                  <Lock className="w-4 h-4" />
-                  Password (Leave blank to keep current)
-                </label>
-                <div className="relative">
-                  <input
-                    placeholder="Enter new password (min. 6 characters)"
-                    type={showEditPassword ? "text" : "password"}
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    className={`w-full px-4 py-2.5 pr-12 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent border ${validationErrors.password ? 'border-red-300 bg-red-50' : 'border-gray-300'}`}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowEditPassword(!showEditPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                  >
-                    <Eye className="w-5 h-5" />
-                  </button>
-                </div>
-                {validationErrors.password && (
-                  <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-                    <AlertCircle className="w-3 h-3" />
-                    {validationErrors.password}
-                  </p>
-                )}
-                <p className="text-xs text-gray-400 mt-1">Leave blank to keep current password</p>
-              </div>
-
-              {/* Site Selection */}
-              <div>
-                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                  <Building2 className="w-4 h-4" />
-                  Assigned Site <span className="text-red-500">*</span>
-                </label>
-                {loadingSites ? (
-                  <div className="w-full border border-gray-300 px-4 py-3 rounded-lg bg-gray-50 flex items-center justify-center">
-                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                    <span className="text-sm text-gray-600">Loading sites...</span>
-                  </div>
-                ) : sites.length === 0 ? (
-                  <div className="border border-gray-300 rounded-lg p-4 text-center text-sm text-gray-500">
-                    No sites available
-                  </div>
-                ) : (
-                  <>
-                    <select
-                      value={formData.siteId}
-                      onChange={(e) => setFormData({ ...formData, siteId: e.target.value })}
-                      className={`w-full px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent border ${validationErrors.siteId ? 'border-red-300 bg-red-50' : 'border-gray-300'}`}
-                    >
-                      <option value="">Select Site</option>
-                      {sites.map((site) => (
-                        <option key={site._id || site.id} value={site._id || site.id}>
-                          {site.name || site.siteName}
-                        </option>
-                      ))}
-                    </select>
-                    {validationErrors.siteId && (
-                      <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-                        <AlertCircle className="w-3 h-3" />
-                        {validationErrors.siteId}
-                      </p>
-                    )}
-                  </>
-                )}
-              </div>
-            </div>
-
-            <div className="sticky bottom-0 bg-gray-50 flex flex-col sm:flex-row justify-end gap-3 p-4 sm:p-6 border-t border-gray-200">
-              <button
-                onClick={() => {
-                  setShowEdit(false);
-                  setSelectedSupervisor(null);
-                  setValidationErrors({});
-                }}
-                className="w-full sm:w-auto px-6 py-2.5 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-100 transition-colors disabled:bg-gray-100 disabled:cursor-not-allowed"
-                disabled={isUpdating}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleUpdateSupervisor}
-                disabled={
-                  !formData.name ||
-                  !formData.email ||
-                  !formData.siteId ||
-                  isUpdating ||
-                  Object.keys(validationErrors).length > 0
-                }
-                className="w-full sm:w-auto px-6 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200 disabled:bg-gray-300 disabled:cursor-not-allowed disabled:shadow-none flex items-center justify-center gap-2"
-              >
-                {isUpdating ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Updating...
-                  </>
-                ) : (
-                  'Update Supervisor'
-                )}
-              </button>
-            </div>
-          </div>
+        {/* Email Field */}
+        <div>
+          <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+            <Mail className="w-4 h-4" />
+            Email Address <span className="text-red-500">*</span>
+          </label>
+          <input
+            placeholder="supervisor@example.com"
+            type="email"
+            value={formData.email}
+            onChange={(e) => {
+              setFormData({ ...formData, email: e.target.value });
+              if (validationErrors.email) {
+                setValidationErrors({ ...validationErrors, email: '' });
+              }
+            }}
+            className={`w-full px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent border ${validationErrors.email ? 'border-red-300 bg-red-50' : 'border-gray-300'}`}
+          />
+          {validationErrors.email && (
+            <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+              <AlertCircle className="w-3 h-3" />
+              {validationErrors.email}
+            </p>
+          )}
         </div>
-      )}
+
+        {/* Phone Field */}
+        <div>
+          <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+            <Phone className="w-4 h-4" />
+            Phone Number <span className="text-gray-400 text-xs">(optional)</span>
+          </label>
+          <input
+            placeholder="9876543210"
+            type="tel"
+            value={formData.mobile}
+            onChange={(e) => {
+              // Allow only numbers
+              const value = e.target.value.replace(/\D/g, '');
+              // Limit to 10 digits
+              const limitedValue = value.slice(0, 10);
+              setFormData({ ...formData, mobile: limitedValue });
+              
+              // Clear validation error when user starts typing
+              if (validationErrors.mobile) {
+                setValidationErrors({ ...validationErrors, mobile: '' });
+              }
+            }}
+            onBlur={() => {
+              // Validate on blur
+              if (formData.mobile && !validatePhone(formData.mobile)) {
+                setValidationErrors({
+                  ...validationErrors,
+                  mobile: 'Please enter a valid 10-digit phone number'
+                });
+              }
+            }}
+            className={`w-full px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent border ${validationErrors.mobile ? 'border-red-300 bg-red-50' : 'border-gray-300'}`}
+          />
+          {validationErrors.mobile ? (
+            <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+              <AlertCircle className="w-3 h-3" />
+              {validationErrors.mobile}
+            </p>
+          ) : (
+            <p className="text-xs text-gray-400 mt-1">
+              {formData.mobile ? `${formData.mobile.length}/10 digits` : 'Enter 10-digit number (optional)'}
+            </p>
+          )}
+        </div>
+
+        {/* Address Field */}
+        <div>
+          <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+            <MapPin className="w-4 h-4" />
+            Address
+          </label>
+          <textarea
+            placeholder="Enter full address"
+            value={formData.address}
+            onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+            rows={3}
+            className="w-full border border-gray-300 px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+          />
+        </div>
+
+        {/* Project Manager Info */}
+        <div>
+          <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+            <UserCheck className="w-4 h-4" />
+            Your Profile (Project Manager)
+          </label>
+          {loadingCurrentPM ? (
+            <div className="w-full border border-gray-300 px-4 py-3 rounded-lg bg-gray-50 flex items-center justify-center">
+              <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              <span className="text-sm text-gray-600">Loading your profile...</span>
+            </div>
+          ) : currentProjectManager ? (
+            <div className="w-full border border-gray-300 bg-blue-50 px-4 py-3 rounded-lg">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="font-semibold text-blue-700">{currentProjectManager.name}</div>
+                  <div className="text-sm text-blue-600">{currentProjectManager.email}</div>
+                </div>
+                <Check className="w-5 h-5 text-green-500" />
+              </div>
+              <div className="text-xs text-blue-500 mt-1">
+                You are creating a supervisor under your management
+              </div>
+            </div>
+          ) : (
+            <div className="w-full border border-gray-300 px-4 py-3 rounded-lg bg-yellow-50 text-yellow-700 text-sm">
+              Unable to load your profile. Supervisor will be created under your account.
+            </div>
+          )}
+        </div>
+
+        {/* Site Selection */}
+        <div>
+          <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+            <Building2 className="w-4 h-4" />
+            Assigned Site <span className="text-red-500">*</span>
+          </label>
+          {loadingSites ? (
+            <div className="w-full border border-gray-300 px-4 py-3 rounded-lg bg-gray-50 flex items-center justify-center">
+              <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              <span className="text-sm text-gray-600">Loading sites...</span>
+            </div>
+          ) : sites.length === 0 ? (
+            <div className="border border-gray-300 rounded-lg p-4 text-center">
+              <Building2 className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+              <p className="text-sm text-gray-500 mb-1">No sites assigned to you</p>
+              <p className="text-xs text-gray-400">Contact admin to get sites assigned</p>
+            </div>
+          ) : (
+            <>
+              <select
+                value={formData.siteId}
+                onChange={(e) => {
+                  setFormData({ ...formData, siteId: e.target.value });
+                  if (validationErrors.siteId) {
+                    setValidationErrors({ ...validationErrors, siteId: '' });
+                  }
+                }}
+                className={`w-full px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent border ${validationErrors.siteId ? 'border-red-300 bg-red-50' : 'border-gray-300'}`}
+              >
+                <option value="">Select Site</option>
+                {sites.map((site) => (
+                  <option key={site._id || site.id} value={site._id || site.id}>
+                    {site.name || site.siteName}
+                  </option>
+                ))}
+              </select>
+              {validationErrors.siteId && (
+                <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3" />
+                  {validationErrors.siteId}
+                </p>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+
+      <div className="sticky bottom-0 bg-gray-50 flex flex-col sm:flex-row justify-end gap-3 p-4 sm:p-6 border-t border-gray-200">
+        <button
+          onClick={() => setShowAdd(false)}
+          className="w-full sm:w-auto px-6 py-2.5 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-100 transition-colors disabled:bg-gray-100 disabled:cursor-not-allowed"
+          disabled={isCreating}
+        >
+          Cancel
+        </button>
+        <button
+          onClick={() => {
+            // Validate before submitting
+            const errors = {};
+            
+            if (!formData.name?.trim()) {
+              errors.name = 'Name is required';
+            }
+            
+            if (!formData.email?.trim()) {
+              errors.email = 'Email is required';
+            } else if (!validateEmail(formData.email)) {
+              errors.email = 'Please enter a valid email address';
+            }
+            
+            if (formData.mobile && !validatePhone(formData.mobile)) {
+              errors.mobile = 'Please enter a valid 10-digit phone number';
+            }
+            
+            if (!formData.siteId) {
+              errors.siteId = 'Please select a site';
+            }
+            
+            setValidationErrors(errors);
+            
+            // If no errors, proceed
+            if (Object.keys(errors).length === 0) {
+              handleCreateSupervisor();
+            } else {
+              // Scroll to first error
+              const firstErrorField = document.querySelector('[class*="border-red-300"]');
+              if (firstErrorField) {
+                firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }
+            }
+          }}
+          disabled={isCreating}
+          className="w-full sm:w-auto px-6 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200 disabled:bg-gray-300 disabled:cursor-not-allowed disabled:shadow-none flex items-center justify-center gap-2"
+        >
+          {isCreating ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Creating...
+            </>
+          ) : (
+            'Create Supervisor'
+          )}
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+     {/* Edit Supervisor Modal */}
+{showEdit && selectedSupervisor && (
+  <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+    <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
+      <div className="sticky top-0 bg-white flex items-center justify-between p-4 sm:p-6 border-b border-gray-200">
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
+          Edit Supervisor
+        </h2>
+        <button
+          onClick={() => {
+            setShowEdit(false);
+            setSelectedSupervisor(null);
+            setValidationErrors({});
+          }}
+          className="text-gray-400 hover:text-gray-600 transition-colors"
+        >
+          <X className="w-6 h-6" />
+        </button>
+      </div>
+
+      <div className="p-4 sm:p-6 space-y-4">
+        <div>
+          <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+            <User className="w-4 h-4" />
+            Full Name <span className="text-red-500">*</span>
+          </label>
+          <input
+            placeholder="John Doe"
+            type="text"
+            value={formData.name}
+            onChange={(e) => {
+              setFormData({ ...formData, name: e.target.value });
+              if (validationErrors.name) {
+                setValidationErrors({ ...validationErrors, name: '' });
+              }
+            }}
+            className={`w-full px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent border ${validationErrors.name ? 'border-red-300 bg-red-50' : 'border-gray-300'}`}
+          />
+          {validationErrors.name && (
+            <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+              <AlertCircle className="w-3 h-3" />
+              {validationErrors.name}
+            </p>
+          )}
+        </div>
+
+        <div>
+          <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+            <Mail className="w-4 h-4" />
+            Email Address <span className="text-red-500">*</span>
+          </label>
+          <input
+            placeholder="john@example.com"
+            type="email"
+            value={formData.email}
+            onChange={(e) => {
+              setFormData({ ...formData, email: e.target.value });
+              if (validationErrors.email) {
+                setValidationErrors({ ...validationErrors, email: '' });
+              }
+            }}
+            className={`w-full px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent border ${validationErrors.email ? 'border-red-300 bg-red-50' : 'border-gray-300'}`}
+          />
+          {validationErrors.email && (
+            <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+              <AlertCircle className="w-3 h-3" />
+              {validationErrors.email}
+            </p>
+          )}
+        </div>
+
+        <div>
+          <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+            <Phone className="w-4 h-4" />
+            Phone Number <span className="text-gray-400 text-xs">(optional)</span>
+          </label>
+          <input
+            placeholder="9876543210"
+            type="tel"
+            value={formData.mobile}
+            onChange={(e) => {
+              // Allow only numbers
+              const value = e.target.value.replace(/\D/g, '');
+              // Limit to 10 digits
+              const limitedValue = value.slice(0, 10);
+              setFormData({ ...formData, mobile: limitedValue });
+              
+              // Clear validation error when user starts typing
+              if (validationErrors.mobile) {
+                setValidationErrors({ ...validationErrors, mobile: '' });
+              }
+            }}
+            onBlur={() => {
+              // Validate on blur only if there's a value
+              if (formData.mobile && formData.mobile.trim() !== '') {
+                if (!validatePhone(formData.mobile)) {
+                  setValidationErrors({
+                    ...validationErrors,
+                    mobile: 'Please enter a valid 10-digit phone number'
+                  });
+                }
+              }
+            }}
+            className={`w-full px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent border ${validationErrors.mobile ? 'border-red-300 bg-red-50' : 'border-gray-300'}`}
+          />
+          {validationErrors.mobile ? (
+            <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+              <AlertCircle className="w-3 h-3" />
+              {validationErrors.mobile}
+            </p>
+          ) : (
+            <p className="text-xs text-gray-400 mt-1">
+              {formData.mobile ? `${formData.mobile.length}/10 digits` : 'Enter 10-digit number (optional)'}
+            </p>
+          )}
+        </div>
+
+        <div>
+          <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+            <MapPin className="w-4 h-4" />
+            Address
+          </label>
+          <textarea
+            placeholder="Enter full address"
+            value={formData.address}
+            onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+            rows={3}
+            className="w-full border border-gray-300 px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+          />
+        </div>
+
+        {/* Site Selection */}
+        <div>
+          <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+            <Building2 className="w-4 h-4" />
+            Assigned Site <span className="text-red-500">*</span>
+          </label>
+          {loadingSites ? (
+            <div className="w-full border border-gray-300 px-4 py-3 rounded-lg bg-gray-50 flex items-center justify-center">
+              <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              <span className="text-sm text-gray-600">Loading sites...</span>
+            </div>
+          ) : sites.length === 0 ? (
+            <div className="border border-gray-300 rounded-lg p-4 text-center text-sm text-gray-500">
+              No sites available
+            </div>
+          ) : (
+            <>
+              <select
+                value={formData.siteId}
+                onChange={(e) => {
+                  setFormData({ ...formData, siteId: e.target.value });
+                  if (validationErrors.siteId) {
+                    setValidationErrors({ ...validationErrors, siteId: '' });
+                  }
+                }}
+                className={`w-full px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent border ${validationErrors.siteId ? 'border-red-300 bg-red-50' : 'border-gray-300'}`}
+              >
+                <option value="">Select Site</option>
+                {sites.map((site) => (
+                  <option key={site._id || site.id} value={site._id || site.id}>
+                    {site.name || site.siteName}
+                  </option>
+                ))}
+              </select>
+              {validationErrors.siteId && (
+                <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3" />
+                  {validationErrors.siteId}
+                </p>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+
+      <div className="sticky bottom-0 bg-gray-50 flex flex-col sm:flex-row justify-end gap-3 p-4 sm:p-6 border-t border-gray-200">
+        <button
+          onClick={() => {
+            setShowEdit(false);
+            setSelectedSupervisor(null);
+            setValidationErrors({});
+          }}
+          className="w-full sm:w-auto px-6 py-2.5 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-100 transition-colors disabled:bg-gray-100 disabled:cursor-not-allowed"
+          disabled={isUpdating}
+        >
+          Cancel
+        </button>
+        <button
+          onClick={() => {
+            // Validate all fields before submitting
+            const errors = {};
+            
+            if (!formData.name?.trim()) {
+              errors.name = 'Name is required';
+            }
+            
+            if (!formData.email?.trim()) {
+              errors.email = 'Email is required';
+            } else if (!validateEmail(formData.email)) {
+              errors.email = 'Please enter a valid email address';
+            }
+            
+            // Phone validation - only if provided
+            if (formData.mobile && formData.mobile.trim() !== '') {
+              if (!validatePhone(formData.mobile)) {
+                errors.mobile = 'Please enter a valid 10-digit phone number';
+              }
+            }
+            
+            if (!formData.siteId) {
+              errors.siteId = 'Please select a site';
+            }
+            
+            setValidationErrors(errors);
+            
+            // If no errors, proceed with update
+            if (Object.keys(errors).length === 0) {
+              handleUpdateSupervisor();
+            } else {
+              // Scroll to first error
+              const firstErrorField = document.querySelector('[class*="border-red-300"]');
+              if (firstErrorField) {
+                firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                firstErrorField.focus();
+              }
+            }
+          }}
+          className="w-full sm:w-auto px-6 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200 disabled:bg-gray-300 disabled:cursor-not-allowed disabled:shadow-none flex items-center justify-center gap-2"
+          disabled={isUpdating}
+        >
+          {isUpdating ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Updating...
+            </>
+          ) : (
+            'Update Supervisor'
+          )}
+        </button>
+      </div>
+    </div>
+  </div>
+)}
     </div>
   );
 };

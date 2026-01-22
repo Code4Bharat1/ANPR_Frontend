@@ -271,13 +271,13 @@ const TripHistory = () => {
                 <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
                 {refreshing ? 'Refreshing...' : 'Refresh'}
               </button>
-              <button
+              {/* <button
                 onClick={() => alert('Export feature coming soon')}
                 className="px-4 py-2.5 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg hover:from-green-600 hover:to-emerald-600 transition font-semibold text-sm flex items-center gap-2"
               >
                 <Download className="w-4 h-4" />
                 Export Report
-              </button>
+              </button> */}
             </div>
           </div>
         </div>

@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Search,
   Download,
@@ -9,9 +9,13 @@ import {
   CheckCircle,
   AlertCircle,
   Clock,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
 } from "lucide-react";
 import Sidebar from "./sidebar";
-import Header from "./header"; // ✅ Import Header
+import Header from "./header";
 import {
   Eye,
   X,
@@ -23,12 +27,15 @@ import {
   LogIn,
   LogOut,
   Timer,
+  Building2,
+  Filter,
 } from "lucide-react";
 import axios from "axios";
 
 const PMReports = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [reports, setReports] = useState([]);
+  const [filteredReports, setFilteredReports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -39,6 +46,16 @@ const PMReports = () => {
       .split("T")[0],
     end: new Date().toISOString().split("T")[0],
   });
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [totalPages, setTotalPages] = useState(1);
+
+  // New state for site filtering
+  const [sites, setSites] = useState([]);
+  const [selectedSite, setSelectedSite] = useState("all");
+  const [loadingSites, setLoadingSites] = useState(false);
 
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedTrip, setSelectedTrip] = useState(null);
@@ -73,6 +90,125 @@ const PMReports = () => {
     },
   ];
 
+  // Create axios instance with base config
+  const axiosInstance = axios.create({
+    baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000",
+    timeout: 30000,
+  });
+
+  // Add request interceptor to include token
+  axiosInstance.interceptors.request.use(
+    (config) => {
+      const token = localStorage.getItem("accessToken");
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+      return config;
+    },
+    (error) => {
+      return Promise.reject(error);
+    }
+  );
+
+  // Add response interceptor for error handling
+  axiosInstance.interceptors.response.use(
+    (response) => response,
+    (error) => {
+      if (error.response?.status === 401) {
+        showAlert("error", "Session expired. Please login again.");
+      }
+      return Promise.reject(error);
+    }
+  );
+
+  useEffect(() => {
+    fetchReports();
+    fetchSites();
+  }, [dateRange]);
+
+  useEffect(() => {
+    applyFilters();
+    setCurrentPage(1); // Reset to first page when filters change
+  }, [searchTerm, selectedSite, reports]);
+
+  // Calculate paginated data
+  const paginatedReports = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredReports.slice(startIndex, endIndex);
+  }, [filteredReports, currentPage, itemsPerPage]);
+
+  // Calculate total pages
+  useEffect(() => {
+    const total = Math.ceil(filteredReports.length / itemsPerPage);
+    setTotalPages(total > 0 ? total : 1);
+    
+    // Adjust current page if it exceeds total pages
+    if (currentPage > total && total > 0) {
+      setCurrentPage(total);
+    }
+  }, [filteredReports, itemsPerPage, currentPage]);
+
+  // Fetch sites using axios
+  const fetchSites = async () => {
+    try {
+      setLoadingSites(true);
+      const response = await axiosInstance.get("/api/project/my-sites");
+      
+      if (response.data) {
+        const sitesData = Array.isArray(response.data.data) 
+          ? response.data.data 
+          : response.data.data?.data || response.data.data || [];
+        setSites(Array.isArray(sitesData) ? sitesData : []);
+      }
+    } catch (err) {
+      console.error("Error fetching sites:", err);
+      showAlert("error", "Failed to fetch sites");
+    } finally {
+      setLoadingSites(false);
+    }
+  };
+
+  // Apply filters
+  const applyFilters = () => {
+    let filtered = [...reports];
+
+    // Apply site filter
+    if (selectedSite !== "all") {
+      filtered = filtered.filter(
+        (report) => report.siteId?._id === selectedSite
+      );
+    }
+
+    // Apply search filter
+    if (searchTerm.trim() !== "") {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(
+        (report) =>
+          report.vehicleId?.vehicleNumber?.toLowerCase().includes(term) ||
+          report.vendorId?.name?.toLowerCase().includes(term) ||
+          report.tripId?.toLowerCase().includes(term) ||
+          report.createdBy?.name?.toLowerCase().includes(term) ||
+          report.siteId?.name?.toLowerCase().includes(term)
+      );
+    }
+
+    setFilteredReports(filtered);
+  };
+
+  // Pagination handlers
+  const goToPage = (page) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+    }
+  };
+
+  const handleItemsPerPageChange = (e) => {
+    const value = parseInt(e.target.value);
+    setItemsPerPage(value);
+    setCurrentPage(1); // Reset to first page when items per page changes
+  };
+
   const toggleSection = (section) => {
     setExpandedSections((prev) => ({
       ...prev,
@@ -86,33 +222,42 @@ const PMReports = () => {
     setMediaLoading(true);
 
     try {
-      const token = localStorage.getItem("accessToken");
-      const API_URL =
-        process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+      // Reset media states
+      setResolvedEntryMedia({ photos: {}, video: null });
+      setResolvedExitMedia({ photos: {}, video: null });
 
       // ENTRY MEDIA
       if (report.entryMedia) {
         const entryPhotos = {};
-        for (const key in report.entryMedia.photos || {}) {
-          const mediaKey = report.entryMedia.photos[key];
-          if (!mediaKey) continue;
+        
+        // Process entry photos
+        const photoPromises = photoFields.map(async (field) => {
+          const mediaKey = report.entryMedia.photos?.[field.key];
+          if (!mediaKey) return null;
 
           try {
-            const res = await axios.get(`${API_URL}/api/uploads/get-file`, {
+            const response = await axiosInstance.get("/api/uploads/get-file", {
               params: { key: mediaKey },
-              headers: { Authorization: `Bearer ${token}` },
             });
-            entryPhotos[key] = res.data.url;
-          } catch { }
-        }
+            entryPhotos[field.key] = response.data.url;
+          } catch (error) {
+            console.error(`Error loading ${field.label} photo:`, error);
+          }
+        });
 
+        await Promise.all(photoPromises);
+
+        // Process entry video
         let entryVideo = null;
         if (report.entryMedia.video) {
-          const res = await axios.get(`${API_URL}/api/uploads/get-file`, {
-            params: { key: report.entryMedia.video },
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          entryVideo = res.data.url;
+          try {
+            const response = await axiosInstance.get("/api/uploads/get-file", {
+              params: { key: report.entryMedia.video },
+            });
+            entryVideo = response.data.url;
+          } catch (error) {
+            console.error("Error loading entry video:", error);
+          }
         }
 
         setResolvedEntryMedia({ photos: entryPhotos, video: entryVideo });
@@ -121,32 +266,42 @@ const PMReports = () => {
       // EXIT MEDIA
       if (report.exitMedia) {
         const exitPhotos = {};
-        for (const key in report.exitMedia.photos || {}) {
-          const mediaKey = report.exitMedia.photos[key];
-          if (!mediaKey) continue;
+        
+        // Process exit photos
+        const exitPhotoPromises = photoFields.map(async (field) => {
+          const mediaKey = report.exitMedia.photos?.[field.key];
+          if (!mediaKey) return null;
 
           try {
-            const res = await axios.get(`${API_URL}/api/uploads/get-file`, {
+            const response = await axiosInstance.get("/api/uploads/get-file", {
               params: { key: mediaKey },
-              headers: { Authorization: `Bearer ${token}` },
             });
-            exitPhotos[key] = res.data.url;
-          } catch { }
-        }
+            exitPhotos[field.key] = response.data.url;
+          } catch (error) {
+            console.error(`Error loading exit ${field.label} photo:`, error);
+          }
+        });
 
+        await Promise.all(exitPhotoPromises);
+
+        // Process exit video
         let exitVideo = null;
         if (report.exitMedia.video) {
-          const res = await axios.get(`${API_URL}/api/uploads/get-file`, {
-            params: { key: report.exitMedia.video },
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          exitVideo = res.data.url;
+          try {
+            const response = await axiosInstance.get("/api/uploads/get-file", {
+              params: { key: report.exitMedia.video },
+            });
+            exitVideo = response.data.url;
+          } catch (error) {
+            console.error("Error loading exit video:", error);
+          }
         }
 
         setResolvedExitMedia({ photos: exitPhotos, video: exitVideo });
       }
     } catch (err) {
       console.error("Media resolve failed:", err);
+      showAlert("error", "Failed to load media");
     } finally {
       setMediaLoading(false);
     }
@@ -187,93 +342,72 @@ const PMReports = () => {
     );
   };
 
-  useEffect(() => {
-    fetchReports();
-  }, [dateRange]);
-
   const showAlert = (type, message) => {
     setAlert({ type, message });
     setTimeout(() => setAlert(null), 4000);
   };
 
+  // Fetch reports using axios
   const fetchReports = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem("accessToken");
-      const API_URL =
-        process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
-
-      const params = new URLSearchParams({
-        startDate: dateRange.start,
-        endDate: dateRange.end,
+      const response = await axiosInstance.get("/api/project/reports/trip", {
+        params: {
+          startDate: dateRange.start,
+          endDate: dateRange.end,
+        },
       });
 
-      const response = await fetch(
-        `${API_URL}/api/project/reports/trip?${params}`,
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-        // console.log(data);
-        setReports(data);
-      } else {
-        showAlert("error", "Failed to fetch reports");
+      if (response.data) {
+        setReports(response.data);
+        setFilteredReports(response.data);
+        setCurrentPage(1); // Reset to first page when new data loads
+        showAlert("success", "Reports loaded successfully");
       }
     } catch (err) {
       console.error("Error fetching reports:", err);
-      showAlert("error", "Network error. Please try again.");
+      showAlert("error", err.response?.data?.message || "Failed to fetch reports");
     } finally {
       setLoading(false);
     }
   };
 
+  // Export reports using axios
   const handleExportExcel = async () => {
     try {
       setExporting(true);
-      const token = localStorage.getItem("accessToken");
-      const API_URL =
-        process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
-
-      const params = new URLSearchParams({
-        startDate: dateRange.start,
-        endDate: dateRange.end,
+      const response = await axiosInstance.get("/api/project/reports/export", {
+        params: {
+          startDate: dateRange.start,
+          endDate: dateRange.end,
+        },
+        responseType: 'blob',
       });
 
-      const response = await fetch(
-        `${API_URL}/api/project/reports/export?${params}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
+      // Create download link
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute(
+        "download",
+        `trip_reports_${dateRange.start}_to_${dateRange.end}.xlsx`
       );
-
-      if (response.ok) {
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.setAttribute(
-          "download",
-          `trip_reports_${dateRange.start}_to_${dateRange.end}.xlsx`,
-        );
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-        window.URL.revokeObjectURL(url);
-        showAlert("success", "Report exported successfully!");
-      } else {
-        showAlert("error", "Failed to export report");
-      }
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      
+      showAlert("success", "Report exported successfully!");
     } catch (err) {
       console.error("Export error:", err);
-      showAlert("error", "Export failed. Please try again.");
+      showAlert("error", err.response?.data?.message || "Export failed. Please try again.");
     } finally {
       setExporting(false);
     }
   };
 
   const calculateDuration = (entryTime, exitTime) => {
-    if (!exitTime) return "-";
+    if (!exitTime || exitTime === "--") return "-";
 
     const diff = new Date(exitTime) - new Date(entryTime);
     const hours = Math.floor(diff / (1000 * 60 * 60));
@@ -283,7 +417,7 @@ const PMReports = () => {
   };
 
   const formatDateTime = (dateString) => {
-    if (!dateString) return "-";
+    if (!dateString || dateString === "--") return "-";
     return new Date(dateString).toLocaleString("en-US", {
       month: "short",
       day: "numeric",
@@ -292,19 +426,11 @@ const PMReports = () => {
     });
   };
 
-  const filteredReports = reports.filter(
-    (report) =>
-      report.vehicleId?.vehicleNumber
-        ?.toLowerCase()
-        .includes(searchTerm.toLowerCase()) ||
-      report.vendorId?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      report.tripId?.toLowerCase().includes(searchTerm.toLowerCase()),
-  );
-
   const stats = {
     total: reports.length,
     completed: reports.filter((r) => r.status === "completed").length,
     active: reports.filter((r) => r.status === "active").length,
+    filtered: filteredReports.length,
   };
 
   if (loading) {
@@ -337,13 +463,13 @@ const PMReports = () => {
         </div>
       )}
 
-      {/* ✅ Header Component with Dropdown */}
+      {/* Header */}
       <Header title="Trip Reports" onMenuClick={() => setSidebarOpen(true)} />
 
-      {/* ✅ Main Content with proper spacing */}
+      {/* Main Content */}
       <main className="lg:ml-72 max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6">
           <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
             <div className="text-sm text-gray-600 mb-1">Total Trips</div>
             <div className="text-3xl font-bold text-gray-900">
@@ -356,17 +482,23 @@ const PMReports = () => {
               {stats.completed}
             </div>
           </div>
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 sm:col-span-2 lg:col-span-1">
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
             <div className="text-sm text-gray-600 mb-1">Active Trips</div>
             <div className="text-3xl font-bold text-blue-600">
               {stats.active}
             </div>
           </div>
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+            <div className="text-sm text-gray-600 mb-1">Showing</div>
+            <div className="text-3xl font-bold text-indigo-600">
+              {stats.filtered}
+            </div>
+          </div>
         </div>
 
-        {/* Filters Section */}
+        {/* Enhanced Filters Section */}
         <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100 mb-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
                 <Calendar className="w-4 h-4" />
@@ -395,10 +527,35 @@ const PMReports = () => {
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent outline-none"
               />
             </div>
-            <div className="sm:col-span-2 flex items-end">
+            
+            {/* Site Filter */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                <Building2 className="w-4 h-4" />
+                Filter by Site
+              </label>
+              <select
+                value={selectedSite}
+                onChange={(e) => setSelectedSite(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent outline-none"
+              >
+                <option value="all">All Sites</option>
+                {loadingSites ? (
+                  <option>Loading sites...</option>
+                ) : (
+                  sites.map((site) => (
+                    <option key={site._id} value={site._id}>
+                      {site.name || site.siteName || "Unnamed Site"}
+                    </option>
+                  ))
+                )}
+              </select>
+            </div>
+            
+            <div className="sm:col-span-2 lg:col-span-2 flex items-end">
               <button
                 onClick={handleExportExcel}
-                disabled={exporting || reports.length === 0}
+                disabled={exporting || filteredReports.length === 0}
                 className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition"
               >
                 {exporting ? (
@@ -409,7 +566,7 @@ const PMReports = () => {
                 ) : (
                   <>
                     <Download className="w-4 h-4" />
-                    Export to Excel
+                    Export Excel
                   </>
                 )}
               </button>
@@ -417,22 +574,80 @@ const PMReports = () => {
           </div>
         </div>
 
-        {/* Search Bar */}
-        <div className="mb-6">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-            <input
-              type="text"
-              placeholder="Search by trip ID, vehicle number, or vendor..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent outline-none"
-            />
+        {/* Enhanced Search Bar */}
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 mb-6">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <input
+                type="text"
+                placeholder="Search by trip ID, vehicle number, vendor, supervisor, or site..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent outline-none"
+              />
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  setSearchTerm("");
+                  setSelectedSite("all");
+                }}
+                className="px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition"
+              >
+                Clear Filters
+              </button>
+            </div>
+          </div>
+          
+          {/* Search Info */}
+          {(searchTerm || selectedSite !== "all") && (
+            <div className="mt-3 flex items-center gap-2 text-sm text-gray-600">
+              <Filter className="w-4 h-4" />
+              <span>
+                {selectedSite !== "all" && `Site: ${sites.find(s => s._id === selectedSite)?.name || selectedSite}`}
+                {searchTerm && selectedSite !== "all" && " • "}
+                {searchTerm && `Search: "${searchTerm}"`}
+              </span>
+              <span className="ml-auto font-medium">
+                {filteredReports.length} results
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Reports Table Header with Items Per Page */}
+        <div className="bg-white rounded-t-xl p-4 shadow-sm border border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-0">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-800">
+              Trip Reports
+            </h3>
+            <p className="text-sm text-gray-600">
+              Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, filteredReports.length)} of {filteredReports.length} entries
+            </p>
+          </div>
+          
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-600">Show:</span>
+              <select
+                value={itemsPerPage}
+                onChange={handleItemsPerPageChange}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent outline-none text-sm"
+              >
+                <option value="5">5</option>
+                <option value="10">10</option>
+                <option value="25">25</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </select>
+              <span className="text-sm text-gray-600">per page</span>
+            </div>
           </div>
         </div>
 
         {/* Reports Table - Desktop */}
-        <div className="hidden lg:block bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="hidden lg:block bg-white rounded-b-xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
@@ -471,73 +686,54 @@ const PMReports = () => {
               </thead>
 
               <tbody className="divide-y divide-gray-200">
-                {filteredReports.length === 0 ? (
+                {paginatedReports.length === 0 ? (
                   <tr>
-                    <td colSpan="8" className="px-6 py-12 text-center">
+                    <td colSpan="10" className="px-6 py-12 text-center">
                       <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                       <p className="text-gray-500 text-lg font-medium">
                         No reports found
                       </p>
                       <p className="text-gray-400 text-sm mt-1">
-                        Try adjusting your date range or search filters
+                        {searchTerm || selectedSite !== "all" 
+                          ? "Try adjusting your search filters" 
+                          : "Try adjusting your date range"}
                       </p>
                     </td>
                   </tr>
                 ) : (
-                  filteredReports.map((report, index) => (
+                  paginatedReports.map((report, index) => (
                     <tr
                       key={report._id}
                       className="hover:bg-gray-50 transition"
                     >
-                      {/* Serial Number */}
                       <td className="px-6 py-4 text-sm font-semibold text-gray-700">
-                        {index + 1}
+                        {((currentPage - 1) * itemsPerPage) + index + 1}
                       </td>
-
                       <td className="px-6 py-4 font-mono text-sm text-gray-900">
                         {report.vehicleId?.vehicleNumber || "N/A"}
                       </td>
-
                       <td className="px-6 py-4 text-sm text-gray-600">
-                        {report.createdBy?.name.charAt(0).toUpperCase() +
-                          report.createdBy?.name.slice(1) || "N/A"}
+                        {report.createdBy?.name ? 
+                          report.createdBy.name.charAt(0).toUpperCase() + report.createdBy.name.slice(1) 
+                          : "N/A"}
                       </td>
-
                       <td className="px-6 py-4 text-sm text-gray-600">
                         {report.vendorId?.name || "N/A"}
                       </td>
-
                       <td className="px-6 py-4 text-sm text-gray-600">
                         {report.siteId?.name || "N/A"}
                       </td>
-
                       <td className="px-6 py-4 text-sm text-gray-600">
                         {formatDateTime(report.entryTime)}
                       </td>
-
                       <td className="px-6 py-4 text-sm text-gray-600">
                         {formatDateTime(report.exitTime)}
                       </td>
-
                       <td className="px-6 py-4 text-sm font-semibold text-gray-900">
                         {calculateDuration(report.entryTime, report.exitTime)}
                       </td>
-
                       <td className="px-6 py-4">
-                        <span
-                          className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${report.status === "completed"
-                              ? "bg-green-100 text-green-700"
-                              : report.status === "active"
-                                ? "bg-blue-100 text-blue-700"
-                                : "bg-gray-100 text-gray-700"
-                            }`}
-                        >
-                          {report.status === "completed"
-                            ? "Completed"
-                            : report.status === "active"
-                              ? "Active"
-                              : report.status}
-                        </span>
+                        {getStatusBadge(report.status)}
                       </td>
                       <td className="px-6 py-4">
                         <button
@@ -554,60 +750,151 @@ const PMReports = () => {
               </tbody>
             </table>
           </div>
+
+          {/* Pagination Footer */}
+          {paginatedReports.length > 0 && (
+            <div className="px-6 py-4 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="text-sm text-gray-600">
+                Showing <span className="font-semibold">{(currentPage - 1) * itemsPerPage + 1}</span> to{" "}
+                <span className="font-semibold">{Math.min(currentPage * itemsPerPage, filteredReports.length)}</span> of{" "}
+                <span className="font-semibold">{filteredReports.length}</span> entries
+              </div>
+              
+              <div className="flex items-center gap-2">
+                {/* First Page */}
+                <button
+                  onClick={() => goToPage(1)}
+                  disabled={currentPage === 1}
+                  className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                  title="First Page"
+                >
+                  <ChevronsLeft className="w-4 h-4 text-gray-600" />
+                </button>
+
+                {/* Previous Page */}
+                <button
+                  onClick={() => goToPage(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                  title="Previous Page"
+                >
+                  <ChevronLeft className="w-4 h-4 text-gray-600" />
+                </button>
+
+                {/* Page Numbers */}
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNum;
+                    if (totalPages <= 5) {
+                      pageNum = i + 1;
+                    } else if (currentPage <= 3) {
+                      pageNum = i + 1;
+                    } else if (currentPage >= totalPages - 2) {
+                      pageNum = totalPages - 4 + i;
+                    } else {
+                      pageNum = currentPage - 2 + i;
+                    }
+
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => goToPage(pageNum)}
+                        className={`w-10 h-10 rounded-lg border flex items-center justify-center text-sm font-medium transition ${
+                          currentPage === pageNum
+                            ? "bg-indigo-600 text-white border-indigo-600"
+                            : "border-gray-300 text-gray-700 hover:bg-gray-50"
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Next Page */}
+                <button
+                  onClick={() => goToPage(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                  title="Next Page"
+                >
+                  <ChevronRight className="w-4 h-4 text-gray-600" />
+                </button>
+
+                {/* Last Page */}
+                <button
+                  onClick={() => goToPage(totalPages)}
+                  disabled={currentPage === totalPages}
+                  className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                  title="Last Page"
+                >
+                  <ChevronsRight className="w-4 h-4 text-gray-600" />
+                </button>
+              </div>
+
+              {/* Jump to Page */}
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600">Go to:</span>
+                <input
+                  type="number"
+                  min="1"
+                  max={totalPages}
+                  value={currentPage}
+                  onChange={(e) => {
+                    const page = parseInt(e.target.value);
+                    if (page >= 1 && page <= totalPages) {
+                      goToPage(page);
+                    }
+                  }}
+                  className="w-20 px-3 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent outline-none text-sm"
+                />
+                <span className="text-sm text-gray-600">/ {totalPages}</span>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Reports Cards - Mobile/Tablet */}
         <div className="lg:hidden space-y-4">
-          {filteredReports.length === 0 ? (
+          {paginatedReports.length === 0 ? (
             <div className="bg-white rounded-xl p-12 text-center">
               <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
               <p className="text-gray-500 text-lg font-medium">
                 No reports found
               </p>
               <p className="text-gray-400 text-sm mt-1">
-                Try adjusting your date range or search filters
+                {searchTerm || selectedSite !== "all" 
+                  ? "Try adjusting your search filters" 
+                  : "Try adjusting your date range"}
               </p>
             </div>
           ) : (
-            filteredReports.map((report) => (
+            paginatedReports.map((report, index) => (
               <div
                 key={report._id}
                 className="bg-white rounded-xl p-4 shadow-sm border border-gray-100"
               >
                 <div className="flex items-start justify-between mb-3">
                   <div>
-                    <div className="font-semibold text-indigo-600 mb-1">
-                      {report.tripId}
+                    <div className="font-semibold text-gray-600 text-sm">
+                      # {((currentPage - 1) * itemsPerPage) + index + 1}
                     </div>
-                    <div className="font-mono text-sm text-gray-900">
+                    <div className="font-mono text-sm text-gray-900 mt-1">
                       {report.vehicleId?.vehicleNumber || "N/A"}
                     </div>
                   </div>
-                  <span
-                    className={`px-2.5 py-1 rounded-full text-xs font-semibold ${report.status === "completed"
-                        ? "bg-green-100 text-green-700"
-                        : report.status === "active"
-                          ? "bg-blue-100 text-blue-700"
-                          : "bg-gray-100 text-gray-700"
-                      }`}
-                  >
-                    {report.status === "completed"
-                      ? "Completed"
-                      : report.status === "active"
-                        ? "Active"
-                        : report.status}
-                  </span>
-                </div>
-
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Supervisor:</span>
-                  <span className="font-medium text-gray-900">
-                    {report.createdBy?.name.charAt(0).toUpperCase() +
-                      report.createdBy?.name.slice(1) || "N/A"}
-                  </span>
+                  {getStatusBadge(report.status)}
                 </div>
 
                 <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Supervisor:</span>
+                    <span className="font-medium text-gray-900">
+                      {report.createdBy?.name ? 
+                        report.createdBy.name.charAt(0).toUpperCase() + report.createdBy.name.slice(1) 
+                        : "N/A"}
+                    </span>
+                  </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Vendor:</span>
                     <span className="font-medium text-gray-900">
@@ -649,16 +936,89 @@ const PMReports = () => {
               </div>
             ))
           )}
+
+          {/* Mobile Pagination */}
+          {paginatedReports.length > 0 && (
+            <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+              <div className="flex items-center justify-between mb-4">
+                <div className="text-sm text-gray-600">
+                  Page {currentPage} of {totalPages}
+                </div>
+                <div className="text-sm text-gray-600">
+                  {((currentPage - 1) * itemsPerPage) + 1}-{Math.min(currentPage * itemsPerPage, filteredReports.length)} of {filteredReports.length}
+                </div>
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <button
+                  onClick={() => goToPage(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center gap-2"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  Previous
+                </button>
+                
+                <select
+                  value={currentPage}
+                  onChange={(e) => goToPage(parseInt(e.target.value))}
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent outline-none"
+                >
+                  {Array.from({ length: totalPages }, (_, i) => (
+                    <option key={i + 1} value={i + 1}>
+                      Page {i + 1}
+                    </option>
+                  ))}
+                </select>
+                
+                <button
+                  onClick={() => goToPage(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center gap-2"
+                >
+                  Next
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+              
+              <div className="mt-4 flex items-center justify-between">
+                <div className="text-sm text-gray-600">Items per page:</div>
+                <select
+                  value={itemsPerPage}
+                  onChange={handleItemsPerPageChange}
+                  className="px-3 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent outline-none text-sm"
+                >
+                  <option value="5">5</option>
+                  <option value="10">10</option>
+                  <option value="20">20</option>
+                  <option value="50">50</option>
+                </select>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Summary */}
-        {filteredReports.length > 0 && (
-          <div className="mt-4 text-sm text-gray-600 text-center">
-            Showing {filteredReports.length} of {reports.length} trip(s)
+        {paginatedReports.length > 0 && (
+          <div className="mt-6 bg-gray-50 rounded-xl p-4 text-center">
+            <div className="text-sm text-gray-600">
+              Showing <span className="font-bold text-indigo-600">{paginatedReports.length}</span> of{" "}
+              <span className="font-bold text-gray-900">{filteredReports.length}</span> filtered trips (Total: {reports.length})
+              {selectedSite !== "all" && (
+                <span className="ml-2 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs">
+                  Site: {sites.find(s => s._id === selectedSite)?.name || selectedSite}
+                </span>
+              )}
+              {searchTerm && (
+                <span className="ml-2 px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs">
+                  Search: "{searchTerm}"
+                </span>
+              )}
+            </div>
           </div>
         )}
-
-        {/* Enhanced Details Modal */}
+        
+        {/* Enhanced Details Modal - same as before */}
         {showDetailsModal && selectedTrip && (
           <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-2xl w-full max-w-4xl shadow-2xl max-h-[90vh] overflow-hidden">
@@ -763,7 +1123,6 @@ const PMReports = () => {
                               Duration
                             </div>
                             <div className="font-bold text-gray-900">
-                              {/* {selectedTrip.duration || "N/A"} */}
                               {calculateDuration(
                                 selectedTrip.entryTime,
                                 selectedTrip.exitTime,

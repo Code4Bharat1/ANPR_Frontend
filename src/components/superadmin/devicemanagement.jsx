@@ -157,6 +157,7 @@ const EditDeviceModal = ({ isOpen, onClose, onSubmit, loading, device, clients, 
               >
                 <option value="ANPR">ANPR Camera</option>
                 <option value="BARRIER">Barrier</option>
+                <option value="BIOMETRIC">BIOMETRIC</option>
               </select>
             </div>
 

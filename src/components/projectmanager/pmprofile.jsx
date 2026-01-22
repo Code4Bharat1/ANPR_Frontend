@@ -282,7 +282,7 @@ const PMProfile = () => {
                     <span>{getInitials(profileData.fullName || 'User')}</span>
                   )}
                 </div>
-                <label className="absolute bottom-0 right-0 w-8 h-8 sm:w-10 sm:h-10 bg-indigo-500 rounded-full flex items-center justify-center cursor-pointer hover:bg-indigo-700 transition border-2 sm:border-4 border-white shadow-lg group-hover:scale-110 transform">
+                {/* <label className="absolute bottom-0 right-0 w-8 h-8 sm:w-10 sm:h-10 bg-indigo-500 rounded-full flex items-center justify-center cursor-pointer hover:bg-indigo-700 transition border-2 sm:border-4 border-white shadow-lg group-hover:scale-110 transform">
                   <Camera className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                   <input
                     type="file"
@@ -290,7 +290,7 @@ const PMProfile = () => {
                     onChange={handleImageUpload}
                     className="hidden"
                   />
-                </label>
+                </label> */}
               </div>
 
               {/* Profile Info */}
@@ -321,7 +321,7 @@ const PMProfile = () => {
               </div>
 
               {/* Edit Button */}
-              <button
+              {/* <button
                 onClick={() => isEditing ? handleCancelEdit() : setIsEditing(true)}
                 className="w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-3 bg-white text-indigo-600 rounded-lg sm:rounded-xl hover:bg-gray-50 transition font-semibold flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transform hover:scale-105 text-sm sm:text-base"
               >
@@ -336,7 +336,7 @@ const PMProfile = () => {
                     Edit Profile
                   </>
                 )}
-              </button>
+              </button> */}
             </div>
           </div>
 

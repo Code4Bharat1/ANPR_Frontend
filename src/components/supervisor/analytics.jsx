@@ -5,10 +5,10 @@ import SupervisorLayout from './SupervisorLayout';
 import axios from 'axios';
 import {
   Download, Calendar, TrendingUp, TrendingDown, Activity,
-  Clock, Car, CheckCircle, XCircle, BarChart3, Loader2,
-  Users, ArrowUpRight, ArrowDownRight, PieChart, LineChart,
-  Target, Shield, Zap, Filter, RefreshCw, Award,
-  Truck, Package, Building2, Database, AlertCircle
+  Clock, Car, CheckCircle, XCircle, BarChart3,
+  Users, ArrowUpRight, ArrowDownRight, LineChart,
+  Target, Zap, Filter, RefreshCw, Award,
+  Truck, Package, Building2
 } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
@@ -40,49 +40,136 @@ const Analytics = () => {
     fetchAnalytics();
   }, [timeFilter]);
 
+  // Helper function to convert 24-hour to 12-hour IST format
+  const convertTo12Hour = (time24) => {
+    if (!time24 || time24 === "--" || time24 === "") return "--";
+    
+    // Handle time range (e.g., "14:00 - 15:00")
+    if (time24.includes("-")) {
+      const [start, end] = time24.split(" - ");
+      const start12hr = convertTo12Hour(start.trim());
+      const end12hr = convertTo12Hour(end.trim());
+      return `${start12hr} - ${end12hr}`;
+    }
+    
+    // Handle single time (e.g., "14:00")
+    const [hours, minutes] = time24.split(":");
+    if (!hours || !minutes) return time24;
+    
+    const hour = parseInt(hours, 10);
+    const period = hour >= 12 ? "PM" : "AM";
+    const hour12 = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+    
+    return `${hour12}:${minutes} ${period}`;
+  };
+
   const fetchAnalytics = async () => {
     try {
       setLoading(true);
       setRefreshing(true);
       const token = localStorage.getItem('accessToken');
+      
+      if (!token) {
+        alert('Please login again');
+        window.location.href = '/login';
+        return;
+      }
+
       const response = await axios.get(
         `${API_URL}/api/supervisor/analytics?period=${timeFilter}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
       if (response.data) {
-        setAnalytics(response.data.analytics || analytics);
-        setDailyTrends(response.data.dailyTrends || []);
-        setHourlyTrends(response.data.hourlyTrends || []);
-        setVehicleTypes(response.data.vehicleTypes || []); // ✅ Now populated from backend
-        setTopVendors(response.data.topVendors || []); // ✅ Now includes vendor names
+        const data = response.data;
+        
+        // Format durations properly
+        const avgProcessingTime = data.analytics?.avgProcessingTime || '--';
+        const avgDuration = data.analytics?.avgDuration || '--';
+        const formattedAvgProcessingTime = avgProcessingTime === '0h 0m' || avgProcessingTime === 'NaNh NaNm' ? '--' : avgProcessingTime;
+        const formattedAvgDuration = avgDuration === '0h 0m' || avgDuration === 'NaNh NaNm' ? '--' : avgDuration;
+        
+        // Set analytics with formatted peak hour
+        setAnalytics({
+          todayTrips: data.analytics?.todayTrips || 0,
+          todayChange: data.analytics?.todayChange || 0,
+          weekTrips: data.analytics?.weekTrips || 0,
+          avgProcessingTime: formattedAvgProcessingTime,
+          peakHour: convertTo12Hour(data.analytics?.peakHour || "--"),
+          totalEntries: data.analytics?.totalEntries || 0,
+          totalExits: data.analytics?.totalExits || 0,
+          activeVehicles: data.analytics?.activeVehicles || 0,
+          avgDuration: formattedAvgDuration,
+          timeImprovement: data.analytics?.timeImprovement || 0
+        });
 
-        // Enhanced performance metrics
+        // Set daily trends (ensure it's an array)
+        setDailyTrends(Array.isArray(data.dailyTrends) ? data.dailyTrends : []);
+
+        // Convert and sort hourly trends
+        const formattedHourly = Array.isArray(data.hourlyTrends) 
+          ? data.hourlyTrends
+              .map(trend => ({
+                ...trend,
+                hour: convertTo12Hour(trend.hour),
+                hour24: trend.hour // Keep original for sorting
+              }))
+              .sort((a, b) => {
+                // Sort by original 24-hour format
+                const hourA = parseInt(a.hour24?.split(":")[0] || "0");
+                const hourB = parseInt(b.hour24?.split(":")[0] || "0");
+                return hourA - hourB;
+              })
+          : [];
+        setHourlyTrends(formattedHourly);
+
+        // Set vehicle types
+        setVehicleTypes(Array.isArray(data.vehicleTypes) ? data.vehicleTypes : []);
+
+        // Set top vendors
+        setTopVendors(Array.isArray(data.topVendors) ? data.topVendors : []);
+
+        // Calculate completion rate
+        const totalEntries = data.analytics?.totalEntries || 0;
+        const totalExits = data.analytics?.totalExits || 0;
+        const completionRate = totalEntries > 0 
+          ? Math.round((totalExits / totalEntries) * 100)
+          : 0;
+
+        // Set performance metrics based on actual data
         setPerformanceMetrics([
           {
             label: 'Entry Processing',
-            value: response.data.analytics?.avgProcessingTime || '--',
-            trend: 'faster'
+            value: formattedAvgProcessingTime,
+            trend: data.analytics?.timeImprovement > 0 ? 'faster' : 'stable'
           },
           {
             label: 'Exit Processing',
-            value: response.data.analytics?.avgDuration || '--',
+            value: formattedAvgDuration,
             trend: 'stable'
           },
           {
-            label: 'Security Checks',
-            value: '98%',
-            trend: 'improved'
+            label: 'Completion Rate',
+            value: `${completionRate}%`,
+            trend: completionRate >= 90 ? 'excellent' : 
+                   completionRate >= 70 ? 'improved' : 'stable'
           },
           {
-            label: 'Compliance Rate',
-            value: '99.5%',
-            trend: 'excellent'
+            label: 'Active Utilization',
+            value: `${data.analytics?.activeVehicles || 0}`,
+            trend: 'stable'
           }
         ]);
       }
     } catch (error) {
       console.error('Error fetching analytics:', error);
+      if (error.response?.status === 401) {
+        alert('Session expired. Please login again.');
+        localStorage.removeItem('accessToken');
+        window.location.href = '/login';
+      } else {
+        alert('Failed to fetch analytics data. Please try again.');
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -102,7 +189,15 @@ const Analytics = () => {
         }
       });
 
-      if (!response.ok) throw new Error('Failed to download report');
+      if (!response.ok) {
+        if (response.status === 401) {
+          alert('Session expired. Please login again.');
+          localStorage.removeItem('accessToken');
+          window.location.href = '/login';
+          return;
+        }
+        throw new Error('Failed to download report');
+      }
 
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
@@ -129,10 +224,10 @@ const Analytics = () => {
     : 10;
 
   const maxHourlyValue = hourlyTrends.length > 0
-    ? Math.max(...hourlyTrends.map(h => h.count))
+    ? Math.max(1, ...hourlyTrends.map(h => h.count || 0))
     : 1;
 
-  if (loading && dailyTrends.length === 0) {
+  if (loading && dailyTrends.length === 0 && hourlyTrends.length === 0) {
     return (
       <SupervisorLayout>
         <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)]">
@@ -185,6 +280,8 @@ const Analytics = () => {
                     >
                       <option value="today">Today</option>
                       <option value="last7days">Last 7 Days</option>
+                      {/* <option value="last30days">Last 30 Days</option>
+                      <option value="thismonth">This Month</option> */}
                     </select>
                   </div>
                 </div>
@@ -300,8 +397,8 @@ const Analytics = () => {
                     <LineChart className="w-5 h-5 text-blue-600" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-bold text-gray-900">Daily Traffic Trends</h2>
-                    <p className="text-sm text-gray-600">Entry and exit patterns over time</p>
+                    <h2 className="text-xl font-bold text-gray-900">Weekly Traffic Trends</h2>
+                    <p className="text-sm text-gray-500">Entry and exit patterns over time</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-4 text-sm">
@@ -328,25 +425,38 @@ const Analytics = () => {
                           <div className="relative flex-1 flex flex-col justify-end h-full">
                             <div
                               className="bg-gradient-to-t from-blue-500 to-blue-600 rounded-t-lg min-h-[8px]"
-                              style={{ height: `${(data.entries / maxDailyValue) * 100}%` }}
+                              style={{ 
+                                height: data.entries > 0 
+                                  ? `${Math.max((data.entries / maxDailyValue) * 100, 10)}%` 
+                                  : '8px'
+                              }}
                             >
-
-                              <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-xs px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition whitespace-nowrap z-10 shadow-xl before:content-[''] before:absolute before:left-1/2 before:-bottom-1 before:transform before:-translate-x-1/2 before:w-2 before:h-2 before:bg-gray-900 before:rotate-45">
-                                <div className="font-bold">{data.entries} entries</div>
-                                <div className="text-gray-300">{data.day}</div>
-                              </div>
+                              {/* Tooltip */}
+                              {data.entries > 0 && (
+                                <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-xs px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition whitespace-nowrap z-10 shadow-xl before:content-[''] before:absolute before:left-1/2 before:-bottom-1 before:transform before:-translate-x-1/2 before:w-2 before:h-2 before:bg-gray-900 before:rotate-45">
+                                  <div className="font-bold">{data.entries} entries</div>
+                                  <div className="text-gray-300">{data.day}</div>
+                                </div>
+                              )}
                             </div>
                           </div>
                           {/* Exit Bar */}
                           <div className="relative flex-1 flex flex-col justify-end">
                             <div
                               className="bg-gradient-to-t from-gray-400 to-gray-500 rounded-t-lg hover:from-gray-500 hover:to-gray-600 transition-all duration-300 cursor-pointer min-h-[8px]"
-                              style={{ height: `${(data.exits / maxDailyValue) * 100}%` }}
+                              style={{ 
+                                height: data.exits > 0 
+                                  ? `${Math.max((data.exits / maxDailyValue) * 100, 10)}%` 
+                                  : '8px'
+                              }}
                             >
-                              <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-xs px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition whitespace-nowrap z-10 shadow-xl before:content-[''] before:absolute before:left-1/2 before:-bottom-1 before:transform before:-translate-x-1/2 before:w-2 before:h-2 before:bg-gray-900 before:rotate-45">
-                                <div className="font-bold">{data.exits} exits</div>
-                                <div className="text-gray-300">{data.day}</div>
-                              </div>
+                              {/* Tooltip */}
+                              {data.exits > 0 && (
+                                <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-xs px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition whitespace-nowrap z-10 shadow-xl before:content-[''] before:absolute before:left-1/2 before:-bottom-1 before:transform before:-translate-x-1/2 before:w-2 before:h-2 before:bg-gray-900 before:rotate-45">
+                                  <div className="font-bold">{data.exits} exits</div>
+                                  <div className="text-gray-300">{data.day}</div>
+                                </div>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -394,8 +504,8 @@ const Analytics = () => {
                   <Calendar className="w-5 h-5 text-blue-600" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-gray-900 text-lg">Today's Summary</h3>
-                  <p className="text-sm text-gray-500">Real-time operational metrics</p>
+                  <h3 className="font-bold text-gray-900 text-lg">Weekly Summary</h3>
+                  <p className="text-sm text-gray-500">Operational metrics for selected period</p>
                 </div>
               </div>
 
@@ -445,7 +555,7 @@ const Analytics = () => {
         </div>
 
         {/* Enhanced Bottom Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-1 gap-6 mb-8">
           {/* Hourly Distribution */}
           <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
             <div className="flex items-center justify-between mb-6">
@@ -455,7 +565,7 @@ const Analytics = () => {
                 </div>
                 <div>
                   <h2 className="text-xl font-bold text-gray-900">Hourly Distribution</h2>
-                  <p className="text-sm text-gray-500">Traffic intensity by hour of day</p>
+                  <p className="text-sm text-gray-500">Traffic intensity by hour of day (IST)</p>
                 </div>
               </div>
             </div>
@@ -464,7 +574,7 @@ const Analytics = () => {
               {hourlyTrends.length > 0 ? (
                 hourlyTrends.map((data, idx) => (
                   <div key={idx} className="flex items-center gap-4 group">
-                    <div className="text-sm font-semibold text-gray-700 w-16 text-center bg-gray-50 px-3 py-1.5 rounded-lg flex-shrink-0">
+                    <div className="text-sm font-semibold text-gray-700 w-24 text-center bg-gray-50 px-3 py-1.5 rounded-lg flex-shrink-0">
                       {data.hour}
                     </div>
                     <div className="flex-1 relative">
@@ -494,7 +604,7 @@ const Analytics = () => {
           </div>
 
           {/* Performance Metrics */}
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+          {/* <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
             <div className="flex items-center gap-3 mb-6">
               <div className="p-2 bg-gradient-to-br from-green-500 to-emerald-500 rounded-lg">
                 <Award className="w-5 h-5 text-white" />
@@ -513,7 +623,8 @@ const Analytics = () => {
                     <span className={`text-sm font-bold ${metric.trend === 'excellent' ? 'text-green-600' :
                         metric.trend === 'improved' ? 'text-blue-600' :
                           metric.trend === 'stable' ? 'text-gray-600' :
-                            'text-green-600'
+                            metric.trend === 'faster' ? 'text-green-600' :
+                            'text-gray-600'
                       }`}>
                       {metric.value}
                     </span>
@@ -523,12 +634,13 @@ const Analytics = () => {
                       {metric.trend === 'faster' && 'Processing speed'}
                       {metric.trend === 'stable' && 'Consistent performance'}
                       {metric.trend === 'improved' && 'Quality improvement'}
-                      {metric.trend === 'excellent' && 'Top-tier compliance'}
+                      {metric.trend === 'excellent' && 'Top-tier performance'}
                     </div>
                     <span className={`text-xs px-2 py-1 rounded-full ${metric.trend === 'excellent' ? 'bg-green-100 text-green-700' :
                         metric.trend === 'improved' ? 'bg-blue-100 text-blue-700' :
                           metric.trend === 'stable' ? 'bg-gray-100 text-gray-700' :
-                            'bg-green-100 text-green-700'
+                            metric.trend === 'faster' ? 'bg-green-100 text-green-700' :
+                            'bg-gray-100 text-gray-700'
                       }`}>
                       {metric.trend}
                     </span>
@@ -536,11 +648,11 @@ const Analytics = () => {
                 </div>
               ))}
             </div>
-          </div>
+          </div> */}
         </div>
 
         {/* Vehicle Types & Top Vendors */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-1 gap-6 mb-8">
           {/* Vehicle Types */}
           {/* <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
             <div className="flex items-center gap-3 mb-6">
@@ -564,10 +676,12 @@ const Analytics = () => {
                               idx === 2 ? 'bg-gradient-to-br from-purple-500 to-violet-500' :
                                 'bg-gradient-to-br from-orange-500 to-amber-500'
                           }`}>
-                          {idx === 0 && <Truck className="w-4 h-4 text-white" />}
-                          {idx === 1 && <Package className="w-4 h-4 text-white" />}
-                          {idx === 2 && <Car className="w-4 h-4 text-white" />}
-                          {idx >= 3 && <Building2 className="w-4 h-4 text-white" />}
+                          {type.type === 'Truck' && <Truck className="w-4 h-4 text-white" />}
+                          {type.type === 'Tempo' && <Package className="w-4 h-4 text-white" />}
+                          {type.type === 'Car' && <Car className="w-4 h-4 text-white" />}
+                          {type.type === 'Trailer' && <Building2 className="w-4 h-4 text-white" />}
+                          {!['Truck', 'Tempo', 'Car', 'Trailer'].includes(type.type) && 
+                            <Truck className="w-4 h-4 text-white" />}
                         </div>
                         <span className="text-sm text-gray-700 font-medium">{type.type}</span>
                       </div>
@@ -580,8 +694,11 @@ const Analytics = () => {
                               idx === 2 ? 'bg-gradient-to-r from-purple-500 to-violet-500' :
                                 'bg-gradient-to-r from-orange-500 to-amber-500'
                           }`}
-                        style={{ width: `${type.percentage}%` }}
+                        style={{ width: `${type.percentage || 0}%` }}
                       ></div>
+                    </div>
+                    <div className="text-xs text-gray-500 text-right mt-1">
+                      {type.percentage || 0}% of total
                     </div>
                   </div>
                 ))
@@ -589,7 +706,7 @@ const Analytics = () => {
                 <div className="flex items-center justify-center py-12 text-gray-400">
                   <div className="text-center">
                     <Truck className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                    <p>No vehicle type data</p>
+                    <p>No vehicle type data available</p>
                   </div>
                 </div>
               )}
@@ -622,7 +739,9 @@ const Analytics = () => {
                           {idx + 1}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="text-sm font-semibold text-gray-900 truncate mb-1">{vendor.name}</div>
+                          <div className="text-sm font-semibold text-gray-900 truncate mb-1">
+                            {vendor.name}
+                          </div>
                           <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
                             <div
                               className={`h-full rounded-full transition-all duration-700 ${idx === 0 ? 'bg-gradient-to-r from-yellow-400 to-yellow-500' :
@@ -630,14 +749,14 @@ const Analytics = () => {
                                     idx === 2 ? 'bg-gradient-to-r from-orange-500 to-orange-600' :
                                       'bg-gradient-to-r from-blue-500 to-blue-600'
                                 }`}
-                              style={{ width: `${vendor.percentage}%` }}
+                              style={{ width: `${vendor.percentage || 0}%` }}
                             ></div>
                           </div>
                         </div>
                       </div>
                       <div className="flex flex-col items-end">
                         <span className="text-lg font-bold text-gray-900 flex-shrink-0">{vendor.trips}</span>
-                        <span className="text-xs text-gray-500">trips</span>
+                        <span className="text-xs text-gray-500">trips • {vendor.percentage || 0}%</span>
                       </div>
                     </div>
                   </div>
