@@ -1502,7 +1502,7 @@ const ProjectManagersPage = () => {
                 </div>
 
                 {/* Quick fix suggestions */}
-                <div className="mt-3 p-3 bg-red-100 rounded border border-red-200">
+                {/* <div className="mt-3 p-3 bg-red-100 rounded border border-red-200">
                   <p className="text-xs font-medium text-red-700 mb-2">Quick Tips:</p>
                   <ul className="text-xs text-red-600 space-y-1">
                     <li className="flex items-start gap-1">
@@ -1522,7 +1522,7 @@ const ProjectManagersPage = () => {
                       <span>Select at least one site for Project Manager</span>
                     </li>
                   </ul>
-                </div>
+                </div> */}
               </div>
             )}
 
