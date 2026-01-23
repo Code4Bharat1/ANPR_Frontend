@@ -641,7 +641,7 @@ const ProjectManagersPage = () => {
         </div>
 
         {/* Navigation to Supervisors */}
-        <div className="mb-6">
+        {/* <div className="mb-6">
           <button
             onClick={() => router.push('/admin/users/supervisors')}
             className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition flex items-center gap-2"
@@ -649,7 +649,7 @@ const ProjectManagersPage = () => {
             <Users className="w-4 h-4" />
             Go to Supervisors
           </button>
-        </div>
+        </div> */}
 
         <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-6">
           <div className="flex-1 relative">
