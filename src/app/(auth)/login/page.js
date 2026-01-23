@@ -47,11 +47,33 @@ export default function LoginPage() {
           router.push("/");
       }
     } catch (err) {
-      setError(err.response?.data?.message || "Invalid credentials");
+      // ✅ SMART ERROR HANDLING
+      if (!err.response) {
+        // Network / server down
+        setError("Server unreachable. Please check your internet connection.");
+      } else {
+        const { status, data } = err.response;
+
+        if (status === 401) {
+          setError("Invalid email/phone or password.");
+        } else if (status === 403 && data?.code === "PLAN_EXPIRED") {
+          setError(
+            "Your subscription plan has expired. Please contact SuperAdmin."
+          );
+        } else if (status === 403) {
+          setError(
+            data?.message ||
+            "Your account is not allowed to login. Please contact SuperAdmin."
+          );
+        } else {
+          setError("Something went wrong. Please try again later.");
+        }
+      }
     } finally {
       setLoading(false);
     }
   };
+
 
   const handleKeyPress = (e) => {
     if (e.key === "Enter" && !loading) {
@@ -162,11 +184,12 @@ export default function LoginPage() {
 
           <button
             onClick={handleLogin}
-            disabled={loading}
+            disabled={loading || !identifier || !password}
             className="w-full bg-blue-600 text-white font-medium py-3 rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
           >
             {loading ? "Signing in..." : "Sign In"}
           </button>
+
         </div>
 
         <div className="mt-8 text-center text-xs text-gray-500">

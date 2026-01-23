@@ -77,6 +77,8 @@ const EntryVehicles = () => {
   const [siteInputMode, setSiteInputMode] = useState('select');
   const [manualSiteId, setManualSiteId] = useState('');
   const [manualSiteName, setManualSiteName] = useState('');
+  const [features, setFeatures] = useState(null);
+
  
   const [anprData, setAnprData] = useState({
     vehicleNumber: '',
@@ -115,52 +117,72 @@ const EntryVehicles = () => {
 
   // Mobile responsive state
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+useEffect(() => {
+  const storedFeatures = localStorage.getItem("features");
+  if (!storedFeatures) return;
+
+  const parsedFeatures = JSON.parse(storedFeatures);
+  setFeatures(parsedFeatures);
+
+  if (parsedFeatures.anpr === false) {
+    router.replace("/supervisor/entry-vehicles/ocr");
+  }
+}, []);
+
+
+
+
+
 
   // Socket connection for ANPR live feed
-  useEffect(() => {
-    const socket = io(SOCKET_URL, {
-      transports: ["websocket"],
-      reconnection: true,
-    });
+// Socket connection for ANPR live feed (PLAN GUARDED)
+useEffect(() => {
+  // 🚫 LITE plan or features not loaded → do nothing
+  if (!features || features.anpr === false) return;
 
-    socket.on("connect", () => {
-      setSocketStatus('connected');
-    });
+  const socket = io(SOCKET_URL, {
+    transports: ["websocket"],
+    reconnection: true,
+  });
 
-    socket.on("connect_error", (err) => {
-      console.error("❌ Socket error:", err);
-      setSocketStatus('error');
-    });
+  socket.on("connect", () => {
+    setSocketStatus("connected");
+  });
 
-    socket.on("disconnect", () => {
-      setSocketStatus('disconnected');
-    });
+  socket.on("connect_error", (err) => {
+    console.error("❌ Socket error:", err);
+    setSocketStatus("error");
+  });
 
-    socket.on("anpr:new-event", (data) => {
-      setAnprEvents(prev => [data, ...prev.slice(0, 4)]);
-      
-      if (data.numberPlate) {
-        setAnprData({
-          vehicleNumber: data.numberPlate || '',
-          capturedImage: base64ToImageUrl(data.image),
-          frameImage: base64ToImageUrl(data.frame),
-          confidence: 95,
-          timestamp: new Date(data.timestamp).toLocaleString(),
-          cameraId: data.cameraName || 'Main Gate (In)',
-          siteId: data.siteId?.toString() || '',
-          siteName: data.siteName || '',
-          laneId: data.laneId?.toString() || '',
-          direction: data.direction?.toString() || '',
-          speed: data.speed?.toString() || '',
-          isEntry: data.isEntry ?? true
-        });
-      }
-    });
+  socket.on("disconnect", () => {
+    setSocketStatus("disconnected");
+  });
 
-    return () => {
-      socket.disconnect();
-    };
-  }, []);
+  socket.on("anpr:new-event", (data) => {
+    setAnprEvents(prev => [data, ...prev.slice(0, 4)]);
+
+    if (data.numberPlate) {
+      setAnprData({
+        vehicleNumber: data.numberPlate || "",
+        capturedImage: base64ToImageUrl(data.image),
+        frameImage: base64ToImageUrl(data.frame),
+        confidence: 95,
+        timestamp: new Date(data.timestamp).toLocaleString(),
+        cameraId: data.cameraName || "Main Gate (In)",
+        siteId: data.siteId?.toString() || "",
+        siteName: data.siteName || "",
+        laneId: data.laneId?.toString() || "",
+        direction: data.direction?.toString() || "",
+        speed: data.speed?.toString() || "",
+        isEntry: data.isEntry ?? true,
+      });
+    }
+  });
+
+  return () => {
+    socket.disconnect();
+  };
+}, [features]);
 
   useEffect(() => {
     fetchVendors();
@@ -316,7 +338,7 @@ const EntryVehicles = () => {
       speed: event.speed?.toString() || '',
       isEntry: event.isEntry ?? true
     });
-  };
+   };
 
   const handleSiteModeChange = (mode) => {
     setSiteInputMode(mode);
@@ -807,6 +829,9 @@ const handleAllowEntry = async () => {
         },
       }
     );
+
+
+    // await axios.post(`http://${ip}/analytics/barrier`)
 
     alert("✅ Vehicle entry recorded successfully!");
     resetForm();
