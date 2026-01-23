@@ -233,62 +233,6 @@ const SupervisorsPage = () => {
         setErrors(newErrors);
     };
 
-    // Add Modal Full Validation
-    const validateAddForm = () => {
-        const newErrors = {};
-
-        // Name validation
-        if (!formData.name.trim()) {
-            newErrors.name = "Full name is required";
-        } else if (formData.name.trim().length < 3) {
-            newErrors.name = "Name must be at least 3 characters";
-        }
-
-        // Email validation
-        if (!formData.email.trim()) {
-            newErrors.email = "Email is required";
-        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-            newErrors.email = "Invalid email format";
-        }
-
-        // Mobile validation
-        if (!formData.mobile.trim()) {
-            newErrors.mobile = "Phone number is required";
-        } else {
-            const phoneDigits = formData.mobile.replace(/\D/g, '');
-            if (phoneDigits.length < 10) {
-                newErrors.mobile = "Phone number must have at least 10 digits";
-            }
-        }
-
-        // Address validation
-        if (!formData.address.trim()) {
-            newErrors.address = "Address is required";
-        } else if (formData.address.trim().length < 10) {
-            newErrors.address = "Address must be at least 10 characters";
-        }
-
-        // Password validation
-        if (!formData.password) {
-            newErrors.password = "Password is required";
-        } else if (formData.password.length < 8) {
-            newErrors.password = "Password must be at least 8 characters";
-        } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(formData.password)) {
-            newErrors.password = "Password must contain uppercase, lowercase, and number";
-        }
-
-        // Supervisor specific validation
-        if (!formData.projectManagerId) {
-            newErrors.projectManagerId = "Project Manager is required";
-        }
-        if (!formData.siteId) {
-            newErrors.siteId = "Site is required";
-        }
-
-        setErrors(newErrors);
-        return Object.keys(newErrors).length === 0;
-    };
-
     // Add Modal Field Change
     const handleAddFieldChange = (field, value) => {
         setFormData({ ...formData, [field]: value });
@@ -306,47 +250,101 @@ const SupervisorsPage = () => {
         setErrors({ ...errors, siteId: null });
     };
 
-    // Handle Create User
+    // Handle Create User - FIXED VERSION
     const handleCreateUser = async () => {
-        const allTouched = {
-            name: true,
-            email: true,
-            mobile: true,
-            address: true,
-            password: true,
-            projectManagerId: true,
-            siteId: true
-        };
-        setTouched(allTouched);
-
-        // ✅ DEBUG: Validation से पहले form data देखें
-        console.log("🔄 Validating form data...");
-        console.log("Form Data:", formData);
-
-        const isValid = validateAddForm();
-
-        // ✅ DEBUG: Validation के बाद errors देखें
-        console.log("✅ Is form valid?", isValid);
-        console.log("📝 Current errors:", errors);
-        console.log("🔢 Number of errors:", Object.keys(errors).length);
-
-        // ✅ Show each error in detail
-        if (Object.keys(errors).length > 0) {
-            console.log("❌ Detailed errors:");
-            Object.entries(errors).forEach(([field, error]) => {
-                console.log(`  - ${field}: ${error}`);
-            });
-        }
-
-        if (!isValid) {
-            console.log("❌ Form validation failed. Cannot submit.");
-            return;
-        }
-
         try {
+            // 1. Mark all fields as touched to show all errors
+            const allTouched = {
+                name: true,
+                email: true,
+                mobile: true,
+                address: true,
+                password: true,
+                projectManagerId: true,
+                siteId: true
+            };
+            setTouched(allTouched);
+
+            // 2. Direct validation (without dependency on errors state)
+            const validationErrors = {};
+
+            // Name validation
+            if (!formData.name.trim()) {
+                validationErrors.name = "Full name is required";
+            } else if (formData.name.trim().length < 3) {
+                validationErrors.name = "Name must be at least 3 characters";
+            } else if (formData.name.trim().length > 100) {
+                validationErrors.name = "Name cannot exceed 100 characters";
+            }
+
+            // Email validation
+            if (!formData.email.trim()) {
+                validationErrors.email = "Email is required";
+            } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+                validationErrors.email = "Invalid email format";
+            } else if (formData.email.length > 100) {
+                validationErrors.email = "Email cannot exceed 100 characters";
+            }
+
+            // Mobile validation
+            if (!formData.mobile.trim()) {
+                validationErrors.mobile = "Phone number is required";
+            } else {
+                const phoneDigits = formData.mobile.replace(/\D/g, '');
+                if (phoneDigits.length < 10) {
+                    validationErrors.mobile = "Phone number must have at least 10 digits";
+                } else if (phoneDigits.length > 15) {
+                    validationErrors.mobile = "Phone number cannot exceed 15 digits";
+                }
+            }
+
+            // Address validation
+            if (!formData.address.trim()) {
+                validationErrors.address = "Address is required";
+            } else if (formData.address.trim().length < 10) {
+                validationErrors.address = "Address must be at least 10 characters";
+            } else if (formData.address.trim().length > 500) {
+                validationErrors.address = "Address cannot exceed 500 characters";
+            }
+
+            // Password validation
+            if (!formData.password) {
+                validationErrors.password = "Password is required";
+            } 
+            else if  (formData.password.length < 8) {
+                validationErrors.password = "Password must be at least 8 characters";
+            } 
+
+            // Supervisor specific validation
+            if (!formData.projectManagerId) {
+                validationErrors.projectManagerId = "Project Manager is required";
+            }
+            if (!formData.siteId) {
+                validationErrors.siteId = "Site is required";
+            }
+
+            // 3. Set errors and check if form is valid
+            setErrors(validationErrors);
+            
+            // If there are validation errors, stop here
+            if (Object.keys(validationErrors).length > 0) {
+                console.log('Form validation failed with errors:', validationErrors);
+                
+                // Scroll to top of modal to show errors
+                setTimeout(() => {
+                    const modalContent = document.querySelector('.max-h-\\[90vh\\]');
+                    if (modalContent) {
+                        modalContent.scrollTop = 0;
+                    }
+                }, 100);
+                
+                return;
+            }
+
+            // 4. Prepare payload (only if validation passed)
             const payload = {
                 name: formData.name.trim(),
-                email: formData.email.trim(),
+                email: formData.email.trim().toLowerCase(),
                 mobile: formData.mobile.replace(/\D/g, ''),
                 address: formData.address.trim(),
                 password: formData.password,
@@ -356,10 +354,12 @@ const SupervisorsPage = () => {
 
             console.log("📤 Sending payload to API:", payload);
 
-            await api.post("/api/client-admin/supervisors", payload);
+            const response = await api.post("/api/client-admin/supervisors", payload);
+            console.log("✅ API Response:", response.data);
 
             alert("Supervisor created successfully!");
 
+            // 5. Reset form state
             setFormData({
                 name: "",
                 email: "",
@@ -374,17 +374,59 @@ const SupervisorsPage = () => {
             setTouched({});
             setShowPassword(false);
             setShowAdd(false);
-            fetchUsers();
+            
+            // 6. Refresh the users list
+            await fetchUsers();
 
         } catch (err) {
             console.error("❌ API Error:", err);
-            console.error("❌ Response data:", err.response?.data);
 
-            const errorMsg = err.response?.data?.message || "Failed to create supervisor";
-            if (err.response?.data?.error?.includes('email')) {
-                setErrors({ ...errors, email: "This email is already registered" });
+            // Enhanced error handling
+            if (err.response) {
+                const serverMessage = err.response.data?.message || err.response.data?.error || "Server error";
+                
+                if (err.response.status === 400) {
+                    if (err.response.data?.errors) {
+                        const serverErrors = {};
+                        Object.keys(err.response.data.errors).forEach(key => {
+                            serverErrors[key] = err.response.data.errors[key].message || err.response.data.errors[key];
+                        });
+                        setErrors(serverErrors);
+                        
+                        // Scroll to show errors
+                        setTimeout(() => {
+                            const modalContent = document.querySelector('.max-h-\\[90vh\\]');
+                            if (modalContent) {
+                                modalContent.scrollTop = 0;
+                            }
+                        }, 100);
+                        
+                    } else if (err.response.data?.error?.includes('email')) {
+                        setErrors({ ...errors, email: "This email is already registered. Please use a different email." });
+                    } else {
+                        alert(`Validation Error: ${serverMessage}`);
+                    }
+                } else if (err.response.status === 409) {
+                    setErrors({ ...errors, email: "This email is already registered." });
+                } else if (err.response.status === 422) {
+                    const validationErrors = err.response.data?.errors || {};
+                    setErrors(validationErrors);
+                    
+                    // Scroll to show errors
+                    setTimeout(() => {
+                        const modalContent = document.querySelector('.max-h-\\[90vh\\]');
+                        if (modalContent) {
+                            modalContent.scrollTop = 0;
+                        }
+                    }, 100);
+                    
+                } else {
+                    alert(`Error ${err.response.status}: ${serverMessage}`);
+                }
+            } else if (err.request) {
+                alert("Network error: Unable to reach server. Please check your internet connection.");
             } else {
-                alert(errorMsg);
+                alert(`Error: ${err.message}`);
             }
         }
     };
@@ -475,54 +517,6 @@ const SupervisorsPage = () => {
         setEditErrors(newErrors);
     };
 
-    // Edit Modal Full Validation
-    const validateEditForm = () => {
-        const newErrors = {};
-
-        // Name validation
-        if (!formData.name.trim()) {
-            newErrors.name = "Full name is required";
-        }
-
-        // Email validation
-        if (!formData.email.trim()) {
-            newErrors.email = "Email is required";
-        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-            newErrors.email = "Invalid email format";
-        }
-
-        // Mobile validation
-        if (!formData.mobile.trim()) {
-            newErrors.mobile = "Phone number is required";
-        } else {
-            const phoneDigits = formData.mobile.replace(/\D/g, '');
-            if (phoneDigits.length < 10) {
-                newErrors.mobile = "Phone number must have at least 10 digits";
-            }
-        }
-
-        // Address validation
-        if (!formData.address.trim()) {
-            newErrors.address = "Address is required";
-        }
-
-        // Password validation (if provided)
-        if (formData.password && formData.password.length < 6) {
-            newErrors.password = "Password must be at least 6 characters";
-        }
-
-        // Supervisor specific validation
-        if (!formData.projectManagerId) {
-            newErrors.projectManagerId = "Project Manager is required";
-        }
-        if (!formData.siteId) {
-            newErrors.siteId = "Site is required";
-        }
-
-        setEditErrors(newErrors);
-        return Object.keys(newErrors).length === 0;
-    };
-
     // Edit Modal Field Change
     const handleEditFieldChange = (field, value) => {
         setFormData({ ...formData, [field]: value });
@@ -540,24 +534,72 @@ const SupervisorsPage = () => {
         setEditErrors({ ...editErrors, siteId: null });
     };
 
-    // Handle Update User
+    // Handle Update User - FIXED VERSION
     const handleUpdateUser = async () => {
-        const allTouched = {
-            name: true,
-            email: true,
-            mobile: true,
-            address: true,
-            password: true,
-            projectManagerId: true,
-            siteId: true
-        };
-        setEditTouched(allTouched);
-
-        if (!validateEditForm()) {
-            return;
-        }
-
         try {
+            // 1. Mark all fields as touched
+            const allTouched = {
+                name: true,
+                email: true,
+                mobile: true,
+                address: true,
+                projectManagerId: true,
+                siteId: true
+            };
+            setEditTouched(allTouched);
+
+            // 2. Direct validation
+            const validationErrors = {};
+
+            // Name validation
+            if (!formData.name.trim()) {
+                validationErrors.name = "Full name is required";
+            }
+
+            // Email validation
+            if (!formData.email.trim()) {
+                validationErrors.email = "Email is required";
+            } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+                validationErrors.email = "Invalid email format";
+            }
+
+            // Mobile validation
+            if (!formData.mobile.trim()) {
+                validationErrors.mobile = "Phone number is required";
+            } else {
+                const phoneDigits = formData.mobile.replace(/\D/g, '');
+                if (phoneDigits.length < 10) {
+                    validationErrors.mobile = "Phone number must have at least 10 digits";
+                }
+            }
+
+            // Address validation
+            if (!formData.address.trim()) {
+                validationErrors.address = "Address is required";
+            }
+
+            // Password validation (if provided)
+            if (formData.password && formData.password.length < 6) {
+                validationErrors.password = "Password must be at least 6 characters";
+            }
+
+            // Supervisor specific validation
+            if (!formData.projectManagerId) {
+                validationErrors.projectManagerId = "Project Manager is required";
+            }
+            if (!formData.siteId) {
+                validationErrors.siteId = "Site is required";
+            }
+
+            // 3. Set errors and check
+            setEditErrors(validationErrors);
+            
+            if (Object.keys(validationErrors).length > 0) {
+                console.log('Edit form validation failed:', validationErrors);
+                return;
+            }
+
+            // 4. Prepare payload
             const payload = {
                 name: formData.name.trim(),
                 email: formData.email.trim(),
@@ -571,10 +613,13 @@ const SupervisorsPage = () => {
                 payload.password = formData.password;
             }
 
+            console.log('Updating Supervisor with payload:', payload);
+
             await api.put(`/api/client-admin/supervisor/${selectedUser._id}`, payload);
 
             alert('Supervisor updated successfully!');
 
+            // 5. Reset form state
             setFormData({
                 name: '',
                 email: '',
@@ -590,6 +635,8 @@ const SupervisorsPage = () => {
             setEditTouched({});
             setShowEdit(false);
             setSelectedUser(null);
+            
+            // 6. Refresh the users list
             await fetchUsers();
 
         } catch (err) {
@@ -1104,8 +1151,6 @@ const SupervisorsPage = () => {
                         </div>
 
                         <div className="p-4 sm:p-6 space-y-4">
-                            {/* ... All your form fields remain the same ... */}
-
                             {/* Full Name */}
                             <div>
                                 <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
@@ -1151,7 +1196,6 @@ const SupervisorsPage = () => {
                             </div>
 
                             {/* Phone Number */}
-                            {/* Phone Number */}
                             <div>
                                 <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
                                     <Phone className="w-4 h-4" />
@@ -1162,7 +1206,6 @@ const SupervisorsPage = () => {
                                     type="tel"
                                     value={formData.mobile}
                                     onChange={(e) => {
-                                        // Allow only numbers
                                         const value = e.target.value.replace(/\D/g, '');
                                         handleAddFieldChange('mobile', value);
                                     }}
@@ -1178,7 +1221,7 @@ const SupervisorsPage = () => {
                                 {!errors.mobile && formData.mobile && (
                                     <div className="text-xs text-gray-500 mt-1 flex justify-between">
                                         <span>Enter 10-digit phone number</span>
-                                        <span className={formData.mobile.length < 10 ? 'text-orange-500' : 'text-green-500'}>
+                                        <span className={formData.mobile.length < 10 ? 'text-orange-500 font-medium' : 'text-green-500 font-medium'}>
                                             {formData.mobile.length}/10 digits
                                         </span>
                                     </div>
@@ -1203,6 +1246,14 @@ const SupervisorsPage = () => {
                                     <div className="mt-1 flex items-start gap-1">
                                         <AlertCircle className="w-3 h-3 text-red-500 flex-shrink-0 mt-0.5" />
                                         <p className="text-red-500 text-xs">{errors.address}</p>
+                                    </div>
+                                )}
+                                {!errors.address && formData.address && (
+                                    <div className="text-xs text-gray-500 mt-1 flex justify-between">
+                                        <span>Minimum 10 characters required</span>
+                                        <span className={formData.address.trim().length < 10 ? 'text-orange-500 font-medium' : 'text-green-500 font-medium'}>
+                                            {formData.address.trim().length}/10
+                                        </span>
                                     </div>
                                 )}
                             </div>
@@ -1234,12 +1285,20 @@ const SupervisorsPage = () => {
                                         )}
                                     </button>
                                 </div>
-                                {errors.password && (
+                                {/* {errors.password && (
                                     <div className="mt-1 flex items-start gap-1">
                                         <AlertCircle className="w-3 h-3 text-red-500 flex-shrink-0 mt-0.5" />
                                         <p className="text-red-500 text-xs">{errors.password}</p>
                                     </div>
-                                )}
+                                )} */}
+                                {/* {!errors.password && formData.password && (
+                                    <div className="text-xs text-gray-500 mt-1 flex justify-between">
+                                        <span>Minimum 8 characters with uppercase, lowercase, number</span>
+                                        <span className={formData.password.length < 8 ? 'text-orange-500 font-medium' : 'text-green-500 font-medium'}>
+                                            {formData.password.length}/8
+                                        </span>
+                                    </div>
+                                )} */}
                             </div>
 
                             {/* Project Manager Selection */}
@@ -1298,7 +1357,7 @@ const SupervisorsPage = () => {
                                     </div>
                                 ) : (
                                     <>
-                                        <div className={`border ${errors.siteId ? 'border-red-500' : 'border-gray-300'} rounded-lg max-h-48 overflow-y-auto`}>
+                                        <div className={`border ${errors.siteId ? 'border-red-500 bg-red-50' : 'border-gray-300'} rounded-lg max-h-48 overflow-y-auto`}>
                                             {sites.map((site) => {
                                                 const siteId = site._id || site.id;
                                                 const siteName = site.name || site.siteName;
@@ -1333,62 +1392,21 @@ const SupervisorsPage = () => {
                                         )}
                                     </>
                                 )}
+
+                                {formData.siteId && (
+                                    <div className="mt-2 px-3 py-1.5 bg-blue-50 border border-blue-100 rounded-lg">
+                                        <p className="text-xs text-blue-700 font-medium">
+                                            <Check className="w-3 h-3 inline mr-1" />
+                                            1 site selected
+                                        </p>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
-                        {/* ✅ IMPROVED ERROR SUMMARY SECTION */}
-                        {Object.keys(errors).length > 0 && (
-                            <div className="mx-4 mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-                                <div className="flex items-center gap-2 mb-3">
-                                    <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
-                                    <div>
-                                        <p className="text-sm font-semibold text-red-700">
-                                            Please fix the following {Object.keys(errors).length} error{Object.keys(errors).length > 1 ? 's' : ''}:
-                                        </p>
-                                        <p className="text-xs text-red-600 mt-1">
-                                            All required fields must be filled correctly.
-                                        </p>
-                                    </div>
-                                </div>
+                        {/* ✅ ERROR SUMMARY SECTION */}
+                        
 
-                                <div className="bg-white rounded-lg border border-red-100 overflow-hidden">
-                                    {Object.entries(errors).map(([field, error]) => (
-                                        <div key={field} className="flex items-start gap-3 p-3 border-b border-red-50 last:border-b-0 hover:bg-red-50">
-                                            <div className="w-6 h-6 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
-                                                <span className="text-xs font-bold text-red-600">!</span>
-                                            </div>
-                                            <div className="flex-1">
-                                                <p className="text-sm font-medium text-red-800 capitalize">
-                                                    {field === 'projectManagerId' ? 'Project Manager' :
-                                                        field === 'siteId' ? 'Site' :
-                                                            field.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
-                                                </p>
-                                                <p className="text-sm text-red-600 mt-0.5">{error}</p>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-
-                                {/* ✅ Quick fix suggestions */}
-                                <div className="mt-3 p-3 bg-red-100 rounded border border-red-200">
-                                    <p className="text-xs font-medium text-red-700 mb-2">Quick Tips:</p>
-                                    <ul className="text-xs text-red-600 space-y-1">
-                                        <li className="flex items-start gap-1">
-                                            <span>•</span>
-                                            <span>Phone number should be 10 digits (numbers only)</span>
-                                        </li>
-                                        <li className="flex items-start gap-1">
-                                            <span>•</span>
-                                            <span>Password needs uppercase, lowercase, number & 8+ characters</span>
-                                        </li>
-                                        <li className="flex items-start gap-1">
-                                            <span>•</span>
-                                            <span>Address should be detailed (minimum 10 characters)</span>
-                                        </li>
-                                    </ul>
-                                </div>
-                            </div>
-                        )}
                         <div className="sticky bottom-0 bg-gray-50 flex flex-col sm:flex-row justify-end gap-3 p-4 sm:p-6 border-t border-gray-200">
                             <button
                                 onClick={() => {
@@ -1402,20 +1420,9 @@ const SupervisorsPage = () => {
                             </button>
                             <button
                                 onClick={handleCreateUser}
-                                // disabled={Object.keys(errors).length > 0}
-                                className={`w-full sm:w-auto px-6 py-3 rounded-lg font-medium transition-colors ${Object.keys(errors).length > 0
-                                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed border-2 border-gray-300'
-                                    : 'bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 shadow-lg shadow-blue-200 border-2 border-blue-600'
-                                    }`}
+                                className="w-full sm:w-auto px-6 py-3 rounded-lg font-medium transition-colors bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 shadow-lg shadow-blue-200 border-2 border-blue-600"
                             >
-                                {Object.keys(errors).length > 0 ? (
-                                    <span className="flex items-center justify-center gap-2">
-                                        <AlertCircle className="w-4 h-4" />
-                                        Fix Errors First
-                                    </span>
-                                ) : (
-                                    'Create Supervisor'
-                                )}
+                                Create Supervisor
                             </button>
                         </div>
                     </div>
@@ -1456,13 +1463,13 @@ const SupervisorsPage = () => {
                                     value={formData.name}
                                     onChange={(e) => handleEditFieldChange('name', e.target.value)}
                                     onBlur={handleEditBlur}
-                                    className={`w-full border ${editErrors.name ? 'border-red-500' : 'border-gray-300'} px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                                    className={`w-full border ${editErrors.name ? 'border-red-500 bg-red-50' : 'border-gray-300'} px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors`}
                                 />
                                 {editErrors.name && (
-                                    <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-                                        <AlertCircle className="w-3 h-3" />
-                                        {editErrors.name}
-                                    </p>
+                                    <div className="mt-1 flex items-start gap-1">
+                                        <AlertCircle className="w-3 h-3 text-red-500 flex-shrink-0 mt-0.5" />
+                                        <p className="text-red-500 text-xs">{editErrors.name}</p>
+                                    </div>
                                 )}
                             </div>
 
@@ -1478,13 +1485,13 @@ const SupervisorsPage = () => {
                                     value={formData.email}
                                     onChange={(e) => handleEditFieldChange('email', e.target.value)}
                                     onBlur={handleEditBlur}
-                                    className={`w-full border ${editErrors.email ? 'border-red-500' : 'border-gray-300'} px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                                    className={`w-full border ${editErrors.email ? 'border-red-500 bg-red-50' : 'border-gray-300'} px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors`}
                                 />
                                 {editErrors.email && (
-                                    <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-                                        <AlertCircle className="w-3 h-3" />
-                                        {editErrors.email}
-                                    </p>
+                                    <div className="mt-1 flex items-start gap-1">
+                                        <AlertCircle className="w-3 h-3 text-red-500 flex-shrink-0 mt-0.5" />
+                                        <p className="text-red-500 text-xs">{editErrors.email}</p>
+                                    </div>
                                 )}
                             </div>
 
@@ -1500,13 +1507,13 @@ const SupervisorsPage = () => {
                                     value={formData.mobile}
                                     onChange={(e) => handleEditFieldChange('mobile', e.target.value)}
                                     onBlur={handleEditBlur}
-                                    className={`w-full border ${editErrors.mobile ? 'border-red-500' : 'border-gray-300'} px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                                    className={`w-full border ${editErrors.mobile ? 'border-red-500 bg-red-50' : 'border-gray-300'} px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors`}
                                 />
                                 {editErrors.mobile && (
-                                    <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-                                        <AlertCircle className="w-3 h-3" />
-                                        {editErrors.mobile}
-                                    </p>
+                                    <div className="mt-1 flex items-start gap-1">
+                                        <AlertCircle className="w-3 h-3 text-red-500 flex-shrink-0 mt-0.5" />
+                                        <p className="text-red-500 text-xs">{editErrors.mobile}</p>
+                                    </div>
                                 )}
                             </div>
 
@@ -1522,13 +1529,13 @@ const SupervisorsPage = () => {
                                     onChange={(e) => handleEditFieldChange('address', e.target.value)}
                                     onBlur={handleEditBlur}
                                     rows={3}
-                                    className={`w-full border ${editErrors.address ? 'border-red-500' : 'border-gray-300'} px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none`}
+                                    className={`w-full border ${editErrors.address ? 'border-red-500 bg-red-50' : 'border-gray-300'} px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none transition-colors`}
                                 />
                                 {editErrors.address && (
-                                    <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-                                        <AlertCircle className="w-3 h-3" />
-                                        {editErrors.address}
-                                    </p>
+                                    <div className="mt-1 flex items-start gap-1">
+                                        <AlertCircle className="w-3 h-3 text-red-500 flex-shrink-0 mt-0.5" />
+                                        <p className="text-red-500 text-xs">{editErrors.address}</p>
+                                    </div>
                                 )}
                             </div>
 
@@ -1545,7 +1552,7 @@ const SupervisorsPage = () => {
                                         value={formData.password}
                                         onChange={(e) => handleEditFieldChange('password', e.target.value)}
                                         onBlur={handleEditBlur}
-                                        className={`w-full border ${editErrors.password ? 'border-red-500' : 'border-gray-300'} px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-10`}
+                                        className={`w-full border ${editErrors.password ? 'border-red-500 bg-red-50' : 'border-gray-300'} px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-10 transition-colors`}
                                     />
                                     <button
                                         type="button"
@@ -1560,10 +1567,10 @@ const SupervisorsPage = () => {
                                     </button>
                                 </div>
                                 {editErrors.password && (
-                                    <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-                                        <AlertCircle className="w-3 h-3" />
-                                        {editErrors.password}
-                                    </p>
+                                    <div className="mt-1 flex items-start gap-1">
+                                        <AlertCircle className="w-3 h-3 text-red-500 flex-shrink-0 mt-0.5" />
+                                        <p className="text-red-500 text-xs">{editErrors.password}</p>
+                                    </div>
                                 )}
                             </div>
 
@@ -1584,7 +1591,7 @@ const SupervisorsPage = () => {
                                             value={formData.projectManagerId}
                                             onChange={(e) => handleEditFieldChange('projectManagerId', e.target.value)}
                                             onBlur={handleEditBlur}
-                                            className={`w-full border ${editErrors.projectManagerId ? 'border-red-500' : 'border-gray-300'} px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                                            className={`w-full border ${editErrors.projectManagerId ? 'border-red-500 bg-red-50' : 'border-gray-300'} px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors`}
                                         >
                                             <option value="">Select Project Manager</option>
                                             {projectManagers.map((pm) => (
@@ -1594,10 +1601,10 @@ const SupervisorsPage = () => {
                                             ))}
                                         </select>
                                         {editErrors.projectManagerId && (
-                                            <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-                                                <AlertCircle className="w-3 h-3" />
-                                                {editErrors.projectManagerId}
-                                            </p>
+                                            <div className="mt-1 flex items-start gap-1">
+                                                <AlertCircle className="w-3 h-3 text-red-500 flex-shrink-0 mt-0.5" />
+                                                <p className="text-red-500 text-xs">{editErrors.projectManagerId}</p>
+                                            </div>
                                         )}
                                     </>
                                 )}
@@ -1618,11 +1625,12 @@ const SupervisorsPage = () => {
                                     </div>
                                 ) : sites.length === 0 ? (
                                     <div className="border border-gray-300 rounded-lg p-4 text-center text-sm text-gray-500">
+                                        <Building2 className="w-8 h-8 text-gray-400 mx-auto mb-2" />
                                         No sites available
                                     </div>
                                 ) : (
                                     <>
-                                        <div className={`border ${editErrors.siteId ? 'border-red-500' : 'border-gray-300'} rounded-lg max-h-48 overflow-y-auto`}>
+                                        <div className={`border ${editErrors.siteId ? 'border-red-500 bg-red-50' : 'border-gray-300'} rounded-lg max-h-48 overflow-y-auto`}>
                                             {sites.map((site) => {
                                                 const siteId = site._id || site.id;
                                                 const siteName = site.name || site.siteName;
@@ -1632,28 +1640,66 @@ const SupervisorsPage = () => {
                                                     <div
                                                         key={siteId}
                                                         onClick={() => handleEditToggleSite(siteId)}
-                                                        className={`flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-gray-50 transition border-b border-gray-100 last:border-b-0 ${isSelected ? 'bg-blue-50' : ''}`}
+                                                        className={`flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-gray-50 transition border-b border-gray-100 last:border-b-0 ${isSelected ? 'bg-blue-50 border-blue-100' : ''}`}
                                                     >
                                                         <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition ${isSelected ? 'bg-blue-600 border-blue-600' : 'border-gray-300'}`}>
                                                             {isSelected && <Check className="w-3 h-3 text-white" />}
                                                         </div>
-                                                        <span className={`text-sm ${isSelected ? 'font-semibold text-blue-900' : 'text-gray-700'}`}>
-                                                            {siteName}
-                                                        </span>
+                                                        <div className="flex-1">
+                                                            <span className={`text-sm font-medium ${isSelected ? 'text-blue-900' : 'text-gray-700'}`}>
+                                                                {siteName}
+                                                            </span>
+                                                            {site.location && (
+                                                                <p className="text-xs text-gray-500 mt-0.5">{site.location}</p>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 );
                                             })}
                                         </div>
                                         {editErrors.siteId && (
-                                            <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-                                                <AlertCircle className="w-3 h-3" />
-                                                {editErrors.siteId}
-                                            </p>
+                                            <div className="mt-1 flex items-start gap-1">
+                                                <AlertCircle className="w-3 h-3 text-red-500 flex-shrink-0 mt-0.5" />
+                                                <p className="text-red-500 text-xs">{editErrors.siteId}</p>
+                                            </div>
                                         )}
                                     </>
                                 )}
+
+                                {formData.siteId && (
+                                    <div className="mt-2 px-3 py-1.5 bg-blue-50 border border-blue-100 rounded-lg">
+                                        <p className="text-xs text-blue-700 font-medium">
+                                            <Check className="w-3 h-3 inline mr-1" />
+                                            1 site selected
+                                        </p>
+                                    </div>
+                                )}
                             </div>
                         </div>
+
+                        {/* Edit Error Summary */}
+                        {Object.keys(editErrors).length > 0 && (
+                            <div className="mx-4 mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <AlertCircle className="w-5 h-5 text-red-500" />
+                                    <p className="text-sm font-semibold text-red-700">
+                                        Please fix {Object.keys(editErrors).length} error{Object.keys(editErrors).length > 1 ? 's' : ''}:
+                                    </p>
+                                </div>
+                                <div className="space-y-1">
+                                    {Object.entries(editErrors).map(([field, error]) => (
+                                        <div key={field} className="text-xs text-red-600 flex items-center gap-2">
+                                            <span className="w-1 h-1 bg-red-500 rounded-full"></span>
+                                            <span className="capitalize">
+                                                {field === 'projectManagerId' ? 'Project Manager' :
+                                                 field === 'siteId' ? 'Site' : field}:
+                                            </span>
+                                            <span>{error}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
 
                         <div className="sticky bottom-0 bg-gray-50 flex flex-col sm:flex-row justify-end gap-3 p-4 sm:p-6 border-t border-gray-200">
                             <button
@@ -1663,17 +1709,13 @@ const SupervisorsPage = () => {
                                     setEditErrors({});
                                     setEditTouched({});
                                 }}
-                                className="w-full sm:w-auto px-6 py-2.5 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-100 transition-colors"
+                                className="w-full sm:w-auto px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-100 transition-colors"
                             >
                                 Cancel
                             </button>
                             <button
                                 onClick={handleUpdateUser}
-                                disabled={Object.keys(editErrors).length > 0}
-                                className={`w-full sm:w-auto px-6 py-2.5 rounded-lg font-medium transition-colors shadow-lg ${Object.keys(editErrors).length > 0
-                                    ? 'bg-gray-400 text-gray-700 cursor-not-allowed'
-                                    : 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-200'
-                                    }`}
+                                className="w-full sm:w-auto px-6 py-3 rounded-lg font-medium transition-colors bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 shadow-lg shadow-blue-200 border-2 border-blue-600"
                             >
                                 Update Supervisor
                             </button>
