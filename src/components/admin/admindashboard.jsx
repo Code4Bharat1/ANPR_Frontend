@@ -25,32 +25,32 @@ const DashboardCard = ({
   onClick
 }) => (
   <div
-    className={`bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-300 hover:-translate-y-1 ${onClick ? 'cursor-pointer hover:border-blue-200' : ''}`}
+    className={`bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-lg transition-all duration-300 hover:-translate-y-1.5 group ${onClick ? 'cursor-pointer hover:border-blue-300' : ''}`}
     onClick={onClick}
   >
-    <div className="flex items-start justify-between mb-4">
-      <div className={`w-12 h-12 ${bgColor} rounded-xl flex items-center justify-center shadow-sm`}>
-        <Icon className={`w-6 h-6 ${iconColor}`} />
+    <div className="flex items-start justify-between mb-5">
+      <div className={`w-14 h-14 ${bgColor} rounded-2xl flex items-center justify-center shadow-md group-hover:shadow-lg transition-all duration-300 group-hover:scale-110`}>
+        <Icon className={`w-7 h-7 ${iconColor}`} />
       </div>
       {trend !== undefined && (
-        <div className={`flex items-center gap-1 text-sm font-semibold px-2 py-1 rounded-full ${trend >= 0 ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
-          {trend >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+        <div className={`flex items-center gap-1.5 text-sm font-bold px-3 py-1.5 rounded-full shadow-sm ${trend >= 0 ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+          {trend >= 0 ? <ArrowUpRight className="w-3.5 h-3.5" /> : <ArrowDownRight className="w-3.5 h-3.5" />}
           {Math.abs(trend)}%
         </div>
       )}
     </div>
     {isLoading ? (
       <div className="animate-pulse">
-        <div className="h-8 bg-gray-200 rounded w-3/4 mb-2"></div>
+        <div className="h-9 bg-gray-200 rounded-lg w-3/4 mb-2"></div>
         <div className="h-4 bg-gray-200 rounded w-1/2"></div>
       </div>
     ) : (
       <>
-        <div className="text-3xl font-bold text-gray-900 mb-1">{value}</div>
-        <div className="text-gray-600 text-sm font-medium">{label}</div>
-        {subtitle && <div className="text-xs text-gray-500 mt-2 flex items-center gap-1">
-          {subtitle.includes('healthy') && <div className="w-2 h-2 bg-green-500 rounded-full"></div>}
-          {subtitle.includes('warning') && <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>}
+        <div className="text-3xl font-bold text-gray-900 mb-2 tracking-tight">{value}</div>
+        <div className="text-gray-600 text-sm font-semibold">{label}</div>
+        {subtitle && <div className="text-xs text-gray-500 mt-3 flex items-center gap-1.5 pt-3 border-t border-gray-100">
+          {subtitle.includes('healthy') && <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>}
+          {subtitle.includes('warning') && <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>}
           {subtitle}
         </div>}
       </>
@@ -65,33 +65,36 @@ const UsageBar = ({ used, limit, label, type = 'default' }) => {
   const isOverLimit = used > limit;
 
   const getBarColor = () => {
-    if (isOverLimit) return 'bg-red-500';
-    if (isNearLimit) return 'bg-yellow-500';
-    if (type === 'warning') return 'bg-yellow-500';
-    if (type === 'success') return 'bg-green-500';
-    return 'bg-blue-600';
+    if (isOverLimit) return 'bg-gradient-to-r from-red-500 to-red-600';
+    if (isNearLimit) return 'bg-gradient-to-r from-yellow-500 to-yellow-600';
+    if (type === 'warning') return 'bg-gradient-to-r from-yellow-500 to-yellow-600';
+    if (type === 'success') return 'bg-gradient-to-r from-green-500 to-green-600';
+    return 'bg-gradient-to-r from-blue-500 to-blue-600';
   };
 
   return (
-    <div className="mb-4">
-      <div className="flex justify-between items-center mb-2">
-        <span className="text-sm font-medium text-gray-700">{label}</span>
+    <div className="mb-5">
+      <div className="flex justify-between items-center mb-2.5">
+        <span className="text-sm font-semibold text-gray-700">{label}</span>
         <div className="flex items-center gap-2">
-          <span className={`text-sm font-semibold ${isOverLimit ? 'text-red-600' : 'text-gray-900'}`}>
+          <span className={`text-sm font-bold ${isOverLimit ? 'text-red-600' : 'text-gray-900'}`}>
             {used} / {limit}
           </span>
-          {isOverLimit && <AlertCircle className="w-4 h-4 text-red-500" />}
+          {isOverLimit && <AlertCircle className="w-4 h-4 text-red-500 animate-pulse" />}
         </div>
       </div>
-      <div className="w-full h-2.5 bg-gray-100 rounded-full overflow-hidden shadow-inner">
+      <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden shadow-inner relative">
         <div
-          className={`h-full rounded-full transition-all duration-500 ${getBarColor()}`}
+          className={`h-full rounded-full transition-all duration-700 ease-out ${getBarColor()} relative overflow-hidden`}
           style={{ width: `${Math.min(percentage, 100)}%` }}
-        ></div>
+        >
+          <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
+        </div>
       </div>
       {isOverLimit && (
-        <div className="text-xs text-red-600 mt-1 font-medium">
-          ⚠️ Limit exceeded by {used - limit} devices
+        <div className="text-xs text-red-600 mt-2 font-semibold flex items-center gap-1">
+          <AlertCircle className="w-3 h-3" />
+          Limit exceeded by {used - limit} devices
         </div>
       )}
     </div>
@@ -114,50 +117,42 @@ const PackageCard = ({
 
   return (
     <div
-      className={`relative bg-white rounded-2xl p-6 shadow-sm border-2 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 cursor-pointer ${isCurrent ? 'border-blue-600 ring-4 ring-blue-100' :
-          isPopular ? 'border-indigo-200' : 'border-gray-200'
+      className={`relative bg-white rounded-3xl p-7 shadow-md border-2 transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 cursor-pointer group ${isCurrent ? 'border-blue-600 ring-4 ring-blue-100 shadow-xl' :
+          isPopular ? 'border-indigo-300 hover:border-indigo-400' : 'border-gray-200 hover:border-gray-300'
         }`}
       onClick={() => onClick && onClick(type)}
     >
-      {/* {isRecommended && (
-        <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-          <span className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-1 rounded-full text-xs font-bold shadow-lg animate-pulse">
-            ⭐ RECOMMENDED
-          </span>
-        </div>
-      )} */}
-
       {isCurrent && (
-        <div className="absolute -top-3 right-4">
-          <span className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg flex items-center gap-1 animate-pulse">
-            <CheckCircle className="w-3 h-3" />
+        <div className="absolute -top-3.5 right-6">
+          <span className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-1.5 rounded-full text-xs font-bold shadow-lg flex items-center gap-1.5">
+            <CheckCircle className="w-3.5 h-3.5" />
             ACTIVE
           </span>
         </div>
       )}
 
-      <div className={`w-14 h-14 bg-gradient-to-br ${bgGradient} rounded-xl flex items-center justify-center mb-4 shadow-lg`}>
-        <Icon className="w-7 h-7 text-white" />
+      <div className={`w-16 h-16 bg-gradient-to-br ${bgGradient} rounded-2xl flex items-center justify-center mb-5 shadow-xl group-hover:scale-110 transition-transform duration-300`}>
+        <Icon className="w-8 h-8 text-white" />
       </div>
 
-      <h3 className="text-xl font-bold text-gray-900 mb-2">{name}</h3>
-      <div className="flex items-baseline gap-1 mb-4">
-        <div className="text-3xl font-bold text-gray-900">₹{price.toLocaleString()}</div>
-        <div className="text-sm text-gray-600">/month</div>
+      <h3 className="text-2xl font-bold text-gray-900 mb-2">{name}</h3>
+      <div className="flex items-baseline gap-1.5 mb-6">
+        <div className="text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">₹{price.toLocaleString()}</div>
+        <div className="text-sm text-gray-500 font-medium">/month</div>
       </div>
 
-      <div className="space-y-3 mb-6">
+      <div className="space-y-3.5 mb-7">
         {features.map((feature, index) => (
-          <div key={index} className="flex items-start gap-2">
-            <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
-            <span className="text-sm text-gray-700">{feature}</span>
+          <div key={index} className="flex items-start gap-3 group/feature">
+            <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5 group-hover/feature:scale-110 transition-transform" />
+            <span className="text-sm text-gray-700 font-medium">{feature}</span>
           </div>
         ))}
       </div>
 
-      <button className={`w-full font-semibold py-3 rounded-xl transition-all duration-300 ${isCurrent
+      <button className={`w-full font-bold py-3.5 rounded-xl transition-all duration-300 text-sm tracking-wide ${isCurrent
           ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          : 'bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-xl'
+          : 'bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-xl transform hover:scale-105'
         }`}>
         {isCurrent ? 'Current Plan' : 'Upgrade Now'}
       </button>
@@ -362,37 +357,43 @@ const AdminDashboard = () => {
       <main className="lg:ml-72 max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
 
         {/* Current Plan Status Banner with warning */}
-        <div className={`rounded-2xl p-6 text-white mb-8 shadow-xl ${isPlanExpiringSoon
-            ? 'bg-gradient-to-r from-red-600 to-red-700 animate-pulse'
+        <div className={`rounded-3xl p-8 text-white mb-8 shadow-2xl relative overflow-hidden ${isPlanExpiringSoon
+            ? 'bg-gradient-to-r from-red-600 to-red-700'
             : 'bg-gradient-to-r from-blue-600 to-indigo-700'
           }`}>
-          <div className="flex items-center justify-between flex-wrap gap-6">
-            <div className="flex items-center gap-4">
-              <div className="w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
-                <Package className="w-8 h-8" />
+          {/* Animated background pattern */}
+          <div className="absolute inset-0 opacity-10">
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent animate-pulse"></div>
+          </div>
+          
+          <div className="flex items-center justify-between flex-wrap gap-6 relative z-10">
+            <div className="flex items-center gap-5">
+              <div className="w-20 h-20 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm shadow-lg">
+                <Package className="w-10 h-10" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold mb-1 flex items-center gap-3">
+                <h1 className="text-3xl font-bold mb-2 flex items-center gap-4">
                   {dashboardData.plan.packageType} Plan
                   <DeviceHealthIndicator health={parseFloat(deviceActivityRate)} />
                 </h1>
-                <p className="text-blue-100 opacity-90">Your current subscription status</p>
+                <p className="text-blue-100 opacity-90 font-medium">Your current subscription status</p>
               </div>
             </div>
 
             <div className="flex items-center gap-6">
-              <div className="text-right">
-                <div className="text-sm text-blue-100 opacity-90 mb-1 flex items-center gap-2">
+              <div className="text-right bg-white/10 rounded-2xl px-6 py-4 backdrop-blur-sm">
+                <div className="text-sm text-blue-100 opacity-90 mb-2 flex items-center gap-2 justify-end">
                   <Clock className="w-4 h-4" />
                   Time Remaining
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className={`text-3xl font-bold ${isPlanExpiringSoon ? 'text-yellow-300' : 'text-white'}`}>
-                    {daysRemaining} days
+                  <div className={`text-4xl font-bold ${isPlanExpiringSoon ? 'text-yellow-300 animate-pulse' : 'text-white'}`}>
+                    {daysRemaining}
                   </div>
+                  <div className="text-xl text-blue-100">days</div>
                   {isPlanExpiringSoon && (
-                    <div className="bg-white/20 px-3 py-1 rounded-full text-sm">
-                      ⚠️ Renew Soon
+                    <div className="bg-yellow-400 text-yellow-900 px-3 py-1 rounded-full text-xs font-bold animate-bounce">
+                      ⚠️ Renew
                     </div>
                   )}
                 </div>
@@ -401,10 +402,10 @@ const AdminDashboard = () => {
           </div>
 
           {hasOverLimitDevices && (
-            <div className="mt-4 pt-4 border-t border-white/20">
-              <div className="flex items-center gap-2 text-yellow-200">
-                <AlertCircle className="w-5 h-5" />
-                <span className="font-medium">Some device limits have been exceeded</span>
+            <div className="mt-6 pt-5 border-t border-white/20 relative z-10">
+              <div className="flex items-center gap-2 text-yellow-200 bg-white/10 rounded-xl px-4 py-3 backdrop-blur-sm">
+                <AlertCircle className="w-5 h-5 animate-pulse" />
+                <span className="font-semibold">Some device limits have been exceeded</span>
               </div>
             </div>
           )}
@@ -430,14 +431,7 @@ const AdminDashboard = () => {
               bgColor="bg-gradient-to-br from-blue-50 to-blue-100"
               iconColor="text-blue-600"
               subtitle={`${dashboardData.totalSites > 0 ? 'All operational' : 'No sites configured'}`}
-              // onClick={() => console.log('Navigate to sites')}
             />
-            {/* <DashboardCard
-             icon={MapPin}
-              value={dashboardData.activeSites}
-              label="Active Sites"
-              subtitle={`${dashboardData.inactiveSites} inactive`}
-            /> */}
 
             <DashboardCard
               icon={Users}
@@ -471,13 +465,15 @@ const AdminDashboard = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
 
           {/* User Allocation */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <Users className="w-5 h-5 text-blue-600" />
+          <div className="bg-white rounded-2xl p-7 shadow-md border border-gray-100 hover:shadow-lg transition-all duration-300">
+            <div className="flex items-center justify-between mb-7">
+              <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2.5">
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl flex items-center justify-center">
+                  <Users className="w-5 h-5 text-blue-600" />
+                </div>
                 User Allocation
               </h3>
-              <ExternalLink className="w-4 h-4 text-gray-400" />
+              <ExternalLink className="w-4 h-4 text-gray-400 hover:text-blue-600 transition-colors cursor-pointer" />
             </div>
             <UsageBar
               used={dashboardData.usage.pm}
@@ -491,13 +487,13 @@ const AdminDashboard = () => {
               label="Supervisors"
               type={dashboardData.usage.supervisor >= dashboardData.plan.limits.supervisor ? 'warning' : 'default'}
             />
-            <div className="mt-6 pt-6 border-t border-gray-100">
-              <div className="flex items-center justify-between">
+            <div className="mt-7 pt-6 border-t border-gray-100">
+              <div className="flex items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4">
                 <div>
-                  <div className="text-sm font-medium text-gray-900">Total Users</div>
-                  <div className="text-xs text-gray-500">Combined allocation</div>
+                  <div className="text-sm font-semibold text-gray-900">Total Users</div>
+                  <div className="text-xs text-gray-500 mt-0.5">Combined allocation</div>
                 </div>
-                <div className="text-lg font-bold text-gray-900">
+                <div className="text-2xl font-bold text-blue-600">
                   {dashboardData.usage.pm + dashboardData.usage.supervisor} / {dashboardData.plan.limits.pm + dashboardData.plan.limits.supervisor}
                 </div>
               </div>
@@ -505,13 +501,15 @@ const AdminDashboard = () => {
           </div>
 
           {/* Device Allocation */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <Camera className="w-5 h-5 text-blue-600" />
+          <div className="bg-white rounded-2xl p-7 shadow-md border border-gray-100 hover:shadow-lg transition-all duration-300">
+            <div className="flex items-center justify-between mb-7">
+              <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2.5">
+                <div className="w-10 h-10 bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl flex items-center justify-center">
+                  <Camera className="w-5 h-5 text-orange-600" />
+                </div>
                 Device Allocation
               </h3>
-              <ExternalLink className="w-4 h-4 text-gray-400" />
+              <ExternalLink className="w-4 h-4 text-gray-400 hover:text-blue-600 transition-colors cursor-pointer" />
             </div>
             <UsageBar
               used={dashboardData.usage.devices.BARRIER || 0}
@@ -528,13 +526,13 @@ const AdminDashboard = () => {
               limit={dashboardData.plan.limits.devices.ANPR || 0}
               label="ANPR Cameras"
             />
-            <div className="mt-6 pt-6 border-t border-gray-100">
-              <div className="flex items-center justify-between">
+            <div className="mt-7 pt-6 border-t border-gray-100">
+              <div className="flex items-center justify-between bg-gradient-to-r from-orange-50 to-amber-50 rounded-xl p-4">
                 <div>
-                  <div className="text-sm font-medium text-gray-900">Total Devices</div>
-                  <div className="text-xs text-gray-500">All device types</div>
+                  <div className="text-sm font-semibold text-gray-900">Total Devices</div>
+                  <div className="text-xs text-gray-500 mt-0.5">All device types</div>
                 </div>
-                <div className="text-lg font-bold text-gray-900">
+                <div className="text-2xl font-bold text-orange-600">
                   {(dashboardData.usage.devices.ANPR || 0) + (dashboardData.usage.devices.BARRIER || 0) + (dashboardData.usage.devices.BIOMETRIC || 0)} /
                   {(dashboardData.plan.limits.devices.ANPR || 0) + (dashboardData.plan.limits.devices.BARRIER || 0) + (dashboardData.plan.limits.devices.BIOMETRIC || 0)}
                 </div>
@@ -543,57 +541,59 @@ const AdminDashboard = () => {
           </div>
 
           {/* Device Health Status */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <Activity className="w-5 h-5 text-blue-600" />
+          <div className="bg-white rounded-2xl p-7 shadow-md border border-gray-100 hover:shadow-lg transition-all duration-300">
+            <div className="flex items-center justify-between mb-7">
+              <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2.5">
+                <div className="w-10 h-10 bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-xl flex items-center justify-center">
+                  <Activity className="w-5 h-5 text-emerald-600" />
+                </div>
                 System Health
               </h3>
               <div className="flex items-center gap-2">
-                <Server className="w-4 h-4 text-gray-400" />
-                <HardDrive className="w-4 h-4 text-gray-400" />
+                <Server className="w-4 h-4 text-gray-400 hover:text-blue-600 transition-colors" />
+                <HardDrive className="w-4 h-4 text-gray-400 hover:text-blue-600 transition-colors" />
               </div>
             </div>
 
             <div className="space-y-4">
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                    <Wifi className="w-5 h-5 text-green-600" />
+              <div className="flex items-center justify-between p-5 bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl border border-green-100 hover:shadow-md transition-all duration-300">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center shadow-sm">
+                    <Wifi className="w-6 h-6 text-green-600" />
                   </div>
                   <div>
-                    <div className="font-medium text-gray-900">Active Devices</div>
-                    <div className="text-xs text-gray-500">Online and responding</div>
+                    <div className="font-bold text-gray-900">Active Devices</div>
+                    <div className="text-xs text-gray-500 mt-0.5">Online and responding</div>
                   </div>
                 </div>
-                <div className="text-2xl font-bold text-green-600">
+                <div className="text-3xl font-bold text-green-600">
                   {dashboardData.activeDevices}
                 </div>
               </div>
 
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
-                    <WifiOff className="w-5 h-5 text-red-600" />
+              <div className="flex items-center justify-between p-5 bg-gradient-to-r from-red-50 to-pink-50 rounded-2xl border border-red-100 hover:shadow-md transition-all duration-300">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center shadow-sm">
+                    <WifiOff className="w-6 h-6 text-red-600" />
                   </div>
                   <div>
-                    <div className="font-medium text-gray-900">Offline Devices</div>
-                    <div className="text-xs text-gray-500">Requires attention</div>
+                    <div className="font-bold text-gray-900">Offline Devices</div>
+                    <div className="text-xs text-gray-500 mt-0.5">Requires attention</div>
                   </div>
                 </div>
-                <div className="text-2xl font-bold text-red-600">
+                <div className="text-3xl font-bold text-red-600">
                   {dashboardData.inactiveDevices}
                 </div>
               </div>
 
-              <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <BarChart3 className="w-5 h-5 text-blue-600" />
+              <div className="flex items-center justify-between p-5 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border border-blue-200 hover:shadow-md transition-all duration-300">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center shadow-sm">
+                    <BarChart3 className="w-6 h-6 text-blue-600" />
                   </div>
                   <div>
-                    <div className="font-medium text-gray-900">System Health</div>
-                    <div className="text-xs text-gray-500">Overall performance</div>
+                    <div className="font-bold text-gray-900">System Health</div>
+                    <div className="text-xs text-gray-500 mt-0.5">Overall performance</div>
                   </div>
                 </div>
                 <DeviceHealthIndicator health={parseFloat(deviceActivityRate)} />
@@ -604,22 +604,17 @@ const AdminDashboard = () => {
 
         {/* Recent Activity with Enhanced Design */}
         <div className="mb-8">
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+          <div className="bg-white rounded-2xl p-7 shadow-md border border-gray-100">
             <div className="flex items-center justify-between mb-8">
               <div>
-                <h2 className="text-xl font-bold text-gray-900">Recent Activity</h2>
-                <p className="text-sm text-gray-600 mt-1">Live system events and movements</p>
+                <h2 className="text-2xl font-bold text-gray-900">Recent Activity</h2>
+                <p className="text-sm text-gray-600 mt-2">Live system events and movements</p>
               </div>
-              {/* <button className="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center gap-1">
-                View All Activity
-                <ArrowUpRight className="w-4 h-4" />
-              </button> */}
             </div>
 
             {dashboardData.recentActivity && dashboardData.recentActivity.length > 0 ? (
               <div className="space-y-3">
                 {dashboardData.recentActivity.slice(0, 5).map((activity, index) => {
-                  // Convert time to 12-hour format
                   const formatTime12Hour = (dateString) => {
                     try {
                       const date = new Date(dateString);
@@ -633,7 +628,6 @@ const AdminDashboard = () => {
                     }
                   };
 
-                  // Format date with month/day
                   const formatDate = (dateString) => {
                     try {
                       const date = new Date(dateString);
@@ -650,7 +644,6 @@ const AdminDashboard = () => {
                   const activityDate = formatDate(activity.time);
                   const isToday = new Date(activity.time).toDateString() === new Date().toDateString();
 
-                  // Determine if it's entry or exit based on title or description
                   const isEntry = activity.title.includes('Vehicle') && activity.description.includes('entry') ||
                     activity.title.includes('Entry') ||
                     activity.description.toLowerCase().includes('entry');
@@ -661,39 +654,39 @@ const AdminDashboard = () => {
                   return (
                     <div
                       key={index}
-                      className="flex items-start gap-4 p-3 hover:bg-gray-50 rounded-xl transition-colors group"
+                      className="flex items-start gap-4 p-4 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 rounded-2xl transition-all duration-300 group border border-transparent hover:border-blue-100 hover:shadow-md"
                     >
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${isEntry ? 'bg-green-100' :
-                          isExit ? 'bg-blue-100' : 'bg-purple-100'
+                      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-sm group-hover:scale-110 transition-transform duration-300 ${isEntry ? 'bg-gradient-to-br from-green-100 to-green-200' :
+                          isExit ? 'bg-gradient-to-br from-blue-100 to-blue-200' : 'bg-gradient-to-br from-purple-100 to-purple-200'
                         }`}>
                         {isEntry ? (
-                          <ArrowUpRight className="w-5 h-5 text-green-600" />
+                          <ArrowUpRight className="w-6 h-6 text-green-600" />
                         ) : isExit ? (
-                          <ArrowDownRight className="w-5 h-5 text-blue-600" />
+                          <ArrowDownRight className="w-6 h-6 text-blue-600" />
                         ) : (
-                          <Activity className="w-5 h-5 text-purple-600" />
+                          <Activity className="w-6 h-6 text-purple-600" />
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
-                          <div className="font-semibold text-gray-900 group-hover:text-blue-600">
+                          <div className="font-bold text-gray-900 group-hover:text-blue-600 transition-colors">
                             {activity.title}
                           </div>
                           <div className="flex flex-col items-end">
-                            <div className="text-sm font-medium text-gray-900">
+                            <div className="text-sm font-bold text-gray-900">
                               {activityTime}
                             </div>
-                            <div className="text-xs text-gray-500 mt-0.5">
+                            <div className="text-xs text-gray-500 mt-0.5 font-medium">
                               {isToday ? 'Today' : activityDate}
                             </div>
                           </div>
                         </div>
-                        <div className="text-sm text-gray-600 mt-1">{activity.description}</div>
-                        <div className="flex items-center gap-2 mt-2">
-                          <div className={`text-xs px-2 py-0.5 rounded-full ${isEntry ? 'bg-green-100 text-green-800' :
+                        <div className="text-sm text-gray-600 mt-1.5 font-medium">{activity.description}</div>
+                        <div className="flex items-center gap-2 mt-3">
+                          <div className={`text-xs px-3 py-1 rounded-full font-bold shadow-sm ${isEntry ? 'bg-green-100 text-green-800' :
                               isExit ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'
                             }`}>
-                            {isEntry ? 'Entry' : isExit ? 'Exit' : 'Activity'}
+                            {isEntry ? '↑ Entry' : isExit ? '↓ Exit' : '• Activity'}
                           </div>
                           <div className="text-xs text-gray-500">
                             • {activity.time ? new Date(activity.time).toLocaleDateString() : 'Unknown date'}
@@ -705,12 +698,12 @@ const AdminDashboard = () => {
                 })}
               </div>
             ) : (
-              <div className="text-center py-12">
-                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Activity className="w-8 h-8 text-gray-400" />
+              <div className="text-center py-16">
+                <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-sm">
+                  <Activity className="w-10 h-10 text-gray-400" />
                 </div>
-                <p className="text-gray-500 font-medium">No recent activity detected</p>
-                <p className="text-sm text-gray-400 mt-1">System activity will appear here automatically</p>
+                <p className="text-gray-500 font-semibold text-lg">No recent activity detected</p>
+                <p className="text-sm text-gray-400 mt-2">System activity will appear here automatically</p>
               </div>
             )}
           </div>

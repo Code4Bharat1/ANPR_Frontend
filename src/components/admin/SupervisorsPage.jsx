@@ -48,6 +48,8 @@ const SupervisorsPage = () => {
     const [showEditPassword, setShowEditPassword] = useState(false);
     const [errors, setErrors] = useState({});
     const [editErrors, setEditErrors] = useState({});
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+const [userToDelete, setUserToDelete] = useState(null);
     const [touched, setTouched] = useState({});
     const [editTouched, setEditTouched] = useState({});
     const [formData, setFormData] = useState({
@@ -310,10 +312,10 @@ const SupervisorsPage = () => {
             // Password validation
             if (!formData.password) {
                 validationErrors.password = "Password is required";
-            } 
-            else if  (formData.password.length < 8) {
+            }
+            else if (formData.password.length < 8) {
                 validationErrors.password = "Password must be at least 8 characters";
-            } 
+            }
 
             // Supervisor specific validation
             if (!formData.projectManagerId) {
@@ -325,11 +327,11 @@ const SupervisorsPage = () => {
 
             // 3. Set errors and check if form is valid
             setErrors(validationErrors);
-            
+
             // If there are validation errors, stop here
             if (Object.keys(validationErrors).length > 0) {
                 console.log('Form validation failed with errors:', validationErrors);
-                
+
                 // Scroll to top of modal to show errors
                 setTimeout(() => {
                     const modalContent = document.querySelector('.max-h-\\[90vh\\]');
@@ -337,7 +339,7 @@ const SupervisorsPage = () => {
                         modalContent.scrollTop = 0;
                     }
                 }, 100);
-                
+
                 return;
             }
 
@@ -374,7 +376,7 @@ const SupervisorsPage = () => {
             setTouched({});
             setShowPassword(false);
             setShowAdd(false);
-            
+
             // 6. Refresh the users list
             await fetchUsers();
 
@@ -384,7 +386,7 @@ const SupervisorsPage = () => {
             // Enhanced error handling
             if (err.response) {
                 const serverMessage = err.response.data?.message || err.response.data?.error || "Server error";
-                
+
                 if (err.response.status === 400) {
                     if (err.response.data?.errors) {
                         const serverErrors = {};
@@ -392,7 +394,7 @@ const SupervisorsPage = () => {
                             serverErrors[key] = err.response.data.errors[key].message || err.response.data.errors[key];
                         });
                         setErrors(serverErrors);
-                        
+
                         // Scroll to show errors
                         setTimeout(() => {
                             const modalContent = document.querySelector('.max-h-\\[90vh\\]');
@@ -400,7 +402,7 @@ const SupervisorsPage = () => {
                                 modalContent.scrollTop = 0;
                             }
                         }, 100);
-                        
+
                     } else if (err.response.data?.error?.includes('email')) {
                         setErrors({ ...errors, email: "This email is already registered. Please use a different email." });
                     } else {
@@ -411,7 +413,7 @@ const SupervisorsPage = () => {
                 } else if (err.response.status === 422) {
                     const validationErrors = err.response.data?.errors || {};
                     setErrors(validationErrors);
-                    
+
                     // Scroll to show errors
                     setTimeout(() => {
                         const modalContent = document.querySelector('.max-h-\\[90vh\\]');
@@ -419,7 +421,7 @@ const SupervisorsPage = () => {
                             modalContent.scrollTop = 0;
                         }
                     }, 100);
-                    
+
                 } else {
                     alert(`Error ${err.response.status}: ${serverMessage}`);
                 }
@@ -593,7 +595,7 @@ const SupervisorsPage = () => {
 
             // 3. Set errors and check
             setEditErrors(validationErrors);
-            
+
             if (Object.keys(validationErrors).length > 0) {
                 console.log('Edit form validation failed:', validationErrors);
                 return;
@@ -635,7 +637,7 @@ const SupervisorsPage = () => {
             setEditTouched({});
             setShowEdit(false);
             setSelectedUser(null);
-            
+
             // 6. Refresh the users list
             await fetchUsers();
 
@@ -661,7 +663,25 @@ const SupervisorsPage = () => {
             alert(err.response?.data?.message || 'Failed to update status');
         }
     };
+    // Add this function in your component, after the handleToggleStatus function
+    // const handleDeleteUser = async (userId) => {
+    //     if (!window.confirm('Are you sure you want to delete this supervisor? This action cannot be undone.')) {
+    //         return;
+    //     }
 
+    //     try {
+    //         await api.delete(`/api/client-admin/supervisors/${userId}`);
+    //         alert('Supervisor deleted successfully!');
+    //         await fetchUsers(); // Refresh the list
+    //     } catch (err) {
+    //         console.error('Error deleting supervisor:', err);
+    //         alert(err.response?.data?.message || 'Failed to delete supervisor');
+    //     }
+    // };
+    const handleDeleteUser = async (userId) => {
+  setUserToDelete(userId);
+  setShowDeleteConfirm(true);
+};
     const filteredUsers = Array.isArray(users) ? users.filter(user => {
         const matchesSearch = user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             user.email?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -842,6 +862,13 @@ const SupervisorsPage = () => {
                                                 >
                                                     <Power className="w-4 h-4" />
                                                 </button>
+                                                <button
+                                                    onClick={() => handleDeleteUser(user._id)}
+                                                    className="p-2 hover:bg-red-50 rounded-lg transition text-red-600"
+                                                    title="Delete"
+                                                >
+                                                    <X className="w-4 h-4" />
+                                                </button>
                                             </div>
                                         </td>
                                     </tr>
@@ -929,6 +956,13 @@ const SupervisorsPage = () => {
                                         }`}
                                 >
                                     <Power className="w-4 h-4" />
+                                </button>
+                                <button
+                                    onClick={() => handleDeleteUser(user._id || user.id)}
+                                    className="flex items-center justify-center gap-2 px-3 py-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg font-semibold text-sm transition"
+                                    title="Delete"
+                                >
+                                    <X className="w-4 h-4" />
                                 </button>
                             </div>
                         </div>
@@ -1405,7 +1439,7 @@ const SupervisorsPage = () => {
                         </div>
 
                         {/* ✅ ERROR SUMMARY SECTION */}
-                        
+
 
                         <div className="sticky bottom-0 bg-gray-50 flex flex-col sm:flex-row justify-end gap-3 p-4 sm:p-6 border-t border-gray-200">
                             <button
@@ -1692,7 +1726,7 @@ const SupervisorsPage = () => {
                                             <span className="w-1 h-1 bg-red-500 rounded-full"></span>
                                             <span className="capitalize">
                                                 {field === 'projectManagerId' ? 'Project Manager' :
-                                                 field === 'siteId' ? 'Site' : field}:
+                                                    field === 'siteId' ? 'Site' : field}:
                                             </span>
                                             <span>{error}</span>
                                         </div>
@@ -1723,6 +1757,79 @@ const SupervisorsPage = () => {
                     </div>
                 </div>
             )}
+
+            {/* Delete Confirmation Modal */}
+{showDeleteConfirm && (
+  <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+    <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl">
+      <div className="p-6">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+            <AlertCircle className="w-6 h-6 text-red-600" />
+          </div>
+          <div>
+            <h3 className="text-lg font-bold text-gray-900">Delete Supervisor</h3>
+            <p className="text-sm text-gray-600">This action cannot be undone</p>
+          </div>
+        </div>
+        
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+          <p className="text-sm text-red-700">
+            <span className="font-semibold">Warning:</span> Deleting this supervisor will:
+          </p>
+          <ul className="text-sm text-red-600 mt-2 space-y-1 pl-4">
+            <li className="flex items-start gap-2">
+              <span className="text-red-500 mt-0.5">•</span>
+              <span>Remove them from all assigned sites</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-red-500 mt-0.5">•</span>
+              <span>Remove them from all associated trips</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-red-500 mt-0.5">•</span>
+              <span>Permanently delete their account</span>
+            </li>
+          </ul>
+        </div>
+
+        <p className="text-gray-700 mb-6">
+          Are you sure you want to delete this supervisor? This action is permanent and cannot be reversed.
+        </p>
+
+        <div className="flex justify-end gap-3">
+          <button
+            onClick={() => {
+              setShowDeleteConfirm(false);
+              setUserToDelete(null);
+            }}
+            className="px-5 py-2.5 border-2 border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-100 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={async () => {
+              try {
+                await api.delete(`/api/client-admin/supervisors/${userToDelete}`);
+                alert('Supervisor deleted successfully!');
+                await fetchUsers();
+              } catch (err) {
+                console.error('Error deleting supervisor:', err);
+                alert(err.response?.data?.message || 'Failed to delete supervisor');
+              } finally {
+                setShowDeleteConfirm(false);
+                setUserToDelete(null);
+              }
+            }}
+            className="px-5 py-2.5 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
         </div>
     );
 };

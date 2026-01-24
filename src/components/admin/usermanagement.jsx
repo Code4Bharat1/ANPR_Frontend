@@ -50,6 +50,8 @@ const ProjectManagersPage = () => {
   const [editErrors, setEditErrors] = useState({});
   const [touched, setTouched] = useState({});
   const [editTouched, setEditTouched] = useState({});
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [userToDelete, setUserToDelete] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -266,7 +268,7 @@ const ProjectManagersPage = () => {
 
       // 2. Validate the form (direct validation without dependency on state)
       const validationErrors = {};
-      
+
       // Name validation
       if (!formData.name.trim()) {
         validationErrors.name = "Full name is required";
@@ -320,11 +322,11 @@ const ProjectManagersPage = () => {
 
       // 3. Set errors and check if form is valid
       setErrors(validationErrors);
-      
+
       // If there are validation errors, stop here
       if (Object.keys(validationErrors).length > 0) {
         console.log('Form validation failed with errors:', validationErrors);
-        
+
         // Scroll to top of modal to show errors
         setTimeout(() => {
           const modalContent = document.querySelector('.max-h-\\[90vh\\]');
@@ -332,7 +334,7 @@ const ProjectManagersPage = () => {
             modalContent.scrollTop = 0;
           }
         }, 100);
-        
+
         return;
       }
 
@@ -385,7 +387,7 @@ const ProjectManagersPage = () => {
       // Enhanced error handling
       if (err.response) {
         const serverMessage = err.response.data?.message || err.response.data?.error || "Server error";
-        
+
         if (err.response.status === 400) {
           if (err.response.data?.errors) {
             const serverErrors = {};
@@ -393,7 +395,7 @@ const ProjectManagersPage = () => {
               serverErrors[key] = err.response.data.errors[key].message || err.response.data.errors[key];
             });
             setErrors(serverErrors);
-            
+
             // Scroll to show errors
             setTimeout(() => {
               const modalContent = document.querySelector('.max-h-\\[90vh\\]');
@@ -401,7 +403,7 @@ const ProjectManagersPage = () => {
                 modalContent.scrollTop = 0;
               }
             }, 100);
-            
+
           } else if (err.response.data?.error?.includes('email')) {
             setErrors({ ...errors, email: "This email is already registered. Please use a different email." });
           } else {
@@ -416,7 +418,7 @@ const ProjectManagersPage = () => {
         } else if (err.response.status === 422) {
           const validationErrors = err.response.data?.errors || {};
           setErrors(validationErrors);
-          
+
           // Scroll to show errors
           setTimeout(() => {
             const modalContent = document.querySelector('.max-h-\\[90vh\\]');
@@ -424,7 +426,7 @@ const ProjectManagersPage = () => {
               modalContent.scrollTop = 0;
             }
           }, 100);
-          
+
         } else {
           alert(`Error ${err.response.status}: ${serverMessage}`);
         }
@@ -596,7 +598,7 @@ const ProjectManagersPage = () => {
 
       // 3. Set errors and check
       setEditErrors(validationErrors);
-      
+
       if (Object.keys(validationErrors).length > 0) {
         console.log('Edit form validation failed:', validationErrors);
         return;
@@ -664,7 +666,25 @@ const ProjectManagersPage = () => {
       alert(err.response?.data?.message || 'Failed to update status');
     }
   };
+  // Add this function in your component, after the handleToggleStatus function
+  // const handleDeleteUser = async (userId) => {
+  //   if (!window.confirm('Are you sure you want to delete this project manager? This action cannot be undone.')) {
+  //     return;
+  //   }
 
+  //   try {
+  //     await api.delete(`/api/client-admin/project-managers/${userId}`);
+  //     alert('Project Manager deleted successfully!');
+  //     await fetchUsers(); // Refresh the list
+  //   } catch (err) {
+  //     console.error('Error deleting project manager:', err);
+  //     alert(err.response?.data?.message || 'Failed to delete project manager');
+  //   }
+  // };
+  const handleDeleteUser = async (userId) => {
+  setUserToDelete(userId);
+  setShowDeleteConfirm(true);
+};
   const filteredUsers = Array.isArray(users) ? users.filter(user => {
     const matchesSearch = user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.email?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -848,6 +868,13 @@ const ProjectManagersPage = () => {
                         >
                           <Power className="w-4 h-4" />
                         </button>
+                        <button
+                          onClick={() => handleDeleteUser(user._id)}
+                          className="p-2 hover:bg-red-50 rounded-lg transition text-red-600"
+                          title="Delete"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -932,6 +959,13 @@ const ProjectManagersPage = () => {
                 >
                   <Edit className="w-4 h-4" />
                   Edit
+                </button>
+                <button
+                  onClick={() => handleDeleteUser(user._id || user.id)}
+                  className="flex items-center justify-center gap-2 px-3 py-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg font-semibold text-sm transition"
+                  title="Delete"
+                >
+                  <X className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => handleToggleStatus(user._id || user.id, user.status || 'Active')}
@@ -1852,6 +1886,78 @@ const ProjectManagersPage = () => {
               >
                 Update Project Manager
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl">
+            <div className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                  <AlertCircle className="w-6 h-6 text-red-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900">Delete Project Manager</h3>
+                  <p className="text-sm text-gray-600">This action cannot be undone</p>
+                </div>
+              </div>
+
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                <p className="text-sm text-red-700">
+                  <span className="font-semibold">Warning:</span> Deleting this project manager will:
+                </p>
+                <ul className="text-sm text-red-600 mt-2 space-y-1 pl-4">
+                  <li className="flex items-start gap-2">
+                    <span className="text-red-500 mt-0.5">•</span>
+                    <span>Remove them from all assigned sites</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-red-500 mt-0.5">•</span>
+                    <span>Remove them from all associated trips</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-red-500 mt-0.5">•</span>
+                    <span>Permanently delete their account</span>
+                  </li>
+                </ul>
+              </div>
+
+              <p className="text-gray-700 mb-6">
+                Are you sure you want to delete this project manager? This action is permanent and cannot be reversed.
+              </p>
+
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => {
+                    setShowDeleteConfirm(false);
+                    setUserToDelete(null);
+                  }}
+                  className="px-5 py-2.5 border-2 border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-100 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={async () => {
+                    try {
+                      await api.delete(`/api/client-admin/project-managers/${userToDelete}`);
+                      alert('Project Manager deleted successfully!');
+                      await fetchUsers();
+                    } catch (err) {
+                      console.error('Error deleting project manager:', err);
+                      alert(err.response?.data?.message || 'Failed to delete project manager');
+                    } finally {
+                      setShowDeleteConfirm(false);
+                      setUserToDelete(null);
+                    }
+                  }}
+                  className="px-5 py-2.5 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors"
+                >
+                  Delete
+                </button>
+              </div>
             </div>
           </div>
         </div>
