@@ -405,6 +405,8 @@ const AdminReports = () => {
       });
 
       setTrips(formattedTrips);
+      console.log(formattedTrips);
+      
       
       // Update active filters
       const filters = [];
