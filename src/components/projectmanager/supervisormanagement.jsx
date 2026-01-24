@@ -183,15 +183,133 @@ const SupervisorManagement = () => {
     await fetchSites();
   };
 
+  // const handleCreateSupervisor = async () => {
+  //   console.log('🚀 START: handleCreateSupervisor');
+
+  //   try {
+  //     setIsCreating(true);
+  //     setErrorMessage('');
+
+  //     // Validation...
+
+  //     const payload = {
+  //       name: formData.name.trim(),
+  //       email: formData.email.trim().toLowerCase(),
+  //       mobile: formData.mobile || '',
+  //       address: formData.address || '',
+  //       siteId: formData.siteId,
+  //       password: formData.password,
+  //     };
+
+  //     if (currentProjectManager?._id) {
+  //       payload.projectManagerId = currentProjectManager._id;
+  //     }
+
+  //     console.log('📤 Sending API request...');
+  //     const response = await api.post('/api/project/supervisors', payload);
+
+  //     console.log('✅ API Response:', response.data);
+
+  //     if (response.data.success || response.data._id) {
+  //       console.log('🎉 SUCCESS: Supervisor created');
+
+  //       // Show success toast
+  //       showToast('Supervisor created successfully!');
+
+  //       // 🔥 FORCE MODAL CLOSE - multiple ways
+  //       console.log('🔴 Setting showAdd to false');
+  //       setShowAdd(false);
+
+  //       // Extra safety - call again in next tick
+  //       setTimeout(() => {
+  //         setShowAdd(false);
+  //       }, 0);
+
+  //       // Reset form
+  //       setTimeout(() => {
+  //         setFormData({
+  //           name: '',
+  //           email: '',
+  //           mobile: '',
+  //           address: '',
+  //           siteId: '',
+  //           projectManagerId: currentProjectManager?._id || '',
+  //           password: '',
+  //         });
+  //         setShowPassword(false);
+  //         setErrorMessage('');
+
+  //         // Refresh list
+  //         fetchSupervisors();
+
+  //         console.log('🔄 Form reset and list refreshed');
+  //       }, 200);
+
+  //       return true; // Return success
+
+  //     } else {
+  //       throw new Error(response.data.message || 'Failed to create supervisor');
+  //     }
+
+  //   } catch (err) {
+  //     console.error('❌ ERROR in handleCreateSupervisor:', err);
+
+  //     let errorMessage = 'Failed to create supervisor';
+
+  //     if (err.response?.status === 400) {
+  //       errorMessage = err.response.data?.message || 'Invalid request data';
+  //     } else if (err.response?.status === 401) {
+  //       errorMessage = 'Session expired. Please login again.';
+  //       setTimeout(() => window.location.href = '/login', 2000);
+  //     } else if (err.response?.status === 409) {
+  //       errorMessage = 'A supervisor with this email already exists.';
+  //     } else if (err.response?.data?.message) {
+  //       errorMessage = err.response.data.message;
+  //     } else if (err.message) {
+  //       errorMessage = err.message;
+  //     }
+
+  //     setErrorMessage(errorMessage);
+  //     showToast(errorMessage, 'error');
+
+  //     return false; // Return failure
+
+  //   } finally {
+  //     console.log('🏁 END: handleCreateSupervisor');
+  //     setIsCreating(false);
+  //   }
+  // };
+
+
   const handleCreateSupervisor = async () => {
   console.log('🚀 START: handleCreateSupervisor');
-  
+
   try {
     setIsCreating(true);
     setErrorMessage('');
-    
-    // Validation...
-    
+
+    /* ================= VALIDATION ================= */
+    if (!formData.name.trim()) {
+      throw new Error('Please enter supervisor name');
+    }
+
+    if (!formData.email.trim()) {
+      throw new Error('Please enter email address');
+    }
+
+    if (!validateEmail(formData.email)) {
+      throw new Error('Please enter a valid email address');
+    }
+
+    if (!formData.password || formData.password.length < 8) {
+      throw new Error('Password must be at least 8 characters');
+    }
+
+    if (!formData.siteId) {
+      throw new Error('Please select a site');
+    }
+
+    /* ================= PAYLOAD ================= */
     const payload = {
       name: formData.name.trim(),
       email: formData.email.trim().toLowerCase(),
@@ -205,75 +323,70 @@ const SupervisorManagement = () => {
       payload.projectManagerId = currentProjectManager._id;
     }
 
-    console.log('📤 Sending API request...');
+    console.log('📤 Sending API request...', payload);
+
+    /* ================= API CALL ================= */
     const response = await api.post('/api/project/supervisors', payload);
-    
+
     console.log('✅ API Response:', response.data);
-    
-    if (response.data.success || response.data._id) {
+
+    /* ================= SUCCESS CHECK ================= */
+    if (
+      response.status === 200 ||
+      response.status === 201 ||
+      response.data?.data?._id
+    ) {
       console.log('🎉 SUCCESS: Supervisor created');
-      
-      // Show success toast
+
       showToast('Supervisor created successfully!');
-      
-      // 🔥 FORCE MODAL CLOSE - multiple ways
-      console.log('🔴 Setting showAdd to false');
+
+      /* Close modal */
       setShowAdd(false);
-      
-      // Extra safety - call again in next tick
-      setTimeout(() => {
-        setShowAdd(false);
-      }, 0);
-      
-      // Reset form
-      setTimeout(() => {
-        setFormData({
-          name: '',
-          email: '',
-          mobile: '',
-          address: '',
-          siteId: '',
-          projectManagerId: currentProjectManager?._id || '',
-          password: '',
-        });
-        setShowPassword(false);
-        setErrorMessage('');
-        
-        // Refresh list
-        fetchSupervisors();
-        
-        console.log('🔄 Form reset and list refreshed');
-      }, 200);
-      
-      return true; // Return success
-      
-    } else {
-      throw new Error(response.data.message || 'Failed to create supervisor');
+
+      /* Reset form */
+      setFormData({
+        name: '',
+        email: '',
+        mobile: '',
+        address: '',
+        siteId: '',
+        projectManagerId: currentProjectManager?._id || '',
+        password: '',
+      });
+
+      setShowPassword(false);
+      setErrorMessage('');
+
+      /* Refresh list */
+      await fetchSupervisors();
+
+      return; // 🔥 VERY IMPORTANT
     }
+
+    /* ================= REAL FAILURE ================= */
+    throw new Error(response.data?.message || 'Failed to create supervisor');
 
   } catch (err) {
     console.error('❌ ERROR in handleCreateSupervisor:', err);
-    
-    let errorMessage = 'Failed to create supervisor';
-    
+
+    let msg = 'Failed to create supervisor';
+
     if (err.response?.status === 400) {
-      errorMessage = err.response.data?.message || 'Invalid request data';
+      msg = err.response.data?.message || msg;
     } else if (err.response?.status === 401) {
-      errorMessage = 'Session expired. Please login again.';
+      msg = 'Session expired. Please login again.';
       setTimeout(() => window.location.href = '/login', 2000);
+    } else if (err.response?.status === 403) {
+      msg = err.response.data?.message || 'You are not allowed to assign supervisor to this site';
     } else if (err.response?.status === 409) {
-      errorMessage = 'A supervisor with this email already exists.';
-    } else if (err.response?.data?.message) {
-      errorMessage = err.response.data.message;
+      msg = 'A supervisor with this email already exists';
     } else if (err.message) {
-      errorMessage = err.message;
+      msg = err.message;
     }
-    
-    setErrorMessage(errorMessage);
-    showToast(errorMessage, 'error');
-    
-    return false; // Return failure
-    
+
+    setErrorMessage(msg);
+    showToast(msg, 'error');
+
   } finally {
     console.log('🏁 END: handleCreateSupervisor');
     setIsCreating(false);
@@ -322,12 +435,12 @@ const SupervisorManagement = () => {
       console.log('Updating supervisor with payload:', payload);
 
       const response = await api.put(`/api/project/supervisors/${selectedSupervisor._id}`, payload);
-      
+
       console.log('Update response:', response.data);
-      
+
       if (response.status === 200 || response.status === 201) {
         showToast('Supervisor updated successfully!');
-        
+
         setShowEdit(false);
         setSelectedSupervisor(null);
         setFormData({
@@ -343,14 +456,14 @@ const SupervisorManagement = () => {
         setTimeout(() => {
           fetchSupervisors();
         }, 500);
-        
+
       } else {
         throw new Error(response.data.message || 'Failed to update supervisor');
       }
 
     } catch (err) {
       console.error('Error updating supervisor:', err);
-      
+
       let errorMessage = 'Failed to update supervisor';
 
       if (err.response?.status === 400) {
@@ -371,10 +484,10 @@ const SupervisorManagement = () => {
       } else if (err.message) {
         errorMessage = err.message;
       }
-      
+
       setErrorMessage(errorMessage);
       showToast(errorMessage, 'error');
-      
+
     } finally {
       setIsUpdating(false);
     }
@@ -824,7 +937,7 @@ const SupervisorManagement = () => {
       )}
 
       {/* Add Supervisor Modal */}
- {showAdd && (
+      {/* {showAdd && (
   <div 
     key={`add-modal-${Date.now()}`}
     className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50"
@@ -834,274 +947,284 @@ const SupervisorManagement = () => {
         setShowAdd(false);
       }
     }}
-  >
-    <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
-      <div className="sticky top-0 bg-white flex items-center justify-between p-6 border-b border-gray-200">
-        <h2 className="text-2xl font-bold text-gray-900">Add Supervisor</h2>
-        <button
-          onClick={() => {
-            console.log('❌ Closing modal manually');
-            setShowAdd(false);
-            setErrorMessage('');
-            setFormData({
-              name: '',
-              email: '',
-              mobile: '',
-              address: '',
-              siteId: '',
-              projectManagerId: currentProjectManager?._id || '',
-              password: '',
-            });
-            setShowPassword(false);
+  > */}
+      {showAdd && (
+        <div
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowAdd(false);
+            }
           }}
-          className="text-gray-400 hover:text-gray-600 transition-colors"
         >
-          <X className="w-6 h-6" />
-        </button>
-      </div>
 
-      <div className="p-6 space-y-6">
-        {/* Error Message */}
-        {errorMessage && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-            <div className="flex items-center gap-2 text-red-700">
-              <AlertCircle className="w-5 h-5" />
-              <p className="font-medium">{errorMessage}</p>
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white flex items-center justify-between p-6 border-b border-gray-200">
+              <h2 className="text-2xl font-bold text-gray-900">Add Supervisor</h2>
+              <button
+                onClick={() => {
+                  console.log('❌ Closing modal manually');
+                  setShowAdd(false);
+                  setErrorMessage('');
+                  setFormData({
+                    name: '',
+                    email: '',
+                    mobile: '',
+                    address: '',
+                    siteId: '',
+                    projectManagerId: currentProjectManager?._id || '',
+                    password: '',
+                  });
+                  setShowPassword(false);
+                }}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
             </div>
-            <button
-              onClick={clearError}
-              className="text-sm text-red-600 hover:text-red-800 mt-2"
-            >
-              Clear error
-            </button>
-          </div>
-        )}
 
-        {/* Name Field */}
-        <div>
-          <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-            <User className="w-4 h-4" />
-            Full Name *
-          </label>
-          <input
-            type="text"
-            placeholder="Enter supervisor name"
-            value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                document.getElementById('create-btn')?.click();
-              }
-            }}
-          />
-        </div>
-
-        {/* Email Field */}
-        <div>
-          <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-            <Mail className="w-4 h-4" />
-            Email Address *
-          </label>
-          <input
-            type="email"
-            placeholder="supervisor@example.com"
-            value={formData.email}
-            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                document.getElementById('create-btn')?.click();
-              }
-            }}
-          />
-        </div>
-
-        {/* Phone Field */}
-        <div>
-          <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-            <Phone className="w-4 h-4" />
-            Phone Number *
-          </label>
-          <input
-            type="tel"
-            placeholder="9876543210"
-            value={formData.mobile}
-            onChange={(e) => {
-              const value = e.target.value.replace(/\D/g, '').slice(0, 10);
-              setFormData({ ...formData, mobile: value });
-            }}
-            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                document.getElementById('create-btn')?.click();
-              }
-            }}
-          />
-          <p className="text-xs text-gray-500 mt-1">
-            {formData.mobile ? `${formData.mobile.length}/10 digits` : 'Enter 10-digit number (optional)'}
-          </p>
-        </div>
-
-        {/* Address Field */}
-        <div>
-          <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-            <MapPin className="w-4 h-4" />
-            Address *
-          </label>
-          <textarea
-            placeholder="Enter full address"
-            value={formData.address}
-            onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-            rows={3}
-            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none"
-            onKeyDown={(e) => {
-              if (e.ctrlKey && e.key === 'Enter') {
-                e.preventDefault();
-                document.getElementById('create-btn')?.click();
-              }
-            }}
-          />
-        </div>
-
-        {/* Password Field */}
-        <div>
-          <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-            <Lock className="w-4 h-4" />
-            Password *
-          </label>
-          <div className="relative">
-            <input
-              type={showPassword ? "text" : "password"}
-              placeholder="Create a strong password"
-              value={formData.password || ''}
-              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none pr-12"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  document.getElementById('create-btn')?.click();
-                }
-              }}
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
-            >
-              {showPassword ? (
-                <EyeOff className="w-5 h-5" />
-              ) : (
-                <Eye className="w-5 h-5" />
+            <div className="p-6 space-y-6">
+              {/* Error Message */}
+              {errorMessage && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <div className="flex items-center gap-2 text-red-700">
+                    <AlertCircle className="w-5 h-5" />
+                    <p className="font-medium">{errorMessage}</p>
+                  </div>
+                  <button
+                    onClick={clearError}
+                    className="text-sm text-red-600 hover:text-red-800 mt-2"
+                  >
+                    Clear error
+                  </button>
+                </div>
               )}
-            </button>
-          </div>
-          <div className="flex items-center justify-between mt-1">
-            <p className="text-xs text-gray-500">
-              Minimum 8 characters required
-            </p>
-            <p className={`text-xs font-medium ${formData.password && formData.password.length >= 8
-                ? 'text-green-600'
-                : 'text-red-500'
-              }`}>
-              {formData.password ? formData.password.length : 0}/8 characters
-            </p>
-          </div>
-          {formData.password && formData.password.length > 0 && formData.password.length < 8 && (
-            <p className="text-xs text-red-500 mt-1">
-              Password must be at least 8 characters
-            </p>
-          )}
-        </div>
 
-        {/* Site Selection */}
-        <div>
-          <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-            <Building2 className="w-4 h-4" />
-            Assigned Site *
-          </label>
-          {loadingSites ? (
-            <div className="w-full border border-gray-300 px-4 py-3 rounded-lg bg-gray-50 flex items-center justify-center">
-              <Loader2 className="w-4 h-4 animate-spin mr-2" />
-              <span className="text-sm text-gray-600">Loading sites...</span>
-            </div>
-          ) : sites.length === 0 ? (
-            <div className="border border-gray-300 rounded-lg p-4 text-center">
-              <Building2 className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-              <p className="text-sm text-gray-500 mb-1">No sites assigned to you</p>
-              <p className="text-xs text-gray-400">Contact admin to get sites assigned</p>
-            </div>
-          ) : (
-            <select
-              value={formData.siteId}
-              onChange={(e) => setFormData({ ...formData, siteId: e.target.value })}
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  document.getElementById('create-btn')?.click();
-                }
-              }}
-            >
-              <option value="">Select Site</option>
-              {sites.map((site) => (
-                <option key={site._id} value={site._id}>
-                  {site.name || site.siteName}
-                </option>
-              ))}
-            </select>
-          )}
-        </div>
-
-        {/* Project Manager Info */}
-        {currentProjectManager && (
-          <div className="bg-blue-50 rounded-lg p-4 border border-blue-100">
-            <label className="flex items-center gap-2 text-sm font-medium text-blue-700 mb-2">
-              <UserCheck className="w-4 h-4" />
-              Your Profile
-            </label>
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                <User className="w-5 h-5 text-blue-600" />
-              </div>
+              {/* Name Field */}
               <div>
-                <p className="font-medium text-blue-800">{currentProjectManager.name}</p>
-                <p className="text-sm text-blue-600">{currentProjectManager.email}</p>
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                  <User className="w-4 h-4" />
+                  Full Name *
+                </label>
+                <input
+                  type="text"
+                  placeholder="Enter supervisor name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      document.getElementById('create-btn')?.click();
+                    }
+                  }}
+                />
               </div>
-            </div>
-            <p className="text-xs text-blue-500 mt-2">
-              This supervisor will be created under your management
-            </p>
-          </div>
-        )}
-      </div>
 
-      <div className="sticky bottom-0 bg-gray-50 flex justify-end gap-3 p-6 border-t border-gray-200">
-        <button
-          onClick={() => {
-            console.log('❌ Cancel button clicked - closing modal');
-            setShowAdd(false);
-            setErrorMessage('');
-            setFormData({
-              name: '',
-              email: '',
-              mobile: '',
-              address: '',
-              siteId: '',
-              projectManagerId: currentProjectManager?._id || '',
-              password: '',
-            });
-            setShowPassword(false);
-          }}
-          className="px-6 py-2.5 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-100 transition-colors"
-          disabled={isCreating}
-        >
-          Cancel
-        </button>
-        <button
+              {/* Email Field */}
+              <div>
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                  <Mail className="w-4 h-4" />
+                  Email Address *
+                </label>
+                <input
+                  type="email"
+                  placeholder="supervisor@example.com"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      document.getElementById('create-btn')?.click();
+                    }
+                  }}
+                />
+              </div>
+
+              {/* Phone Field */}
+              <div>
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                  <Phone className="w-4 h-4" />
+                  Phone Number *
+                </label>
+                <input
+                  type="tel"
+                  placeholder="9876543210"
+                  value={formData.mobile}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/\D/g, '').slice(0, 10);
+                    setFormData({ ...formData, mobile: value });
+                  }}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      document.getElementById('create-btn')?.click();
+                    }
+                  }}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  {formData.mobile ? `${formData.mobile.length}/10 digits` : 'Enter 10-digit number (optional)'}
+                </p>
+              </div>
+
+              {/* Address Field */}
+              <div>
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                  <MapPin className="w-4 h-4" />
+                  Address *
+                </label>
+                <textarea
+                  placeholder="Enter full address"
+                  value={formData.address}
+                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  rows={3}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none"
+                  onKeyDown={(e) => {
+                    if (e.ctrlKey && e.key === 'Enter') {
+                      e.preventDefault();
+                      document.getElementById('create-btn')?.click();
+                    }
+                  }}
+                />
+              </div>
+
+              {/* Password Field */}
+              <div>
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                  <Lock className="w-4 h-4" />
+                  Password *
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Create a strong password"
+                    value={formData.password || ''}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none pr-12"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        document.getElementById('create-btn')?.click();
+                      }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="w-5 h-5" />
+                    ) : (
+                      <Eye className="w-5 h-5" />
+                    )}
+                  </button>
+                </div>
+                <div className="flex items-center justify-between mt-1">
+                  <p className="text-xs text-gray-500">
+                    Minimum 8 characters required
+                  </p>
+                  <p className={`text-xs font-medium ${formData.password && formData.password.length >= 8
+                    ? 'text-green-600'
+                    : 'text-red-500'
+                    }`}>
+                    {formData.password ? formData.password.length : 0}/8 characters
+                  </p>
+                </div>
+                {formData.password && formData.password.length > 0 && formData.password.length < 8 && (
+                  <p className="text-xs text-red-500 mt-1">
+                    Password must be at least 8 characters
+                  </p>
+                )}
+              </div>
+
+              {/* Site Selection */}
+              <div>
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                  <Building2 className="w-4 h-4" />
+                  Assigned Site *
+                </label>
+                {loadingSites ? (
+                  <div className="w-full border border-gray-300 px-4 py-3 rounded-lg bg-gray-50 flex items-center justify-center">
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    <span className="text-sm text-gray-600">Loading sites...</span>
+                  </div>
+                ) : sites.length === 0 ? (
+                  <div className="border border-gray-300 rounded-lg p-4 text-center">
+                    <Building2 className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                    <p className="text-sm text-gray-500 mb-1">No sites assigned to you</p>
+                    <p className="text-xs text-gray-400">Contact admin to get sites assigned</p>
+                  </div>
+                ) : (
+                  <select
+                    value={formData.siteId}
+                    onChange={(e) => setFormData({ ...formData, siteId: e.target.value })}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        document.getElementById('create-btn')?.click();
+                      }
+                    }}
+                  >
+                    <option value="">Select Site</option>
+                    {sites.map((site) => (
+                      <option key={site._id} value={site._id}>
+                        {site.name || site.siteName}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+
+              {/* Project Manager Info */}
+              {currentProjectManager && (
+                <div className="bg-blue-50 rounded-lg p-4 border border-blue-100">
+                  <label className="flex items-center gap-2 text-sm font-medium text-blue-700 mb-2">
+                    <UserCheck className="w-4 h-4" />
+                    Your Profile
+                  </label>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                      <User className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-blue-800">{currentProjectManager.name}</p>
+                      <p className="text-sm text-blue-600">{currentProjectManager.email}</p>
+                    </div>
+                  </div>
+                  <p className="text-xs text-blue-500 mt-2">
+                    This supervisor will be created under your management
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="sticky bottom-0 bg-gray-50 flex justify-end gap-3 p-6 border-t border-gray-200">
+              <button
+                onClick={() => {
+                  console.log('❌ Cancel button clicked - closing modal');
+                  setShowAdd(false);
+                  setErrorMessage('');
+                  setFormData({
+                    name: '',
+                    email: '',
+                    mobile: '',
+                    address: '',
+                    siteId: '',
+                    projectManagerId: currentProjectManager?._id || '',
+                    password: '',
+                  });
+                  setShowPassword(false);
+                }}
+                className="px-6 py-2.5 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-100 transition-colors"
+                disabled={isCreating}
+              >
+                Cancel
+              </button>
+              {/* <button
           id="create-btn"
           onClick={async () => {
             console.log('✅ Create button clicked');
@@ -1111,7 +1234,7 @@ const SupervisorManagement = () => {
             
             try {
               // Directly call the creation logic here
-              await handleCreateSupervisorDirect();
+              await handleCreateSupervisor();
             } catch (error) {
               console.error('❌ Error in create handler:', error);
             }
@@ -1127,11 +1250,23 @@ const SupervisorManagement = () => {
           ) : (
             'Create Supervisor'
           )}
-        </button>
-      </div>
-    </div>
-  </div>
-)}
+        </button> */}
+              <button
+                id="create-btn"
+                onClick={async () => {
+                  if (isCreating) return;
+                  await handleCreateSupervisor(); // ✅ correct
+                }}
+                disabled={isCreating || loadingSites}
+                className="px-6 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:bg-blue-300 flex items-center gap-2"
+              >
+                {isCreating ? 'Creating...' : 'Create Supervisor'}
+              </button>
+
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Edit Supervisor Modal */}
       {showEdit && selectedSupervisor && (
