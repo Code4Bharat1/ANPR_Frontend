@@ -124,9 +124,7 @@ const SiteModal = ({ isOpen, onClose, site, onSave, mode }) => {
           const phoneDigits = value.replace(/\D/g, '');
           if (phoneDigits.length < 10) {
             newErrors.contactPhone = 'Phone number must have at least 10 digits';
-          } else if (phoneDigits.length > 15) {
-            newErrors.contactPhone = 'Phone number cannot exceed 15 digits';
-          } else if (!/^[+]?[0-9\s\-()]+$/.test(value)) {
+          }  else if (!/^[+]?[0-9\s\-()]+$/.test(value)) {
             newErrors.contactPhone = 'Invalid phone number format';
           } else {
             delete newErrors.contactPhone;
@@ -248,8 +246,7 @@ const SiteModal = ({ isOpen, onClose, site, onSave, mode }) => {
       const phoneDigits = formData.contactPhone.replace(/\D/g, '');
       if (phoneDigits.length < 10) {
         newErrors.contactPhone = 'Phone number must have at least 10 digits';
-      } else if (phoneDigits.length > 15) {
-        newErrors.contactPhone = 'Phone number cannot exceed 15 digits';
+      
       } else if (!/^[+]?[0-9\s\-()]+$/.test(formData.contactPhone)) {
         newErrors.contactPhone = 'Invalid phone number format';
       }

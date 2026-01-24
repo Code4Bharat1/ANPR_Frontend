@@ -337,12 +337,12 @@ const AddDeviceModal = ({ isOpen, onClose, onSubmit, loading, clients, sites }) 
         } else {
           // Validate each octet is between 0-255
           const octets = value.split('.');
-          const isValid = octets.length === 4 && 
+          const isValid = octets.length === 4 &&
             octets.every(octet => {
               const num = parseInt(octet, 10);
               return num >= 0 && num <= 255 && octet === num.toString();
             });
-          
+
           if (!isValid) {
             newErrors.ipAddress = "Invalid IP address format";
           } else {
@@ -407,12 +407,12 @@ const AddDeviceModal = ({ isOpen, onClose, onSubmit, loading, clients, sites }) 
     } else {
       // Validate each octet is between 0-255
       const octets = formData.ipAddress.split('.');
-      const isValid = octets.length === 4 && 
+      const isValid = octets.length === 4 &&
         octets.every(octet => {
           const num = parseInt(octet, 10);
           return num >= 0 && num <= 255 && octet === num.toString();
         });
-      
+
       if (!isValid) {
         newErrors.ipAddress = "Invalid IP address format";
       }
@@ -430,7 +430,7 @@ const AddDeviceModal = ({ isOpen, onClose, onSubmit, loading, clients, sites }) 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
-    
+
     // Real-time validation for already touched fields
     if (touched[name]) {
       validateField(name);
@@ -439,7 +439,7 @@ const AddDeviceModal = ({ isOpen, onClose, onSubmit, loading, clients, sites }) 
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
+
     // Mark all fields as touched for validation
     const allTouched = Object.keys(formData).reduce((acc, key) => {
       acc[key] = true;
@@ -495,9 +495,8 @@ const AddDeviceModal = ({ isOpen, onClose, onSubmit, loading, clients, sites }) 
                   onBlur={handleBlur}
                   required
                   placeholder="e.g., Entrance Camera"
-                  className={`w-full px-3 md:px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base ${
-                    errors.deviceName ? 'border-red-500' : 'border-gray-300'
-                  }`}
+                  className={`w-full px-3 md:px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base ${errors.deviceName ? 'border-red-500' : 'border-gray-300'
+                    }`}
                 />
                 {errors.deviceName && (
                   <p className="text-red-500 text-xs mt-1">{errors.deviceName}</p>
@@ -517,9 +516,8 @@ const AddDeviceModal = ({ isOpen, onClose, onSubmit, loading, clients, sites }) 
                   onBlur={handleBlur}
                   required
                   placeholder="e.g., DEV-2024-001"
-                  className={`w-full px-3 md:px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base ${
-                    errors.serialNumber ? 'border-red-500' : 'border-gray-300'
-                  }`}
+                  className={`w-full px-3 md:px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base ${errors.serialNumber ? 'border-red-500' : 'border-gray-300'
+                    }`}
                 />
                 {errors.serialNumber && (
                   <p className="text-red-500 text-xs mt-1">{errors.serialNumber}</p>
@@ -537,12 +535,12 @@ const AddDeviceModal = ({ isOpen, onClose, onSubmit, loading, clients, sites }) 
                   onChange={handleChange}
                   onBlur={handleBlur}
                   required
-                  className={`w-full px-3 md:px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base ${
-                    errors.deviceType ? 'border-red-500' : 'border-gray-300'
-                  }`}
+                  className={`w-full px-3 md:px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base ${errors.deviceType ? 'border-red-500' : 'border-gray-300'
+                    }`}
                 >
                   <option value="ANPR">ANPR Camera</option>
                   <option value="BARRIER">Barrier</option>
+                  <option value="BIOMETRIC">BIOMETRIC</option>
                 </select>
                 {errors.deviceType && (
                   <p className="text-red-500 text-xs mt-1">{errors.deviceType}</p>
@@ -566,9 +564,8 @@ const AddDeviceModal = ({ isOpen, onClose, onSubmit, loading, clients, sites }) 
                     onChange={handleChange}
                     onBlur={handleBlur}
                     required
-                    className={`w-full px-3 md:px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base ${
-                      errors.clientId ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                    className={`w-full px-3 md:px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base ${errors.clientId ? 'border-red-500' : 'border-gray-300'
+                      }`}
                   >
                     <option value="">Select Client</option>
                     {clients.map(client => (
@@ -593,9 +590,8 @@ const AddDeviceModal = ({ isOpen, onClose, onSubmit, loading, clients, sites }) 
                     onChange={handleChange}
                     onBlur={handleBlur}
                     required
-                    className={`w-full px-3 md:px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base ${
-                      errors.siteId ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                    className={`w-full px-3 md:px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base ${errors.siteId ? 'border-red-500' : 'border-gray-300'
+                      }`}
                   >
                     <option value="">Select Site</option>
                     {sites.map(site => (
@@ -624,9 +620,8 @@ const AddDeviceModal = ({ isOpen, onClose, onSubmit, loading, clients, sites }) 
                 onBlur={handleBlur}
                 required
                 placeholder="e.g., 192.168.1.100"
-                className={`w-full px-3 md:px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base ${
-                  errors.ipAddress ? 'border-red-500' : 'border-gray-300'
-                }`}
+                className={`w-full px-3 md:px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base ${errors.ipAddress ? 'border-red-500' : 'border-gray-300'
+                  }`}
               />
               {errors.ipAddress ? (
                 <p className="text-red-500 text-xs mt-1">{errors.ipAddress}</p>
@@ -647,9 +642,8 @@ const AddDeviceModal = ({ isOpen, onClose, onSubmit, loading, clients, sites }) 
                 onBlur={handleBlur}
                 rows={3}
                 placeholder="Additional notes about the device"
-                className={`w-full px-3 md:px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base ${
-                  errors.notes ? 'border-red-500' : 'border-gray-300'
-                }`}
+                className={`w-full px-3 md:px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base ${errors.notes ? 'border-red-500' : 'border-gray-300'
+                  }`}
               />
               <div className="flex justify-between items-center mt-1">
                 {errors.notes ? (
@@ -680,7 +674,7 @@ const AddDeviceModal = ({ isOpen, onClose, onSubmit, loading, clients, sites }) 
                 {loading ? 'Registering...' : 'Register Device'}
               </button>
             </div>
-          </div>  
+          </div>
         </form>
       </div>
     </div>
@@ -707,50 +701,50 @@ const DeviceManagement = () => {
     fetchSites();
   }, []);
 
- const getAuthHeaders = () => {
-  const token = localStorage.getItem('accessToken');
-  if (!token) {
-    // Redirect immediately if no token
-    if (typeof window !== 'undefined') {
-      window.location.href = '/login';
-    }
-    throw new Error('No authentication token found');
-  }
-  return {
-    'Authorization': `Bearer ${token}`,
-    'Content-Type': 'application/json'
-  };
-};
-
-const fetchDevices = async () => {
-  try {
-    setLoading(true);
-    const response = await axios.get(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/devices`,
-      { headers: getAuthHeaders() }
-    );
-    
-    setDevices(Array.isArray(response.data) ? response.data : []);
-    setError(null);
-  } catch (err) {
-    console.error('Error fetching devices:', err);
-    
-    // Handle 401/403 errors
-    if (err.response?.status === 401 || err.response?.status === 403) {
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('user');
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      // Redirect immediately if no token
       if (typeof window !== 'undefined') {
         window.location.href = '/login';
       }
-      return;
+      throw new Error('No authentication token found');
     }
-    
-    setError(err.response?.data?.message || err.message);
-    setDevices([]);
-  } finally {
-    setLoading(false);
-  }
-};
+    return {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    };
+  };
+
+  const fetchDevices = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/devices`,
+        { headers: getAuthHeaders() }
+      );
+
+      setDevices(Array.isArray(response.data) ? response.data : []);
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching devices:', err);
+
+      // Handle 401/403 errors
+      if (err.response?.status === 401 || err.response?.status === 403) {
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('user');
+        if (typeof window !== 'undefined') {
+          window.location.href = '/login';
+        }
+        return;
+      }
+
+      setError(err.response?.data?.message || err.message);
+      setDevices([]);
+    } finally {
+      setLoading(false);
+    }
+  };
   const fetchClients = async () => {
     try {
       const response = await axios.get(
@@ -854,27 +848,29 @@ const fetchDevices = async () => {
   };
 
   const filteredDevices = devices.filter(device => {
-  const query = searchQuery.toLowerCase();
+    const query = searchQuery.toLowerCase();
 
-  const matchesSearch =
-    device.name?.toLowerCase().includes(query) ||          // device name
-    device.deviceId?.toLowerCase().includes(query) ||      // device id
-    device.clientName?.toLowerCase().includes(query) ||    // client name
-    device.siteName?.toLowerCase().includes(query);        // site name
+    const matchesSearch =
+      device.name?.toLowerCase().includes(query) ||          // device name
+      device.deviceId?.toLowerCase().includes(query) ||      // device id
+      device.clientName?.toLowerCase().includes(query) ||    // client name
+      device.siteName?.toLowerCase().includes(query);        // site name
 
-  const matchesType = filterType === 'all' || device.type === filterType;
-  const matchesStatus = filterStatus === 'all' || device.status === filterStatus;
+    const matchesType = filterType === 'all' || device.type === filterType;
+    const matchesStatus = filterStatus === 'all' || device.status === filterStatus;
 
-  return matchesSearch && matchesType && matchesStatus;
-});
+    return matchesSearch && matchesType && matchesStatus;
+  });
 
   const stats = {
-    total: devices.length,
-    online: devices.filter(d => d.status === 'online').length,
-    offline: devices.filter(d => d.status === 'offline').length,
-    anpr: devices.filter(d => d.type === 'ANPR').length,
-    barriers: devices.filter(d => d.type === 'BARRIER').length
-  };
+  total: devices.length,
+  online: devices.filter(d => d.status === 'online').length,
+  offline: devices.filter(d => d.status === 'offline').length,
+  anpr: devices.filter(d => d.type === 'ANPR').length,
+  barriers: devices.filter(d => d.type === 'BARRIER').length,
+  biometric: devices.filter(d => d.type === 'BIOMETRIC').length // ✅
+};
+
 
   if (loading) {
     return (
@@ -910,6 +906,15 @@ const fetchDevices = async () => {
           <div className="text-xl md:text-2xl font-bold text-green-600">{stats.barriers}</div>
           <div className="text-xs md:text-sm text-gray-600">Barriers</div>
         </div>
+        <div className="bg-white rounded-lg p-3 md:p-4 border border-gray-100">
+          <div className="text-xl md:text-2xl font-bold text-green-600">
+            {stats.biometric}
+          </div>
+          <div className="text-xs md:text-sm text-gray-600">
+            BIOMETRIC
+          </div>
+        </div>
+
       </div>
 
       <button

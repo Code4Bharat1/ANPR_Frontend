@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import {
   Search, Plus, User, Mail,
@@ -41,17 +41,11 @@ api.interceptors.response.use(
 );
 
 const validatePhone = (phone) => {
-  // Check if phone is falsy (null, undefined, empty string)
-  if (!phone && phone !== 0) return true; // Changed this line
-  
-  // Convert to string if it's a number
+  if (!phone && phone !== 0) return true;
   const phoneStr = String(phone);
-  
-  // Check if it's an empty string after conversion
   if (phoneStr.trim() === '') return true;
-  
   const phoneRegex = /^[0-9]{10}$/;
-  return phoneRegex.test(phoneStr); // Test on string version
+  return phoneRegex.test(phoneStr);
 };
 
 const validateEmail = (email) => {
@@ -86,8 +80,7 @@ const SupervisorManagement = () => {
     address: '',
     siteId: '',
     projectManagerId: '',
-    password: '', // Sirf password rakho
-    // confirmPassword: '', // Remove karo
+    password: '',
   });
 
   useEffect(() => {
@@ -100,10 +93,9 @@ const SupervisorManagement = () => {
     setErrorMessage('');
   };
 
-  const showToast = (message, type = 'success') => {
+  const showToast = useCallback((message, type = 'success') => {
     const toast = document.createElement('div');
-    toast.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg text-white font-medium z-50 transform transition-transform duration-300 ${type === 'success' ? 'bg-green-500' : 'bg-red-500'
-      }`;
+    toast.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg text-white font-medium z-50 transform transition-transform duration-300 ${type === 'success' ? 'bg-green-500' : 'bg-red-500'}`;
     toast.textContent = message;
     document.body.appendChild(toast);
 
@@ -111,7 +103,7 @@ const SupervisorManagement = () => {
       toast.style.transform = 'translateX(100%)';
       setTimeout(() => document.body.removeChild(toast), 300);
     }, 3000);
-  };
+  }, []);
 
   const fetchCurrentProjectManager = async () => {
     try {
@@ -180,52 +172,26 @@ const SupervisorManagement = () => {
       address: '',
       siteId: '',
       projectManagerId: currentProjectManager?._id || '',
+      password: '',
     });
 
     setValidationErrors({});
     setErrorMessage('');
+    setShowPassword(false);
     setShowAdd(true);
 
     await fetchSites();
   };
 
- const handleCreateSupervisor = async () => {
+  const handleCreateSupervisor = async () => {
+  console.log('🚀 START: handleCreateSupervisor');
+  
   try {
     setIsCreating(true);
     setErrorMessage('');
     
-    // Validation
-    if (!formData.name?.trim()) {
-      setErrorMessage('Please enter supervisor name');
-      return;
-    }
-    if (!formData.email?.trim()) {
-      setErrorMessage('Please enter email address');
-      return;
-    }
-    if (!validateEmail(formData.email)) {
-      setErrorMessage('Please enter a valid email address');
-      return;
-    }
-    if (!formData.siteId) {
-      setErrorMessage('Please select a site');
-      return;
-    }
-    if (formData.mobile && !validatePhone(formData.mobile)) {
-      setErrorMessage('Please enter a valid 10-digit phone number');
-      return;
-    }
-    // PASSWORD VALIDATION
-    if (!formData.password || formData.password.trim() === '') {
-      setErrorMessage('Please enter a password');
-      return;
-    }
-    if (formData.password.length < 8) { // Changed from 6 to 8
-      setErrorMessage('Password must be at least 8 characters long');
-      return;
-    }
-
-    // Prepare payload
+    // Validation...
+    
     const payload = {
       name: formData.name.trim(),
       email: formData.email.trim().toLowerCase(),
@@ -239,156 +205,64 @@ const SupervisorManagement = () => {
       payload.projectManagerId = currentProjectManager._id;
     }
 
-    console.log('Creating supervisor with payload:', { ...payload, password: '***' });
-
+    console.log('📤 Sending API request...');
     const response = await api.post('/api/project/supervisors', payload);
     
-    console.log('Response:', response.data);
+    console.log('✅ API Response:', response.data);
     
     if (response.data.success || response.data._id) {
+      console.log('🎉 SUCCESS: Supervisor created');
+      
+      // Show success toast
       showToast('Supervisor created successfully!');
       
-      // Close modal and reset
+      // 🔥 FORCE MODAL CLOSE - multiple ways
+      console.log('🔴 Setting showAdd to false');
       setShowAdd(false);
-      setFormData({
-        name: '',
-        email: '',
-        mobile: '',
-        address: '',
-        siteId: '',
-        projectManagerId: '',
-        password: '',
-      });
-      setShowPassword(false);
-
-      // Refresh the list
-      await fetchSupervisors();
+      
+      // Extra safety - call again in next tick
+      setTimeout(() => {
+        setShowAdd(false);
+      }, 0);
+      
+      // Reset form
+      setTimeout(() => {
+        setFormData({
+          name: '',
+          email: '',
+          mobile: '',
+          address: '',
+          siteId: '',
+          projectManagerId: currentProjectManager?._id || '',
+          password: '',
+        });
+        setShowPassword(false);
+        setErrorMessage('');
+        
+        // Refresh list
+        fetchSupervisors();
+        
+        console.log('🔄 Form reset and list refreshed');
+      }, 200);
+      
+      return true; // Return success
+      
     } else {
       throw new Error(response.data.message || 'Failed to create supervisor');
     }
 
   } catch (err) {
-    console.error('Error creating supervisor:', err);
+    console.error('❌ ERROR in handleCreateSupervisor:', err);
     
     let errorMessage = 'Failed to create supervisor';
     
-    if (err.response?.status === 400) {
-      if (err.response.data?.error?.includes('password')) {
-        errorMessage = 'Password is required. Please enter a valid password.';
-      } else {
-        errorMessage = err.response.data?.message || 'Invalid request data';
-      }
-    } else if (err.response?.status === 401) {
-      errorMessage = 'Session expired. Please login again.';
-      setTimeout(() => window.location.href = '/login', 2000);
-    } else if (err.response?.status === 403) {
-      errorMessage = 'You do not have permission to create supervisors for this site.';
-    } else if (err.response?.status === 404) {
-      errorMessage = 'Site not found. Please select a valid site.';
-    } else if (err.response?.status === 409) {
-      errorMessage = 'A supervisor with this email already exists.';
-    } else if (err.response?.status === 500) {
-      errorMessage = 'Server error. Please try again later or contact support.';
-    } else if (err.response?.data?.message) {
-      errorMessage = err.response.data.message;
-    } else if (err.message) {
-      errorMessage = err.message;
-    }
-    
-    setErrorMessage(errorMessage);
-    showToast(errorMessage, 'error');
-    
-  } finally {
-    setIsCreating(false);
-  }
-};
-
-  const handleUpdateSupervisor = async () => {
-  if (!selectedSupervisor?._id) {
-    setErrorMessage('No supervisor selected');
-    return;
-  }
-
-  try {
-    setIsUpdating(true);
-    setErrorMessage('');
-
-    if (!formData.name?.trim()) {
-      setErrorMessage('Please enter supervisor name');
-      return;
-    }
-    if (!formData.email?.trim()) {
-      setErrorMessage('Please enter email address');
-      return;
-    }
-    if (!validateEmail(formData.email)) {
-      setErrorMessage('Please enter a valid email address');
-      return;
-    }
-    if (!formData.siteId) {
-      setErrorMessage('Please select a site');
-      return;
-    }
-    if (formData.mobile && !validatePhone(formData.mobile)) {
-      setErrorMessage('Please enter a valid 10-digit phone number');
-      return;
-    }
-
-    const payload = {
-      name: formData.name.trim(),
-      email: formData.email.trim().toLowerCase(),
-      mobile: formData.mobile || '',
-      address: formData.address || '',
-      siteId: formData.siteId,
-    };
-
-    console.log('Updating supervisor with payload:', payload);
-
-    const response = await api.put(`/api/project/supervisors/${selectedSupervisor._id}`, payload);
-    
-    // DEBUG: Check what the response actually contains
-    console.log('Update response:', response.data);
-    
-    // More flexible success check
-    if (response.status === 200 || response.status === 201) {
-      // If we get a success status, consider it successful
-      showToast('Supervisor updated successfully!');
-      
-      setShowEdit(false);
-      setSelectedSupervisor(null);
-      setFormData({
-        name: '',
-        email: '',
-        mobile: '',
-        address: '',
-        siteId: '',
-        projectManagerId: currentProjectManager?._id || '',
-      });
-
-      await fetchSupervisors();
-    } else {
-      // If response has a message, use it
-      throw new Error(response.data.message || 'Failed to update supervisor');
-    }
-
-  } catch (err) {
-    console.error('Error updating supervisor:', err);
-    
-    let errorMessage = 'Failed to update supervisor';
-
     if (err.response?.status === 400) {
       errorMessage = err.response.data?.message || 'Invalid request data';
     } else if (err.response?.status === 401) {
       errorMessage = 'Session expired. Please login again.';
       setTimeout(() => window.location.href = '/login', 2000);
-    } else if (err.response?.status === 403) {
-      errorMessage = 'Permission denied. You cannot update this supervisor or assign to this site.';
-    } else if (err.response?.status === 404) {
-      errorMessage = 'Supervisor not found';
     } else if (err.response?.status === 409) {
-      errorMessage = 'Email already exists';
-    } else if (err.response?.status === 500) {
-      errorMessage = 'Server error. Please try again later.';
+      errorMessage = 'A supervisor with this email already exists.';
     } else if (err.response?.data?.message) {
       errorMessage = err.response.data.message;
     } else if (err.message) {
@@ -398,10 +272,113 @@ const SupervisorManagement = () => {
     setErrorMessage(errorMessage);
     showToast(errorMessage, 'error');
     
+    return false; // Return failure
+    
   } finally {
-    setIsUpdating(false);
+    console.log('🏁 END: handleCreateSupervisor');
+    setIsCreating(false);
   }
 };
+
+  const handleUpdateSupervisor = async () => {
+    if (!selectedSupervisor?._id) {
+      setErrorMessage('No supervisor selected');
+      return;
+    }
+
+    try {
+      setIsUpdating(true);
+      setErrorMessage('');
+
+      if (!formData.name?.trim()) {
+        setErrorMessage('Please enter supervisor name');
+        return;
+      }
+      if (!formData.email?.trim()) {
+        setErrorMessage('Please enter email address');
+        return;
+      }
+      if (!validateEmail(formData.email)) {
+        setErrorMessage('Please enter a valid email address');
+        return;
+      }
+      if (!formData.siteId) {
+        setErrorMessage('Please select a site');
+        return;
+      }
+      if (formData.mobile && !validatePhone(formData.mobile)) {
+        setErrorMessage('Please enter a valid 10-digit phone number');
+        return;
+      }
+
+      const payload = {
+        name: formData.name.trim(),
+        email: formData.email.trim().toLowerCase(),
+        mobile: formData.mobile || '',
+        address: formData.address || '',
+        siteId: formData.siteId,
+      };
+
+      console.log('Updating supervisor with payload:', payload);
+
+      const response = await api.put(`/api/project/supervisors/${selectedSupervisor._id}`, payload);
+      
+      console.log('Update response:', response.data);
+      
+      if (response.status === 200 || response.status === 201) {
+        showToast('Supervisor updated successfully!');
+        
+        setShowEdit(false);
+        setSelectedSupervisor(null);
+        setFormData({
+          name: '',
+          email: '',
+          mobile: '',
+          address: '',
+          siteId: '',
+          projectManagerId: currentProjectManager?._id || '',
+        });
+        setErrorMessage('');
+
+        setTimeout(() => {
+          fetchSupervisors();
+        }, 500);
+        
+      } else {
+        throw new Error(response.data.message || 'Failed to update supervisor');
+      }
+
+    } catch (err) {
+      console.error('Error updating supervisor:', err);
+      
+      let errorMessage = 'Failed to update supervisor';
+
+      if (err.response?.status === 400) {
+        errorMessage = err.response.data?.message || 'Invalid request data';
+      } else if (err.response?.status === 401) {
+        errorMessage = 'Session expired. Please login again.';
+        setTimeout(() => window.location.href = '/login', 2000);
+      } else if (err.response?.status === 403) {
+        errorMessage = 'Permission denied. You cannot update this supervisor or assign to this site.';
+      } else if (err.response?.status === 404) {
+        errorMessage = 'Supervisor not found';
+      } else if (err.response?.status === 409) {
+        errorMessage = 'Email already exists';
+      } else if (err.response?.status === 500) {
+        errorMessage = 'Server error. Please try again later.';
+      } else if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      setErrorMessage(errorMessage);
+      showToast(errorMessage, 'error');
+      
+    } finally {
+      setIsUpdating(false);
+    }
+  };
 
   const handleToggleStatus = async (supervisorId, currentStatus) => {
     if (!window.confirm(`Are you sure you want to ${currentStatus ? 'disable' : 'enable'} this supervisor?`)) {
@@ -698,7 +675,7 @@ const SupervisorManagement = () => {
         </div>
       </main>
 
-      {/* YEH HAI VIEW MODAL BHAI - Abhi add kiya hai */}
+      {/* View Modal */}
       {showView && selectedSupervisor && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
@@ -819,16 +796,6 @@ const SupervisorManagement = () => {
 
               {/* Additional Info */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-gray-200">
-                {/* <div className="space-y-1">
-                  <label className="flex items-center gap-2 text-sm font-medium text-gray-500">
-                    <Shield className="w-4 h-4" />
-                    Supervisor ID
-                  </label>
-                  <p className="text-gray-900 font-mono text-sm bg-gray-50 px-3 py-1.5 rounded">
-                    {selectedSupervisor._id?.substring(0, 8) || 'N/A'}
-                  </p>
-                </div> */}
-
                 <div className="space-y-1">
                   <label className="flex items-center gap-2 text-sm font-medium text-gray-500">
                     <Clock className="w-4 h-4" />
@@ -857,229 +824,314 @@ const SupervisorManagement = () => {
       )}
 
       {/* Add Supervisor Modal */}
-      {showAdd && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white flex items-center justify-between p-6 border-b border-gray-200">
-              <h2 className="text-2xl font-bold text-gray-900">Add Supervisor</h2>
-              <button
-                onClick={() => setShowAdd(false)}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <X className="w-6 h-6" />
-              </button>
+ {showAdd && (
+  <div 
+    key={`add-modal-${Date.now()}`}
+    className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+    onClick={(e) => {
+      // Background पर click करने पर modal बंद करें
+      if (e.target === e.currentTarget) {
+        setShowAdd(false);
+      }
+    }}
+  >
+    <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
+      <div className="sticky top-0 bg-white flex items-center justify-between p-6 border-b border-gray-200">
+        <h2 className="text-2xl font-bold text-gray-900">Add Supervisor</h2>
+        <button
+          onClick={() => {
+            console.log('❌ Closing modal manually');
+            setShowAdd(false);
+            setErrorMessage('');
+            setFormData({
+              name: '',
+              email: '',
+              mobile: '',
+              address: '',
+              siteId: '',
+              projectManagerId: currentProjectManager?._id || '',
+              password: '',
+            });
+            setShowPassword(false);
+          }}
+          className="text-gray-400 hover:text-gray-600 transition-colors"
+        >
+          <X className="w-6 h-6" />
+        </button>
+      </div>
+
+      <div className="p-6 space-y-6">
+        {/* Error Message */}
+        {errorMessage && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="flex items-center gap-2 text-red-700">
+              <AlertCircle className="w-5 h-5" />
+              <p className="font-medium">{errorMessage}</p>
             </div>
-
-            <div className="p-6 space-y-6">
-              {/* Error Message */}
-              {errorMessage && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                  <div className="flex items-center gap-2 text-red-700">
-                    <AlertCircle className="w-5 h-5" />
-                    <p className="font-medium">{errorMessage}</p>
-                  </div>
-                  <button
-                    onClick={clearError}
-                    className="text-sm text-red-600 hover:text-red-800 mt-2"
-                  >
-                    Clear error
-                  </button>
-                </div>
-              )}
-
-              {/* Name Field */}
-              <div>
-                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                  <User className="w-4 h-4" />
-                  Full Name *
-                </label>
-                <input
-                  type="text"
-                  placeholder="Enter supervisor name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                />
-              </div>
-
-              {/* Email Field */}
-              <div>
-                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                  <Mail className="w-4 h-4" />
-                  Email Address *
-                </label>
-                <input
-                  type="email"
-                  placeholder="supervisor@example.com"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                />
-              </div>
-
-              {/* Phone Field */}
-              <div>
-                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                  <Phone className="w-4 h-4" />
-                  Phone Number *
-                </label>
-                <input
-                  type="tel"
-                  placeholder="9876543210"
-                  value={formData.mobile}
-                  onChange={(e) => {
-                    const value = e.target.value.replace(/\D/g, '').slice(0, 10);
-                    setFormData({ ...formData, mobile: value });
-                  }}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  {formData.mobile ? `${formData.mobile.length}/10 digits` : 'Enter 10-digit number (optional)'}
-                </p>
-              </div>
-
-              {/* Address Field */}
-              <div>
-                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                  <MapPin className="w-4 h-4" />
-                  Address *
-                </label>
-                <textarea
-                  placeholder="Enter full address"
-                  value={formData.address}
-                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                  rows={3}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none"
-                />
-              </div>
-
-              <div>
-                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                  <Lock className="w-4 h-4" />
-                  Password *
-                </label>
-                <div className="relative">
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Create a strong password"
-                    value={formData.password || ''}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none pr-12"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
-                  >
-                    {showPassword ? (
-                      <EyeOff className="w-5 h-5" />
-                    ) : (
-                      <Eye className="w-5 h-5" />
-                    )}
-                  </button>
-                </div>
-                <div className="flex items-center justify-between mt-1">
-                  <p className="text-xs text-gray-500">
-                    Minimum 8 characters required
-                  </p>
-                  <p className={`text-xs font-medium ${formData && formData.password && formData.password.length >= 8
-                      ? 'text-green-600'
-                      : 'text-red-500'
-                    }`}>
-                    {formData && formData.password ? formData.password.length : 0}/8 characters
-                  </p>
-                </div>
-                {formData && formData.password && formData.password.length > 0 && formData.password.length < 8 && (
-                  <p className="text-xs text-red-500 mt-1">
-                    Password must be at least 8 characters
-                  </p>
-                )}
-              </div>
-
-
-              {/* Site Selection */}
-              <div>
-                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                  <Building2 className="w-4 h-4" />
-                  Assigned Site *
-                </label>
-                {loadingSites ? (
-                  <div className="w-full border border-gray-300 px-4 py-3 rounded-lg bg-gray-50 flex items-center justify-center">
-                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                    <span className="text-sm text-gray-600">Loading sites...</span>
-                  </div>
-                ) : sites.length === 0 ? (
-                  <div className="border border-gray-300 rounded-lg p-4 text-center">
-                    <Building2 className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                    <p className="text-sm text-gray-500 mb-1">No sites assigned to you</p>
-                    <p className="text-xs text-gray-400">Contact admin to get sites assigned</p>
-                  </div>
-                ) : (
-                  <select
-                    value={formData.siteId}
-                    onChange={(e) => setFormData({ ...formData, siteId: e.target.value })}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                  >
-                    <option value="">Select Site</option>
-                    {sites.map((site) => (
-                      <option key={site._id} value={site._id}>
-                        {site.name || site.siteName}
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </div>
-
-              {/* Project Manager Info */}
-              {currentProjectManager && (
-                <div className="bg-blue-50 rounded-lg p-4 border border-blue-100">
-                  <label className="flex items-center gap-2 text-sm font-medium text-blue-700 mb-2">
-                    <UserCheck className="w-4 h-4" />
-                    Your Profile
-                  </label>
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                      <User className="w-5 h-5 text-blue-600" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-blue-800">{currentProjectManager.name}</p>
-                      <p className="text-sm text-blue-600">{currentProjectManager.email}</p>
-                    </div>
-                  </div>
-                  <p className="text-xs text-blue-500 mt-2">
-                    This supervisor will be created under your management
-                  </p>
-                </div>
-              )}
-            </div>
-
-            <div className="sticky bottom-0 bg-gray-50 flex justify-end gap-3 p-6 border-t border-gray-200">
-              <button
-                onClick={() => setShowAdd(false)}
-                className="px-6 py-2.5 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-100 transition-colors"
-                disabled={isCreating}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleCreateSupervisor}
-                disabled={isCreating || loadingSites}
-                className="px-6 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:bg-blue-300 disabled:cursor-not-allowed flex items-center gap-2"
-              >
-                {isCreating ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Creating...
-                  </>
-                ) : (
-                  'Create Supervisor'
-                )}
-              </button>
-            </div>
+            <button
+              onClick={clearError}
+              className="text-sm text-red-600 hover:text-red-800 mt-2"
+            >
+              Clear error
+            </button>
           </div>
-        </div>
-      )}
+        )}
 
+        {/* Name Field */}
+        <div>
+          <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+            <User className="w-4 h-4" />
+            Full Name *
+          </label>
+          <input
+            type="text"
+            placeholder="Enter supervisor name"
+            value={formData.name}
+            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                document.getElementById('create-btn')?.click();
+              }
+            }}
+          />
+        </div>
+
+        {/* Email Field */}
+        <div>
+          <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+            <Mail className="w-4 h-4" />
+            Email Address *
+          </label>
+          <input
+            type="email"
+            placeholder="supervisor@example.com"
+            value={formData.email}
+            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                document.getElementById('create-btn')?.click();
+              }
+            }}
+          />
+        </div>
+
+        {/* Phone Field */}
+        <div>
+          <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+            <Phone className="w-4 h-4" />
+            Phone Number *
+          </label>
+          <input
+            type="tel"
+            placeholder="9876543210"
+            value={formData.mobile}
+            onChange={(e) => {
+              const value = e.target.value.replace(/\D/g, '').slice(0, 10);
+              setFormData({ ...formData, mobile: value });
+            }}
+            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                document.getElementById('create-btn')?.click();
+              }
+            }}
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            {formData.mobile ? `${formData.mobile.length}/10 digits` : 'Enter 10-digit number (optional)'}
+          </p>
+        </div>
+
+        {/* Address Field */}
+        <div>
+          <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+            <MapPin className="w-4 h-4" />
+            Address *
+          </label>
+          <textarea
+            placeholder="Enter full address"
+            value={formData.address}
+            onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+            rows={3}
+            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none"
+            onKeyDown={(e) => {
+              if (e.ctrlKey && e.key === 'Enter') {
+                e.preventDefault();
+                document.getElementById('create-btn')?.click();
+              }
+            }}
+          />
+        </div>
+
+        {/* Password Field */}
+        <div>
+          <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+            <Lock className="w-4 h-4" />
+            Password *
+          </label>
+          <div className="relative">
+            <input
+              type={showPassword ? "text" : "password"}
+              placeholder="Create a strong password"
+              value={formData.password || ''}
+              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none pr-12"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  document.getElementById('create-btn')?.click();
+                }
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
+            >
+              {showPassword ? (
+                <EyeOff className="w-5 h-5" />
+              ) : (
+                <Eye className="w-5 h-5" />
+              )}
+            </button>
+          </div>
+          <div className="flex items-center justify-between mt-1">
+            <p className="text-xs text-gray-500">
+              Minimum 8 characters required
+            </p>
+            <p className={`text-xs font-medium ${formData.password && formData.password.length >= 8
+                ? 'text-green-600'
+                : 'text-red-500'
+              }`}>
+              {formData.password ? formData.password.length : 0}/8 characters
+            </p>
+          </div>
+          {formData.password && formData.password.length > 0 && formData.password.length < 8 && (
+            <p className="text-xs text-red-500 mt-1">
+              Password must be at least 8 characters
+            </p>
+          )}
+        </div>
+
+        {/* Site Selection */}
+        <div>
+          <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+            <Building2 className="w-4 h-4" />
+            Assigned Site *
+          </label>
+          {loadingSites ? (
+            <div className="w-full border border-gray-300 px-4 py-3 rounded-lg bg-gray-50 flex items-center justify-center">
+              <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              <span className="text-sm text-gray-600">Loading sites...</span>
+            </div>
+          ) : sites.length === 0 ? (
+            <div className="border border-gray-300 rounded-lg p-4 text-center">
+              <Building2 className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+              <p className="text-sm text-gray-500 mb-1">No sites assigned to you</p>
+              <p className="text-xs text-gray-400">Contact admin to get sites assigned</p>
+            </div>
+          ) : (
+            <select
+              value={formData.siteId}
+              onChange={(e) => setFormData({ ...formData, siteId: e.target.value })}
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  document.getElementById('create-btn')?.click();
+                }
+              }}
+            >
+              <option value="">Select Site</option>
+              {sites.map((site) => (
+                <option key={site._id} value={site._id}>
+                  {site.name || site.siteName}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
+
+        {/* Project Manager Info */}
+        {currentProjectManager && (
+          <div className="bg-blue-50 rounded-lg p-4 border border-blue-100">
+            <label className="flex items-center gap-2 text-sm font-medium text-blue-700 mb-2">
+              <UserCheck className="w-4 h-4" />
+              Your Profile
+            </label>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                <User className="w-5 h-5 text-blue-600" />
+              </div>
+              <div>
+                <p className="font-medium text-blue-800">{currentProjectManager.name}</p>
+                <p className="text-sm text-blue-600">{currentProjectManager.email}</p>
+              </div>
+            </div>
+            <p className="text-xs text-blue-500 mt-2">
+              This supervisor will be created under your management
+            </p>
+          </div>
+        )}
+      </div>
+
+      <div className="sticky bottom-0 bg-gray-50 flex justify-end gap-3 p-6 border-t border-gray-200">
+        <button
+          onClick={() => {
+            console.log('❌ Cancel button clicked - closing modal');
+            setShowAdd(false);
+            setErrorMessage('');
+            setFormData({
+              name: '',
+              email: '',
+              mobile: '',
+              address: '',
+              siteId: '',
+              projectManagerId: currentProjectManager?._id || '',
+              password: '',
+            });
+            setShowPassword(false);
+          }}
+          className="px-6 py-2.5 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-100 transition-colors"
+          disabled={isCreating}
+        >
+          Cancel
+        </button>
+        <button
+          id="create-btn"
+          onClick={async () => {
+            console.log('✅ Create button clicked');
+            
+            // Prevent multiple clicks
+            if (isCreating) return;
+            
+            try {
+              // Directly call the creation logic here
+              await handleCreateSupervisorDirect();
+            } catch (error) {
+              console.error('❌ Error in create handler:', error);
+            }
+          }}
+          disabled={isCreating || loadingSites}
+          className="px-6 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:bg-blue-300 disabled:cursor-not-allowed flex items-center gap-2"
+        >
+          {isCreating ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Creating...
+            </>
+          ) : (
+            'Create Supervisor'
+          )}
+        </button>
+      </div>
+    </div>
+  </div>
+)}
 
       {/* Edit Supervisor Modal */}
       {showEdit && selectedSupervisor && (
