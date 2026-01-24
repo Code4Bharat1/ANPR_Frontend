@@ -151,23 +151,30 @@ const PMReports = () => {
 
   // Fetch sites using axios
   const fetchSites = async () => {
-    try {
-      setLoadingSites(true);
-      const response = await axiosInstance.get("/api/project/my-sites");
-      
-      if (response.data) {
-        const sitesData = Array.isArray(response.data.data) 
-          ? response.data.data 
-          : response.data.data?.data || response.data.data || [];
-        setSites(Array.isArray(sitesData) ? sitesData : []);
-      }
-    } catch (err) {
-      console.error("Error fetching sites:", err);
-      showAlert("error", "Failed to fetch sites");
-    } finally {
-      setLoadingSites(false);
+  try {
+    setLoadingSites(true);
+    const response = await axiosInstance.get("/api/project/my-sites");
+
+    console.log("Sites API response:", response.data);
+
+    // 🔥 MOST IMPORTANT FIX
+    if (Array.isArray(response.data)) {
+      setSites(response.data);
+    } else if (Array.isArray(response.data.data)) {
+      setSites(response.data.data);
+    } else {
+      setSites([]);
     }
-  };
+
+  } catch (err) {
+    console.error("Error fetching sites:", err);
+    showAlert("error", "Failed to fetch sites");
+    setSites([]);
+  } finally {
+    setLoadingSites(false);
+  }
+};
+
 
   // Apply filters
   const applyFilters = () => {

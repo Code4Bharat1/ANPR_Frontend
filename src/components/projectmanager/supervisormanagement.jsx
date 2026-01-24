@@ -71,6 +71,8 @@ const SupervisorManagement = () => {
   const [isUpdating, setIsUpdating] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
   const [errorMessage, setErrorMessage] = useState('');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [userToDelete, setUserToDelete] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -282,116 +284,116 @@ const SupervisorManagement = () => {
 
 
   const handleCreateSupervisor = async () => {
-  console.log('🚀 START: handleCreateSupervisor');
+    console.log('🚀 START: handleCreateSupervisor');
 
-  try {
-    setIsCreating(true);
-    setErrorMessage('');
-
-    /* ================= VALIDATION ================= */
-    if (!formData.name.trim()) {
-      throw new Error('Please enter supervisor name');
-    }
-
-    if (!formData.email.trim()) {
-      throw new Error('Please enter email address');
-    }
-
-    if (!validateEmail(formData.email)) {
-      throw new Error('Please enter a valid email address');
-    }
-
-    if (!formData.password || formData.password.length < 8) {
-      throw new Error('Password must be at least 8 characters');
-    }
-
-    if (!formData.siteId) {
-      throw new Error('Please select a site');
-    }
-
-    /* ================= PAYLOAD ================= */
-    const payload = {
-      name: formData.name.trim(),
-      email: formData.email.trim().toLowerCase(),
-      mobile: formData.mobile || '',
-      address: formData.address || '',
-      siteId: formData.siteId,
-      password: formData.password,
-    };
-
-    if (currentProjectManager?._id) {
-      payload.projectManagerId = currentProjectManager._id;
-    }
-
-    console.log('📤 Sending API request...', payload);
-
-    /* ================= API CALL ================= */
-    const response = await api.post('/api/project/supervisors', payload);
-
-    console.log('✅ API Response:', response.data);
-
-    /* ================= SUCCESS CHECK ================= */
-    if (
-      response.status === 200 ||
-      response.status === 201 ||
-      response.data?.data?._id
-    ) {
-      console.log('🎉 SUCCESS: Supervisor created');
-
-      showToast('Supervisor created successfully!');
-
-      /* Close modal */
-      setShowAdd(false);
-
-      /* Reset form */
-      setFormData({
-        name: '',
-        email: '',
-        mobile: '',
-        address: '',
-        siteId: '',
-        projectManagerId: currentProjectManager?._id || '',
-        password: '',
-      });
-
-      setShowPassword(false);
+    try {
+      setIsCreating(true);
       setErrorMessage('');
 
-      /* Refresh list */
-      await fetchSupervisors();
+      /* ================= VALIDATION ================= */
+      if (!formData.name.trim()) {
+        throw new Error('Please enter supervisor name');
+      }
 
-      return; // 🔥 VERY IMPORTANT
+      if (!formData.email.trim()) {
+        throw new Error('Please enter email address');
+      }
+
+      if (!validateEmail(formData.email)) {
+        throw new Error('Please enter a valid email address');
+      }
+
+      if (!formData.password || formData.password.length < 8) {
+        throw new Error('Password must be at least 8 characters');
+      }
+
+      if (!formData.siteId) {
+        throw new Error('Please select a site');
+      }
+
+      /* ================= PAYLOAD ================= */
+      const payload = {
+        name: formData.name.trim(),
+        email: formData.email.trim().toLowerCase(),
+        mobile: formData.mobile || '',
+        address: formData.address || '',
+        siteId: formData.siteId,
+        password: formData.password,
+      };
+
+      if (currentProjectManager?._id) {
+        payload.projectManagerId = currentProjectManager._id;
+      }
+
+      console.log('📤 Sending API request...', payload);
+
+      /* ================= API CALL ================= */
+      const response = await api.post('/api/project/supervisors', payload);
+
+      console.log('✅ API Response:', response.data);
+
+      /* ================= SUCCESS CHECK ================= */
+      if (
+        response.status === 200 ||
+        response.status === 201 ||
+        response.data?.data?._id
+      ) {
+        console.log('🎉 SUCCESS: Supervisor created');
+
+        showToast('Supervisor created successfully!');
+
+        /* Close modal */
+        setShowAdd(false);
+
+        /* Reset form */
+        setFormData({
+          name: '',
+          email: '',
+          mobile: '',
+          address: '',
+          siteId: '',
+          projectManagerId: currentProjectManager?._id || '',
+          password: '',
+        });
+
+        setShowPassword(false);
+        setErrorMessage('');
+
+        /* Refresh list */
+        await fetchSupervisors();
+
+        return; // 🔥 VERY IMPORTANT
+      }
+
+      /* ================= REAL FAILURE ================= */
+      throw new Error(response.data?.message || 'Failed to create supervisor');
+
+    } catch (err) {
+      console.error('❌ ERROR in handleCreateSupervisor:', err);
+
+      let msg = 'Failed to create supervisor';
+
+      if (err.response?.status === 400) {
+        msg = err.response.data?.message || msg;
+      } else if (err.response?.status === 401) {
+        msg = 'Session expired. Please login again.';
+        setTimeout(() => window.location.href = '/login', 2000);
+      } else if (err.response?.status === 403) {
+        msg = err.response.data?.message || 'You are not allowed to assign supervisor to this site';
+      } else if (err.response?.status === 409) {
+        msg = 'A supervisor with this email already exists';
+      } else if (err.message) {
+        msg = err.message;
+      }
+
+      setErrorMessage(msg);
+      showToast(msg, 'error');
+
+    } finally {
+      console.log('🏁 END: handleCreateSupervisor');
+      setIsCreating(false);
     }
-
-    /* ================= REAL FAILURE ================= */
-    throw new Error(response.data?.message || 'Failed to create supervisor');
-
-  } catch (err) {
-    console.error('❌ ERROR in handleCreateSupervisor:', err);
-
-    let msg = 'Failed to create supervisor';
-
-    if (err.response?.status === 400) {
-      msg = err.response.data?.message || msg;
-    } else if (err.response?.status === 401) {
-      msg = 'Session expired. Please login again.';
-      setTimeout(() => window.location.href = '/login', 2000);
-    } else if (err.response?.status === 403) {
-      msg = err.response.data?.message || 'You are not allowed to assign supervisor to this site';
-    } else if (err.response?.status === 409) {
-      msg = 'A supervisor with this email already exists';
-    } else if (err.message) {
-      msg = err.message;
-    }
-
-    setErrorMessage(msg);
-    showToast(msg, 'error');
-
-  } finally {
-    console.log('🏁 END: handleCreateSupervisor');
-    setIsCreating(false);
-  }
-};
+  };
 
   const handleUpdateSupervisor = async () => {
     if (!selectedSupervisor?._id) {
@@ -533,6 +535,28 @@ const SupervisorManagement = () => {
       return 'Invalid Date';
     }
   };
+  // Add this delete handler function in your React component
+  // const handleDeleteUser = async (userId) => {
+  //   if (!window.confirm('Are you sure you want to delete this supervisor? This action cannot be undone.')) {
+  //     return;
+  //   }
+
+  //   try {
+  //     await api.delete(`/api/client-admin/supervisors/${userId}`);
+  //     alert('Supervisor deleted successfully!');
+  //     await fetchUsers(); // Refresh the list
+  //   } catch (err) {
+  //     console.error('Error deleting supervisor:', err);
+  //     alert(err.response?.data?.message || 'Failed to delete supervisor');
+  //   }
+  // };
+
+   const handleDeleteUser = async (userId) => {
+  setUserToDelete(userId);
+  setShowDeleteConfirm(true);
+};
+
+  // Update your desktop table actions column:
 
   const filteredSupervisors = Array.isArray(supervisors) ? supervisors.filter(supervisor => {
     const matchesSearch = supervisor.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -687,6 +711,13 @@ const SupervisorManagement = () => {
                         >
                           <Power className="w-4 h-4" />
                         </button>
+                        <button
+                          onClick={() => handleDeleteUser(supervisor._id)}
+                          className="p-2 hover:bg-red-50 rounded-lg transition text-red-600"
+                          title="Delete"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -771,6 +802,13 @@ const SupervisorManagement = () => {
                     }`}
                 >
                   <Power className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => handleDeleteUser(supervisor._id)}
+                  className="p-2 hover:bg-red-50 rounded-lg transition text-red-600"
+                  title="Delete"
+                >
+                  <X className="w-4 h-4" />
                 </button>
               </div>
             </div>
@@ -1427,6 +1465,86 @@ const SupervisorManagement = () => {
           </div>
         </div>
       )}
+
+      {showDeleteConfirm && (
+  <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+    <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl">
+      <div className="p-6">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+            <AlertCircle className="w-6 h-6 text-red-600" />
+          </div>
+          <div>
+            <h3 className="text-lg font-bold text-gray-900">Delete Supervisor</h3>
+            <p className="text-sm text-gray-600">This action cannot be undone</p>
+          </div>
+        </div>
+        
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+          <p className="text-sm text-red-700">
+            <span className="font-semibold">Warning:</span> Deleting this supervisor will:
+          </p>
+          <ul className="text-sm text-red-600 mt-2 space-y-1 pl-4">
+            <li className="flex items-start gap-2">
+              <span className="text-red-500 mt-0.5">•</span>
+              <span>Remove them from all assigned sites</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-red-500 mt-0.5">•</span>
+              <span>Remove them from all associated trips</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-red-500 mt-0.5">•</span>
+              <span>Permanently delete their account</span>
+            </li>
+          </ul>
+        </div>
+
+        <p className="text-gray-700 mb-6">
+          Are you sure you want to delete this supervisor? This action is permanent and cannot be reversed.
+        </p>
+
+        <div className="flex justify-end gap-3">
+          <button
+            onClick={() => {
+              setShowDeleteConfirm(false);
+              setUserToDelete(null);
+            }}
+            className="px-5 py-2.5 border-2 border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-100 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={async () => {
+              try {
+                // Use the project manager API endpoint
+                await api.delete(`/api/project/supervisors/${userToDelete}`);
+                
+                // Use showToast instead of alert
+                showToast('Supervisor deleted successfully!');
+                
+                // Refresh the supervisors list
+                await fetchSupervisors(); // Changed from fetchUsers()
+              } catch (err) {
+                console.error('Error deleting supervisor:', err);
+                
+                // Use showToast for error as well
+                const errorMsg = err.response?.data?.message || 'Failed to delete supervisor';
+                showToast(errorMsg, 'error');
+              } finally {
+                setShowDeleteConfirm(false);
+                setUserToDelete(null);
+              }
+            }}
+            className="px-5 py-2.5 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
     </div>
   );
 };
