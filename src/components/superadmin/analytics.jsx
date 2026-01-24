@@ -412,7 +412,7 @@ const SuperAdminAnalytics = () => {
       setError(null);
       const period = periodMap[dateRange] || "7d";
 
-      console.log(`Fetching analytics for period: ${period}`);
+      // console.log(`Fetching analytics for period: ${period}`);
 
       const [summaryRes, tripsRes, clientsRes] = await Promise.all([
         api.get(`/api/superadmin/analytics/summary?period=${period}`).catch(err => {
@@ -429,11 +429,11 @@ const SuperAdminAnalytics = () => {
         })
       ]);
 
-      console.log('API Responses:', {
-        summary: summaryRes.data,
-        trips: tripsRes.data,
-        clients: clientsRes.data
-      });
+      // console.log('API Responses:', {
+      //   summary: summaryRes.data,
+      //   trips: tripsRes.data,
+      //   clients: clientsRes.data
+      // });
 
       // Format trip trends
       const tripTrends = Array.isArray(tripsRes.data) 
