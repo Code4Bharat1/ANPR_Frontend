@@ -138,7 +138,7 @@ const EntryVehicles = () => {
 
     socket.on("anpr:new-event", (data) => {
       setAnprEvents(prev => [data, ...prev.slice(0, 4)]);
-      
+      console.log("ANPR Data: ", data)
       if (data.numberPlate) {
         setAnprData({
           vehicleNumber: data.numberPlate || '',
@@ -302,6 +302,7 @@ const EntryVehicles = () => {
   };
 
   const handleANPREventClick = (event) => {
+    console.log(event);
     setAnprData({
       vehicleNumber: event.numberPlate || '',
       capturedImage: base64ToImageUrl(event.image),
@@ -703,7 +704,8 @@ const handleAllowEntry = async () => {
       return;
     }
 
-    const vehicleId = selectedVehicle?._id;
+    const vehicleId = "6978a3403a13cad2dbf79a6d";
+    // const vehicleId = selectedVehicle?._id;
     if (!vehicleId) {
       alert("Invalid vehicle");
       return;
@@ -760,6 +762,7 @@ const handleAllowEntry = async () => {
         file: videoFile,
         vehicleId,
         type: "entry",
+        index: 1,
       });
     }
 
@@ -775,12 +778,16 @@ const handleAllowEntry = async () => {
         file: challanFile,
         vehicleId,
         type: "entry",
+        index: 1,
       });
     }
+
+    console.log(vendors[0]._id)
 
     // 📦 FINAL PAYLOAD
     const entryData = {
       vehicleNumber: anprData.vehicleNumber.toUpperCase().trim(),
+      vendorId: vendors[0]._id,
       vehicleType: finalVehicleType || "TRUCK",
       driverName: driverName || "",
       entryTime: new Date().toISOString(),
