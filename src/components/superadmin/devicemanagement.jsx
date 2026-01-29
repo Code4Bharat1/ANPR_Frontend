@@ -885,7 +885,7 @@ const DeviceManagement = () => {
 
   return (
     <SuperAdminLayout title="Device Management">
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-3 md:gap-4 mb-6">
         <div className="bg-white rounded-lg p-3 md:p-4 border border-gray-100">
           <div className="text-xl md:text-2xl font-bold text-gray-900">{stats.total}</div>
           <div className="text-xs md:text-sm text-gray-600">Total Devices</div>
