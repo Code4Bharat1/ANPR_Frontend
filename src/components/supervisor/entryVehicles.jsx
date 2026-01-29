@@ -1,19 +1,34 @@
 // components/supervisor/entryVehicles.jsx
 "use client";
-import React, { useState, useEffect, useRef } from 'react';
-import SupervisorLayout from './SupervisorLayout';
-import axios from 'axios';
+import React, { useState, useEffect, useRef } from "react";
+import SupervisorLayout from "./SupervisorLayout";
+import axios from "axios";
 import {
-  Camera, Upload, X, CheckCircle, AlertCircle, Loader2,
-  Car, Package, FileText, Video, ArrowRight, ArrowLeft, Truck, RotateCw, StopCircle, User,
-  Clock, Plus, CheckCircle2, Search, Menu, ChevronDown, Building,
-  Target, Contrast, Filter, ZoomIn, Settings, Hash, MapPin
-} from 'lucide-react';
-import { io } from 'socket.io-client';
-import { useRouter } from 'next/navigation';
+  Camera,
+  X,
+  CheckCircle,
+  Loader2,
+  Car,
+  Video,
+  ArrowRight,
+  ArrowLeft,
+  Truck,
+  RotateCw,
+  StopCircle,
+  User,
+  Clock,
+  Menu,
+  ChevronDown,
+  Building,
+  Target,
+} from "lucide-react";
+import { io } from "socket.io-client";
+import { useRouter } from "next/navigation";
+import BarrierLoginPage from "@/utils/BarrierLogin";
+import BarrierControls from "../BarrierControls";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-const SOCKET_URL = 'https://webhooks.nexcorealliance.com';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+const SOCKET_URL = "https://webhooks.nexcorealliance.com";
 
 // Vehicle Types
 const VEHICLE_TYPES = [
@@ -39,7 +54,7 @@ const VEHICLE_TYPES = [
   { value: "BIKE", label: "Bike" },
   { value: "BUS", label: "Bus" },
   { value: "VISITOR", label: "Visitor" },
-  { value: "OTHER", label: "Other" }
+  { value: "OTHER", label: "Other" },
 ];
 
 const EntryVehicles = () => {
@@ -50,59 +65,59 @@ const EntryVehicles = () => {
   const [sites, setSites] = useState([]);
   const [cameraView, setCameraView] = useState(null);
   const [stream, setStream] = useState(null);
-  const [facingMode, setFacingMode] = useState('environment');
-  
+  const [facingMode, setFacingMode] = useState("environment");
+
   // ANPR Live Feed State
-  const [socketStatus, setSocketStatus] = useState('disconnected');
+  const [socketStatus, setSocketStatus] = useState("disconnected");
   const [anprEvents, setAnprEvents] = useState([]);
-  
+
   // Video recording states
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [mediaRecorder, setMediaRecorder] = useState(null);
-  
+
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const recordingIntervalRef = useRef(null);
 
   // Driver Name
-  const [driverName, setDriverName] = useState('');
-  
-  const [vehicleTypeInput, setVehicleTypeInput] = useState('');
+  const [driverName, setDriverName] = useState("");
+
+  const [vehicleTypeInput, setVehicleTypeInput] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [filteredVehicleTypes, setFilteredVehicleTypes] = useState([]);
-  const [customVehicleType, setCustomVehicleType] = useState('');
-  const [vendorInputMode, setVendorInputMode] = useState('select');
-  const [manualVendorName, setManualVendorName] = useState('');
-  const [siteInputMode, setSiteInputMode] = useState('select');
-  const [manualSiteId, setManualSiteId] = useState('');
-  const [manualSiteName, setManualSiteName] = useState('');
- 
+  const [customVehicleType, setCustomVehicleType] = useState("");
+  const [vendorInputMode, setVendorInputMode] = useState("select");
+  const [manualVendorName, setManualVendorName] = useState("");
+  const [siteInputMode, setSiteInputMode] = useState("select");
+  const [manualSiteId, setManualSiteId] = useState("");
+  const [manualSiteName, setManualSiteName] = useState("");
+
   const [anprData, setAnprData] = useState({
-    vehicleNumber: '',
+    vehicleNumber: "",
     capturedImage: null,
     frameImage: null,
     confidence: 0,
-    timestamp: '',
-    cameraId: 'Main Gate (In)',
-    siteId: '',
-    siteName: '',
-    laneId: '',
-    direction: '',
-    speed: '',
-    isEntry: true
+    timestamp: "",
+    cameraId: "Main Gate (In)",
+    siteId: "",
+    siteName: "",
+    laneId: "",
+    direction: "",
+    speed: "",
+    isEntry: true,
   });
 
   const [vehicleDetails, setVehicleDetails] = useState({
-    vehicleType: '',
-    vendorId: '',
-    materialType: '',
-    countofmaterials: '',
-    loadStatus: 'full',
+    vehicleType: "",
+    vendorId: "",
+    materialType: "",
+    materialCount: "",
+    loadStatus: "full",
     challanImage: null,
-    notes: '',
-    siteId: '',
-    siteName: ''
+    notes: "",
+    siteId: "",
+    siteName: "",
   });
 
   const [mediaCapture, setMediaCapture] = useState({
@@ -110,7 +125,7 @@ const EntryVehicles = () => {
     backView: null,
     driverView: null,
     loadView: null,
-    videoClip: null
+    videoClip: null,
   });
 
   // Mobile responsive state
@@ -124,35 +139,35 @@ const EntryVehicles = () => {
     });
 
     socket.on("connect", () => {
-      setSocketStatus('connected');
+      setSocketStatus("connected");
     });
 
     socket.on("connect_error", (err) => {
       console.error("❌ Socket error:", err);
-      setSocketStatus('error');
+      setSocketStatus("error");
     });
 
     socket.on("disconnect", () => {
-      setSocketStatus('disconnected');
+      setSocketStatus("disconnected");
     });
 
     socket.on("anpr:new-event", (data) => {
-      setAnprEvents(prev => [data, ...prev.slice(0, 4)]);
-      console.log("ANPR Data: ", data)
+      setAnprEvents((prev) => [data, ...prev.slice(0, 4)]);
+
       if (data.numberPlate) {
         setAnprData({
-          vehicleNumber: data.numberPlate || '',
+          vehicleNumber: data.numberPlate || "",
           capturedImage: base64ToImageUrl(data.image),
           frameImage: base64ToImageUrl(data.frame),
           confidence: 95,
           timestamp: new Date(data.timestamp).toLocaleString(),
-          cameraId: data.cameraName || 'Main Gate (In)',
-          siteId: data.siteId?.toString() || '',
-          siteName: data.siteName || '',
-          laneId: data.laneId?.toString() || '',
-          direction: data.direction?.toString() || '',
-          speed: data.speed?.toString() || '',
-          isEntry: data.isEntry ?? true
+          cameraId: data.cameraName || "Main Gate (In)",
+          siteId: data.siteId?.toString() || "",
+          siteName: data.siteName || "",
+          laneId: data.laneId?.toString() || "",
+          direction: data.direction?.toString() || "",
+          speed: data.speed?.toString() || "",
+          isEntry: data.isEntry ?? true,
         });
       }
     });
@@ -165,7 +180,7 @@ const EntryVehicles = () => {
   useEffect(() => {
     fetchVendors();
     fetchSites();
-    
+
     return () => {
       stopCamera();
       if (isRecording) stopRecording();
@@ -174,9 +189,10 @@ const EntryVehicles = () => {
 
   useEffect(() => {
     if (vehicleTypeInput.trim()) {
-      const filtered = VEHICLE_TYPES.filter(type =>
-        type.label.toLowerCase().includes(vehicleTypeInput.toLowerCase()) ||
-        type.value.toLowerCase().includes(vehicleTypeInput.toLowerCase())
+      const filtered = VEHICLE_TYPES.filter(
+        (type) =>
+          type.label.toLowerCase().includes(vehicleTypeInput.toLowerCase()) ||
+          type.value.toLowerCase().includes(vehicleTypeInput.toLowerCase()),
       );
       setFilteredVehicleTypes(filtered);
       setShowSuggestions(true);
@@ -189,41 +205,44 @@ const EntryVehicles = () => {
   // Fetch assigned sites
   const fetchSites = async () => {
     try {
-      const token = localStorage.getItem('accessToken');
-      
+      const token = localStorage.getItem("accessToken");
+
       const response = await axios.get(`${API_URL}/api/supervisor/my-site`, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       let sitesData = [];
-      
+
       if (response.data && response.data.success) {
         if (Array.isArray(response.data.data)) {
           sitesData = response.data.data;
-        } else if (response.data.data && typeof response.data.data === 'object') {
+        } else if (
+          response.data.data &&
+          typeof response.data.data === "object"
+        ) {
           sitesData = [response.data.data];
         }
       } else {
         if (Array.isArray(response.data)) {
           sitesData = response.data;
-        } else if (response.data && typeof response.data === 'object') {
+        } else if (response.data && typeof response.data === "object") {
           sitesData = [response.data];
         }
       }
-      
+
       setSites(sitesData);
-      
-      if (sitesData.length > 0 && siteInputMode === 'select') {
+
+      if (sitesData.length > 0 && siteInputMode === "select") {
         const firstSite = sitesData[0];
-        setVehicleDetails(prev => ({ 
-          ...prev, 
+        setVehicleDetails((prev) => ({
+          ...prev,
           siteId: firstSite._id,
-          siteName: firstSite.name
+          siteName: firstSite.name,
         }));
       }
     } catch (error) {
-      console.error('Error fetching sites:', error);
-      console.error('Error response:', error.response?.data);
+      console.error("Error fetching sites:", error);
+      console.error("Error response:", error.response?.data);
       setSites([]);
     }
   };
@@ -231,32 +250,32 @@ const EntryVehicles = () => {
   const fetchVendors = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('accessToken');
-      
+      const token = localStorage.getItem("accessToken");
+
       const endpoints = [
         `${API_URL}/api/supervisor/vendors`,
         `${API_URL}/api/project/vendors`,
-        // `${API_URL}/api/supervisor/vendors-by-site`,
-        // `${API_URL}/api/vendors/active`,
-        `${API_URL}/api/vendors`
+        `${API_URL}/api/supervisor/vendors-by-site`,
+        `${API_URL}/api/vendors/active`,
+        `${API_URL}/api/vendors`,
       ];
-      
+
       let vendorsData = [];
       let lastError = null;
-      
+
       for (const endpoint of endpoints) {
         try {
           // console.log(`Trying endpoint: ${endpoint}`);
           const response = await axios.get(endpoint, {
-            headers: { 
+            headers: {
               Authorization: `Bearer ${token}`,
-              'Content-Type': 'application/json'
+              "Content-Type": "application/json",
             },
-            timeout: 5000
+            timeout: 5000,
           });
-          
+
           // console.log(`Response from ${endpoint}:`, response.data);
-          
+
           if (response.data && response.data.success) {
             if (Array.isArray(response.data.data)) {
               vendorsData = response.data.data;
@@ -266,7 +285,7 @@ const EntryVehicles = () => {
           } else if (Array.isArray(response.data)) {
             vendorsData = response.data;
           }
-          
+
           if (vendorsData.length > 0) {
             // console.log(`Successfully fetched ${vendorsData.length} vendors from ${endpoint}`);
             break;
@@ -277,182 +296,187 @@ const EntryVehicles = () => {
           continue;
         }
       }
-      
+
       if (vendorsData.length === 0) {
         // console.log('No vendors found from any endpoint. Using mock data for testing.');
-        // vendorsData = [
-        //   { _id: '1', name: 'Test Vendor 1', email: 'vendor1@test.com' },
-        //   { _id: '2', name: 'Test Vendor 2', email: 'vendor2@test.com' }
-        // ];
+        vendorsData = [
+          { _id: "1", name: "Test Vendor 1", email: "vendor1@test.com" },
+          { _id: "2", name: "Test Vendor 2", email: "vendor2@test.com" },
+        ];
       }
-      
+
       setVendors(vendorsData);
       setLoading(false);
-      
     } catch (error) {
-      console.error('❌ Error fetching vendors:', error);
+      console.error("❌ Error fetching vendors:", error);
       setLoading(false);
-      alert('Failed to load vendors. Please check your connection.');
+      alert("Failed to load vendors. Please check your connection.");
     }
   };
 
   // Manual entry via OCR page
   const handleManualEntry = () => {
-    router.push('/supervisor/entry-vehicles/ocr');
+    router.push("/supervisor/entry-vehicles/ocr");
   };
 
   const handleANPREventClick = (event) => {
-    console.log(event);
     setAnprData({
-      vehicleNumber: event.numberPlate || '',
+      vehicleNumber: event.numberPlate || "",
       capturedImage: base64ToImageUrl(event.image),
       frameImage: base64ToImageUrl(event.frame),
       confidence: 95,
       timestamp: new Date(event.timestamp).toLocaleString(),
-      cameraId: event.cameraName || 'Main Gate (In)',
-      siteId: event.siteId?.toString() || '',
-      siteName: event.siteName || '',
-      laneId: event.laneId?.toString() || '',
-      direction: event.direction?.toString() || '',
-      speed: event.speed?.toString() || '',
-      isEntry: event.isEntry ?? true
+      cameraId: event.cameraName || "Main Gate (In)",
+      siteId: event.siteId?.toString() || "",
+      siteName: event.siteName || "",
+      laneId: event.laneId?.toString() || "",
+      direction: event.direction?.toString() || "",
+      speed: event.speed?.toString() || "",
+      isEntry: event.isEntry ?? true,
     });
   };
 
   const handleSiteModeChange = (mode) => {
     setSiteInputMode(mode);
-    
-    if (mode === 'select') {
+
+    if (mode === "select") {
       if (sites.length > 0) {
         const firstSite = sites[0];
-        setVehicleDetails(prev => ({ 
-          ...prev, 
+        setVehicleDetails((prev) => ({
+          ...prev,
           siteId: firstSite._id,
-          siteName: firstSite.name
+          siteName: firstSite.name,
         }));
       } else {
-        setVehicleDetails(prev => ({ ...prev, siteId: '', siteName: '' }));
+        setVehicleDetails((prev) => ({ ...prev, siteId: "", siteName: "" }));
       }
-      setManualSiteId('');
-      setManualSiteName('');
+      setManualSiteId("");
+      setManualSiteName("");
     } else {
-      setVehicleDetails(prev => ({ ...prev, siteId: '', siteName: '' }));
+      setVehicleDetails((prev) => ({ ...prev, siteId: "", siteName: "" }));
     }
   };
 
   const handleManualSiteChange = (field, value) => {
-    if (field === 'id') {
+    if (field === "id") {
       setManualSiteId(value);
-      setVehicleDetails(prev => ({ ...prev, siteId: value }));
-    } else if (field === 'name') {
+      setVehicleDetails((prev) => ({ ...prev, siteId: value }));
+    } else if (field === "name") {
       setManualSiteName(value);
-      setVehicleDetails(prev => ({ ...prev, siteName: value }));
+      setVehicleDetails((prev) => ({ ...prev, siteName: value }));
     }
   };
 
   const handleSiteSelect = (siteId) => {
-    const selectedSite = sites.find(s => s._id === siteId);
+    const selectedSite = sites.find((s) => s._id === siteId);
     if (selectedSite) {
-      setVehicleDetails(prev => ({ 
-        ...prev, 
+      setVehicleDetails((prev) => ({
+        ...prev,
         siteId: selectedSite._id,
-        siteName: selectedSite.name
+        siteName: selectedSite.name,
       }));
     }
   };
 
   const base64ToImageUrl = (base64String) => {
     if (!base64String) return null;
-    
-    if (base64String.startsWith('data:image')) {
+
+    if (base64String.startsWith("data:image")) {
       return base64String;
     }
-    
+
     return `data:image/jpeg;base64,${base64String}`;
   };
 
   // Helper function to convert base64 to File
   const base64ToFile = (base64String, filename) => {
-    const arr = base64String.split(',');
+    const arr = base64String.split(",");
     const mime = arr[0].match(/:(.*?);/)[1];
     const bstr = atob(arr[1]);
     let n = bstr.length;
     const u8arr = new Uint8Array(n);
-    
+
     while (n--) {
       u8arr[n] = bstr.charCodeAt(n);
     }
-    
+
     return new File([u8arr], filename, { type: mime });
   };
 
   // Upload to Wasabi function
-  // const uploadToWasabi = async (file, folder) => {
-  //   try {
-  //     const token = localStorage.getItem('accessToken');
-      
-  //     const formData = new FormData();
-  //     formData.append('file', file);
-  //     formData.append('folder', folder);
-      
-  //     const response = await axios.post(`${API_URL}/api/upload/upload-url`, formData, {
-  //       headers: {
-  //         'Authorization': `Bearer ${token}`,
-  //         'Content-Type': 'multipart/form-data'
-  //       }
-  //     });
-      
-  //     if (response.data.success) {
-  //       return response.data.key;
-  //     } else {
-  //       throw new Error('Upload failed');
-  //     }
-  //   } catch (error) {
-  //     console.error('Upload error:', error);
-  //     throw error;
-  //   }
-  // };
+  const uploadToWasabi = async (file, folder) => {
+    try {
+      const token = localStorage.getItem("accessToken");
+
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("folder", folder);
+
+      const response = await axios.post(
+        `${API_URL}/api/upload/upload-url`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
+        },
+      );
+
+      if (response.data.success) {
+        return response.data.key;
+      } else {
+        throw new Error("Upload failed");
+      }
+    } catch (error) {
+      console.error("Upload error:", error);
+      throw error;
+    }
+  };
 
   const startCamera = async (type) => {
     setCameraView(type);
-    
+
     try {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        throw new Error('Camera not supported');
+        throw new Error("Camera not supported");
       }
 
       const constraints = {
         video: {
           facingMode: facingMode,
           width: { ideal: 1920, max: 1920 },
-          height: { ideal: 1080, max: 1080 }
+          height: { ideal: 1080, max: 1080 },
         },
-        audio: type === 'video'
+        audio: type === "video",
       };
 
-      const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+      const mediaStream =
+        await navigator.mediaDevices.getUserMedia(constraints);
       setStream(mediaStream);
-      
+
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
         videoRef.current.onloadedmetadata = () => {
-          videoRef.current.play().catch(err => console.error('Error playing video:', err));
+          videoRef.current
+            .play()
+            .catch((err) => console.error("Error playing video:", err));
         };
       }
 
-      if (type === 'video') {
+      if (type === "video") {
         startVideoRecording(mediaStream);
       }
     } catch (error) {
-      console.error('Camera error:', error);
-      alert('Could not access camera. Please check permissions.');
+      console.error("Camera error:", error);
+      alert("Could not access camera. Please check permissions.");
       setCameraView(null);
     }
   };
 
   const stopCamera = () => {
     if (stream) {
-      stream.getTracks().forEach(track => track.stop());
+      stream.getTracks().forEach((track) => track.stop());
       setStream(null);
     }
     if (videoRef.current) {
@@ -465,66 +489,71 @@ const EntryVehicles = () => {
     if (wasRecording) {
       stopRecording();
     }
-    
+
     stopCamera();
-    const newFacingMode = facingMode === 'user' ? 'environment' : 'user';
+    const newFacingMode = facingMode === "user" ? "environment" : "user";
     setFacingMode(newFacingMode);
-    
+
     try {
       const constraints = {
         video: {
           facingMode: newFacingMode,
           width: { ideal: 1920, max: 1920 },
-          height: { ideal: 1080, max: 1080 }
+          height: { ideal: 1080, max: 1080 },
         },
-        audio: cameraView === 'video'
+        audio: cameraView === "video",
       };
 
-      const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+      const mediaStream =
+        await navigator.mediaDevices.getUserMedia(constraints);
       setStream(mediaStream);
-      
+
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
         videoRef.current.onloadedmetadata = () => {
-          videoRef.current.play().catch(err => console.error('Error playing video:', err));
+          videoRef.current
+            .play()
+            .catch((err) => console.error("Error playing video:", err));
         };
       }
 
-      if (wasRecording && cameraView === 'video') {
+      if (wasRecording && cameraView === "video") {
         startVideoRecording(mediaStream);
       }
     } catch (error) {
-      console.error('Error switching camera:', error);
-      alert('Could not switch camera');
+      console.error("Error switching camera:", error);
+      alert("Could not switch camera");
     }
   };
 
   const capturePhoto = () => {
     if (!videoRef.current || !canvasRef.current) {
-      alert('Camera not ready');
+      alert("Camera not ready");
       return;
     }
 
     const video = videoRef.current;
     const canvas = canvasRef.current;
-    
+
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
-    
+
     if (canvas.width === 0 || canvas.height === 0) {
-      alert('Camera not ready. Please wait.');
+      alert("Camera not ready. Please wait.");
       return;
     }
-    
-    const context = canvas.getContext('2d');
+
+    const context = canvas.getContext("2d");
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
-    
-    const imageData = canvas.toDataURL('image/jpeg', 0.85);
-    
-    if (cameraView === 'challan') {
-      setVehicleDetails(prev => ({ ...prev, challanImage: imageData }));
-    } else if (['frontView', 'backView', 'driverView', 'loadView'].includes(cameraView)) {
-      setMediaCapture(prev => ({ ...prev, [cameraView]: imageData }));
+
+    const imageData = canvas.toDataURL("image/jpeg", 0.85);
+
+    if (cameraView === "challan") {
+      setVehicleDetails((prev) => ({ ...prev, challanImage: imageData }));
+    } else if (
+      ["frontView", "backView", "driverView", "loadView"].includes(cameraView)
+    ) {
+      setMediaCapture((prev) => ({ ...prev, [cameraView]: imageData }));
     }
 
     stopCamera();
@@ -533,12 +562,12 @@ const EntryVehicles = () => {
 
   const startVideoRecording = (mediaStream) => {
     try {
-      const options = { mimeType: 'video/webm;codecs=vp9' };
-      
+      const options = { mimeType: "video/webm;codecs=vp9" };
+
       if (!MediaRecorder.isTypeSupported(options.mimeType)) {
-        options.mimeType = 'video/webm';
+        options.mimeType = "video/webm";
       }
-      
+
       const recorder = new MediaRecorder(mediaStream, options);
       const chunks = [];
 
@@ -549,10 +578,10 @@ const EntryVehicles = () => {
       };
 
       recorder.onstop = () => {
-        const blob = new Blob(chunks, { type: 'video/webm' });
+        const blob = new Blob(chunks, { type: "video/webm" });
         const reader = new FileReader();
         reader.onloadend = () => {
-          setMediaCapture(prev => ({ ...prev, videoClip: reader.result }));
+          setMediaCapture((prev) => ({ ...prev, videoClip: reader.result }));
         };
         reader.readAsDataURL(blob);
       };
@@ -563,12 +592,11 @@ const EntryVehicles = () => {
       setRecordingTime(0);
 
       recordingIntervalRef.current = setInterval(() => {
-        setRecordingTime(prev => prev + 1);
+        setRecordingTime((prev) => prev + 1);
       }, 1000);
-
     } catch (error) {
-      console.error('Error starting recording:', error);
-      alert('Could not start video recording');
+      console.error("Error starting recording:", error);
+      alert("Could not start video recording");
     }
   };
 
@@ -576,11 +604,11 @@ const EntryVehicles = () => {
     if (mediaRecorder && isRecording) {
       mediaRecorder.stop();
       setIsRecording(false);
-      
+
       if (recordingIntervalRef.current) {
         clearInterval(recordingIntervalRef.current);
       }
-      
+
       stopCamera();
       setCameraView(null);
       setRecordingTime(0);
@@ -590,7 +618,7 @@ const EntryVehicles = () => {
   const formatRecordingTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
   const cancelCamera = () => {
@@ -612,30 +640,30 @@ const EntryVehicles = () => {
     setVehicleTypeInput(type.label);
     setVehicleDetails({ ...vehicleDetails, vehicleType: type.value });
     setShowSuggestions(false);
-    
-    if (type.value !== 'OTHER') {
-      setCustomVehicleType('');
+
+    if (type.value !== "OTHER") {
+      setCustomVehicleType("");
     }
   };
 
   const handleNext = () => {
     if (step === 1) {
       if (!anprData.vehicleNumber) {
-        alert('Vehicle number is required');
+        alert("Vehicle number is required");
         return;
       }
       setStep(2);
     } else if (step === 2) {
       if (!vehicleDetails.vehicleType) {
-        alert('Please select vehicle type');
+        alert("Please select vehicle type");
         return;
       }
-      if (vehicleDetails.vehicleType === 'OTHER' && !customVehicleType.trim()) {
-        alert('Please enter custom vehicle type');
+      if (vehicleDetails.vehicleType === "OTHER" && !customVehicleType.trim()) {
+        alert("Please enter custom vehicle type");
         return;
       }
       if (!vehicleDetails.siteId) {
-        alert('Please enter or select a site');
+        alert("Please enter or select a site");
         return;
       }
       setStep(3);
@@ -646,259 +674,344 @@ const EntryVehicles = () => {
     if (step > 1) setStep(step - 1);
   };
 
- // Utility functions for direct Wasabi upload
-// Make sure your uploadToWasabiDirect function looks like this:
+  // Utility functions for direct Wasabi upload
+  // Make sure your uploadToWasabiDirect function looks like this:
 
- const uploadToWasabi = async ({
-  file,
-  vehicleId,
-  type,          // "entry" | "exit"
-  index = null,  // 1–4 for photos, null for video/challan
-}) => {
-  try {
-    const token = localStorage.getItem("accessToken");
+  const uploadToWasabiDirect = async (file, folder = "vehicles/entry") => {
+    try {
+      const fileName = `${folder}/${Date.now()}-${Math.random().toString(36).substring(7)}-${file.name}`;
+      const fileType = file.type;
 
-    const ext = file.name.split(".").pop();
-    const filename = `${Date.now()}-${Math.random()
-      .toString(36)
-      .slice(2)}.${ext}`;
+      // console.log('📤 Getting signed URL for:', fileName);
 
-    const { data } = await axios.post(
-      `${API_URL}/api/uploads/upload-url`,
-      {
-        vehicleId,
-        type,
-        index,
-        fileName: filename,
-        fileType: file.type,
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
+      // STEP 1: Get signed URL
+      const token = localStorage.getItem("accessToken");
+      const urlResponse = await axios.post(
+        `${API_URL}/api/upload/upload-url`,
+        { fileName, fileType },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
         },
-      }
-    );
-
-    const { uploadURL, fileKey } = data;
-
-    await axios.put(uploadURL, file, {
-      headers: { "Content-Type": file.type },
-      transformRequest: [(d) => d],
-    });
-
-    return fileKey;
-  } catch (err) {
-    console.error("❌ Wasabi upload failed:", err.response?.data || err);
-    throw err;
-  }
-};
-
-
-const handleAllowEntry = async () => {
-  try {
-    setLoading(true);
-    const token = localStorage.getItem("accessToken");
-
-    if (!anprData.vehicleNumber) {
-      alert("❌ Vehicle number is required");
-      return;
-    }
-
-    const vehicleId = "6978a3403a13cad2dbf79a6d";
-    // const vehicleId = selectedVehicle?._id;
-    if (!vehicleId) {
-      alert("Invalid vehicle");
-      return;
-    }
-
-    const finalVehicleType =
-      vehicleDetails.vehicleType === "OTHER"
-        ? customVehicleType
-        : vehicleDetails.vehicleType;
-
-    const PHOTO_CONFIG = [
-      { key: "frontView", index: 1 },
-      { key: "backView", index: 2 },
-      { key: "loadView", index: 3 },
-      { key: "driverView", index: 4 },
-    ];
-
-    const uploadedPhotos = {
-      frontView: null,
-      backView: null,
-      loadView: null,
-      driverView: null,
-    };
-
-    // 📸 PHOTO UPLOADS
-    for (const photo of PHOTO_CONFIG) {
-      const base64 = mediaCapture?.[photo.key];
-      if (!base64) continue;
-
-      const file = base64ToFile(
-        base64,
-        `${photo.key}-${Date.now()}.jpg`
       );
 
-      const fileKey = await uploadToWasabi({
-        file,
-        vehicleId,
-        type: "entry",
-        index: photo.index,
-      });
+      // console.log('✅ Signed URL received');
+      // console.log('   fileKey:', urlResponse.data.fileKey);  // 🔥 CHECK THIS
 
-      uploadedPhotos[photo.key] = fileKey;
-    }
-
-    // 🎥 VIDEO
-    let videoKey = null;
-    if (mediaCapture?.videoClip) {
-      const videoFile = base64ToFile(
-        mediaCapture.videoClip,
-        `entry-video-${Date.now()}.webm`
-      );
-
-      videoKey = await uploadToWasabi({
-        file: videoFile,
-        vehicleId,
-        type: "entry",
-        index: 1,
-      });
-    }
-
-    // 📄 CHALLAN
-    let challanKey = null;
-    if (vehicleDetails?.challanImage) {
-      const challanFile = base64ToFile(
-        vehicleDetails.challanImage,
-        `challan-${Date.now()}.jpg`
-      );
-
-      challanKey = await uploadToWasabi({
-        file: challanFile,
-        vehicleId,
-        type: "entry",
-        index: 1,
-      });
-    }
-
-    console.log(vendors[0]._id)
-
-    // 📦 FINAL PAYLOAD
-    const entryData = {
-      vehicleNumber: anprData.vehicleNumber.toUpperCase().trim(),
-      vendorId: vendors[0]._id,
-      vehicleType: finalVehicleType || "TRUCK",
-      driverName: driverName || "",
-      entryTime: new Date().toISOString(),
-      purpose: vehicleDetails.materialType || "Material Delivery",
-      loadStatus: vehicleDetails.loadStatus?.toUpperCase() || "FULL",
-      entryGate: "Manual Entry",
-      notes: vehicleDetails.notes || "",
-      siteId: vehicleDetails.siteId,
-      media: {
-        anprImage: anprData.capturedImage || null,
-        photos: uploadedPhotos,
-        video: videoKey,
-        challanImage: challanKey,
-      },
-    };
-
-    await axios.post(
-      `${API_URL}/api/supervisor/vehicles/entry`,
-      entryData,
-      {
+      // STEP 2: Upload to Wasabi
+      await axios.put(urlResponse.data.uploadURL, file, {
         headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
+          "Content-Type": fileType,
         },
+      });
+
+      // console.log('✅ File uploaded to Wasabi');
+
+      // 🔥 CRITICAL: Return the FILE KEY, not the upload URL
+      const fileKey = urlResponse.data.fileKey;
+
+      // 🔥 VERIFY: File key should look like a path
+      if (!fileKey || !fileKey.includes("/")) {
+        console.error("❌ INVALID FILE KEY:", fileKey);
+        console.error(
+          "   Expected format: vehicles/entry/photos/123-front.jpg",
+        );
+        throw new Error("Invalid file key returned from server");
       }
-    );
 
-    alert("✅ Vehicle entry recorded successfully!");
-    resetForm();
+      // console.log('✅ Returning file key:', fileKey);
+      return fileKey; // 🔥 This should be like "vehicles/entry/photos/123-front.jpg"
+    } catch (error) {
+      console.error("❌ Upload error:", error.response?.data || error.message);
+      throw error;
+    }
+  };
 
-  } catch (err) {
-    console.error("❌ Entry error:", err.response?.data || err);
-    alert(err.response?.data?.message || "Failed to record entry");
-  } finally {
-    setLoading(false);
-  }
-};
+  const handleAllowEntry = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem("accessToken");
 
+      if (!anprData.vehicleNumber) {
+        alert("❌ Vehicle number is required");
+        setLoading(false);
+        return;
+      }
 
+      // Vendor logic
+      const finalVendor =
+        vendorInputMode === "manual"
+          ? manualVendorName
+          : vehicleDetails.vendorId;
 
+      if (!finalVendor || finalVendor.trim() === "") {
+        const proceedWithoutVendor = window.confirm(
+          "⚠️ No vendor selected. Would you like to continue without vendor information?\n\n" +
+            "Note: You can add vendor details later if needed.",
+        );
+
+        if (!proceedWithoutVendor) {
+          setLoading(false);
+          return;
+        }
+      }
+
+      const finalVehicleType =
+        vehicleDetails.vehicleType === "OTHER"
+          ? customVehicleType
+          : vehicleDetails.vehicleType;
+
+      // console.log('\n🔍 DEBUG: mediaCapture keys:', Object.keys(mediaCapture));
+
+      // 🔥 FIX: Create proper photo object with Wasabi keys
+      const uploadedPhotos = {
+        frontView: null,
+        backView: null,
+        loadView: null,
+        driverView: null,
+      };
+
+      // 🔥 Define how to map your mediaCapture keys to standard photo keys
+      // UPDATE THIS MAP based on your actual mediaCapture structure
+      const photoKeyMapping = {
+        // Format: 'yourMediaCaptureKey': 'standardPhotoKey'
+        frontView: "frontView",
+        backView: "backView",
+        loadView: "loadView",
+        driverView: "driverView",
+        // If your keys are different, update like this:
+        // 'photo1': 'frontView',
+        // 'photo2': 'backView',
+        // 'photo3': 'loadView',
+        // 'photo4': 'driverView',
+      };
+
+      // console.log('📤 Starting photo uploads...');
+
+      // Upload photos with proper mapping
+      for (const [mediaCaptureKey, photo] of Object.entries(mediaCapture)) {
+        if (
+          photo &&
+          mediaCaptureKey !== "videoClip" &&
+          typeof photo === "string"
+        ) {
+          const standardKey = photoKeyMapping[mediaCaptureKey];
+
+          if (standardKey) {
+            try {
+              // console.log(`📸 Uploading ${mediaCaptureKey} → ${standardKey}`);
+              const file = base64ToFile(
+                photo,
+                `${Date.now()}-${mediaCaptureKey}.jpg`,
+              );
+              const wasabiFileKey = await uploadToWasabiDirect(
+                file,
+                "vehicles/entry/photos",
+              );
+
+              if (wasabiFileKey) {
+                uploadedPhotos[standardKey] = wasabiFileKey;
+                // console.log(`✅ ${standardKey} uploaded:`, wasabiFileKey);
+              }
+            } catch (error) {
+              console.error(`❌ Failed to upload ${mediaCaptureKey}:`, error);
+            }
+          } else {
+            console.warn(`⚠️ No mapping found for key: ${mediaCaptureKey}`);
+          }
+        }
+      }
+
+      // console.log('📊 Final uploadedPhotos:', uploadedPhotos);
+
+      // Upload video
+      let videoUrl = null;
+      if (mediaCapture.videoClip) {
+        try {
+          // console.log('📹 Uploading video...');
+          const videoFile = base64ToFile(
+            mediaCapture.videoClip,
+            `${Date.now()}-video.webm`,
+          );
+          videoUrl = await uploadToWasabiDirect(
+            videoFile,
+            "vehicles/entry/videos",
+          );
+          // console.log("✅ Video uploaded:", videoUrl);
+        } catch (error) {
+          console.error("❌ Failed to upload video:", error);
+        }
+      }
+
+      // Upload challan image
+      let challanImageUrl = null;
+      if (vehicleDetails.challanImage) {
+        try {
+          // console.log('📄 Uploading challan...');
+          const challanFile = base64ToFile(
+            vehicleDetails.challanImage,
+            `${Date.now()}-challan.jpg`,
+          );
+          challanImageUrl = await uploadToWasabiDirect(
+            challanFile,
+            "vehicles/entry/challan",
+          );
+          // console.log("✅ Challan uploaded:", challanImageUrl);
+        } catch (error) {
+          console.error("❌ Failed to upload challan:", error);
+        }
+      }
+
+      // 🔥 CRITICAL: Prepare entry data with WASABI FILE KEYS, not base64
+      const entryData = {
+        vehicleNumber: anprData.vehicleNumber.toUpperCase().trim(),
+        vehicleType: finalVehicleType || "TRUCK",
+        driverName: driverName || "",
+        entryTime: new Date().toISOString(),
+        purpose: vehicleDetails.materialType || "Material Delivery",
+        loadStatus: vehicleDetails.loadStatus.toUpperCase() || "FULL",
+        entryGate: "Manual Entry",
+        notes: vehicleDetails.notes || "",
+        siteId: vehicleDetails.siteId,
+        media: {
+          anprImage: anprData.capturedImage || null,
+          photos: uploadedPhotos, // 🔥 These should be Wasabi keys
+          video: videoUrl,
+          challanImage: challanImageUrl,
+        },
+      };
+
+      // Add vendor if available
+      if (finalVendor && finalVendor.trim() !== "") {
+        entryData.vendorId = finalVendor;
+      }
+
+      // console.log("\n📦 FINAL PAYLOAD:");
+      // console.log("vehicleNumber:", entryData.vehicleNumber);
+      // console.log("media.photos:", entryData.media.photos);
+      // console.log("media.video:", entryData.media.video);
+      // console.log("media.challanImage:", entryData.media.challanImage);
+
+      // 🔥 VERIFY: Check that photo keys look like file paths
+      Object.entries(entryData.media.photos).forEach(([key, value]) => {
+        if (value) {
+          if (!value.includes("/")) {
+            console.error(`❌ WRONG FORMAT for ${key}:`, value);
+            console.error("   Expected: vehicles/entry/photos/123-front.jpg");
+            console.error("   Got:", value);
+          } else {
+            // console.log(`✅ ${key} format correct:`, value);
+          }
+        }
+      });
+
+      // Send to your vehicle entry API
+      const response = await axios.post(
+        `${API_URL}/api/supervisor/vehicles/entry`,
+        entryData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        },
+      );
+
+      // console.log("\n✅ SUCCESS Response:", response.data);
+      alert("✅ Vehicle entry recorded successfully!");
+      resetForm();
+    } catch (error) {
+      console.error("\n❌ ERROR Details:");
+      console.error("Status:", error.response?.status);
+      console.error("Message:", error.response?.data?.message);
+      console.error("Full error:", error.response?.data);
+
+      if (error.response?.status === 400) {
+        alert(`❌ ${error.response.data.message}`);
+      } else if (error.response?.status === 409) {
+        alert(`⚠️ ${error.response.data.message}`);
+      } else {
+        alert("❌ Failed to record entry. Check console for details.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const resetForm = () => {
     setStep(1);
-    setDriverName('');
-    setVehicleTypeInput('');
-    setCustomVehicleType('');
-    setVendorInputMode('select');
-    setManualVendorName('');
-    setSiteInputMode('select');
-    setManualSiteId('');
-    setManualSiteName('');
+    setDriverName("");
+    setVehicleTypeInput("");
+    setCustomVehicleType("");
+    setVendorInputMode("select");
+    setManualVendorName("");
+    setSiteInputMode("select");
+    setManualSiteId("");
+    setManualSiteName("");
     setVehicleDetails({
-      vehicleType: '',
-      vendorId: '',
-      materialType: '',
-      materialCount: '',
-      loadStatus: 'full',
+      vehicleType: "",
+      vendorId: "",
+      materialType: "",
+      materialCount: "",
+      loadStatus: "full",
       challanImage: null,
-      notes: '',
-      siteId: '',
-      siteName: ''
+      notes: "",
+      siteId: "",
+      siteName: "",
     });
     setMediaCapture({
       frontView: null,
       backView: null,
       driverView: null,
       loadView: null,
-      videoClip: null
+      videoClip: null,
     });
     setRecordingTime(0);
     setAnprData({
-      vehicleNumber: '',
+      vehicleNumber: "",
       capturedImage: null,
       frameImage: null,
       confidence: 0,
-      timestamp: '',
-      cameraId: 'Main Gate (In)',
-      siteId: '',
-      siteName: '',
-      laneId: '',
-      direction: '',
-      speed: '',
-      isEntry: true
+      timestamp: "",
+      cameraId: "Main Gate (In)",
+      siteId: "",
+      siteName: "",
+      laneId: "",
+      direction: "",
+      speed: "",
+      isEntry: true,
     });
   };
 
   const getCameraLabel = () => {
     const labels = {
-      'challan': 'Challan/Bill',
-      'frontView': 'Front View',
-      'backView': 'Back View',
-      'driverView': 'Driver/Cabin',
-      'loadView': 'Material/Load',
-      'video': 'Video Recording'
+      challan: "Challan/Bill",
+      frontView: "Front View",
+      backView: "Back View",
+      driverView: "Driver/Cabin",
+      loadView: "Material/Load",
+      video: "Video Recording",
     };
-    return labels[cameraView] || 'Photo';
+    return labels[cameraView] || "Photo";
   };
 
   const getSocketStatusColor = () => {
     switch (socketStatus) {
-      case 'connected':
-        return 'bg-green-500';
-      case 'error':
-        return 'bg-red-500';
+      case "connected":
+        return "bg-green-500";
+      case "error":
+        return "bg-red-500";
       default:
-        return 'bg-orange-500';
+        return "bg-orange-500";
     }
   };
 
   return (
     <SupervisorLayout>
+      <BarrierLoginPage />
+      <BarrierControls />
       <div className="max-w-6xl mx-auto px-2 sm:px-4">
         <canvas ref={canvasRef} className="hidden" />
 
@@ -912,10 +1025,12 @@ const handleAllowEntry = async () => {
               >
                 <X className="w-5 h-5 sm:w-6 sm:h-6" />
               </button>
-              
+
               <div className="text-white font-semibold text-center">
                 <div className="text-sm sm:text-base">
-                  {cameraView === 'video' ? 'Recording Video' : `Capture ${getCameraLabel()}`}
+                  {cameraView === "video"
+                    ? "Recording Video"
+                    : `Capture ${getCameraLabel()}`}
                 </div>
                 {isRecording && (
                   <div className="text-xs text-red-400 mt-1 flex items-center justify-center gap-2">
@@ -938,12 +1053,14 @@ const handleAllowEntry = async () => {
                 ref={videoRef}
                 autoPlay
                 playsInline
-                muted={cameraView !== 'video'}
+                muted={cameraView !== "video"}
                 className="w-full h-full object-cover"
-                style={{ transform: facingMode === 'user' ? 'scaleX(-1)' : 'none' }}
+                style={{
+                  transform: facingMode === "user" ? "scaleX(-1)" : "none",
+                }}
               />
-              
-              {cameraView !== 'video' && (
+
+              {cameraView !== "video" && (
                 <div className="absolute inset-0 pointer-events-none">
                   <div className="absolute inset-8 border-2 border-white/30 rounded-lg"></div>
                 </div>
@@ -951,7 +1068,7 @@ const handleAllowEntry = async () => {
             </div>
 
             <div className="bg-black/80 backdrop-blur-sm p-4 sm:p-6 flex justify-center items-center">
-              {cameraView === 'video' ? (
+              {cameraView === "video" ? (
                 <button
                   onClick={stopRecording}
                   disabled={!isRecording}
@@ -984,9 +1101,16 @@ const handleAllowEntry = async () => {
 
         {/* Header */}
         <div className="mb-4 sm:mb-6">
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-1 sm:mb-2">New Vehicle Entry</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-1 sm:mb-2">
+            New Vehicle Entry
+          </h1>
           <p className="text-sm text-gray-600">
-            Step {step}: {step === 1 ? 'Vehicle Identification' : step === 2 ? 'Vehicle & Driver Details' : 'Media Capture & Validation'}
+            Step {step}:{" "}
+            {step === 1
+              ? "Vehicle Identification"
+              : step === 2
+                ? "Vehicle & Driver Details"
+                : "Media Capture & Validation"}
           </p>
         </div>
 
@@ -996,22 +1120,36 @@ const handleAllowEntry = async () => {
             {[1, 2, 3].map((s) => (
               <React.Fragment key={s}>
                 <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
-                  <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-bold text-sm sm:text-base ${
-                    s === step ? 'bg-blue-600 text-white' : s < step ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'
-                  }`}>
-                    {s < step ? <CheckCircle className="w-4 h-4 sm:w-6 sm:h-6" /> : s}
+                  <div
+                    className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-bold text-sm sm:text-base ${
+                      s === step
+                        ? "bg-blue-600 text-white"
+                        : s < step
+                          ? "bg-green-600 text-white"
+                          : "bg-gray-200 text-gray-600"
+                    }`}
+                  >
+                    {s < step ? (
+                      <CheckCircle className="w-4 h-4 sm:w-6 sm:h-6" />
+                    ) : (
+                      s
+                    )}
                   </div>
                   <div className="hidden sm:block">
-                    <div className={`text-sm font-semibold ${s === step ? 'text-blue-600' : s < step ? 'text-green-600' : 'text-gray-500'}`}>
+                    <div
+                      className={`text-sm font-semibold ${s === step ? "text-blue-600" : s < step ? "text-green-600" : "text-gray-500"}`}
+                    >
                       Step {s}
                     </div>
                     <div className="text-xs text-gray-500">
-                      {s === 1 ? 'Arrival' : s === 2 ? 'Details' : 'Media'}
+                      {s === 1 ? "Arrival" : s === 2 ? "Details" : "Media"}
                     </div>
                   </div>
                 </div>
                 {s < 3 && (
-                  <div className={`flex-1 h-1 mx-2 sm:mx-4 ${s < step ? 'bg-green-600' : 'bg-gray-200'}`}></div>
+                  <div
+                    className={`flex-1 h-1 mx-2 sm:mx-4 ${s < step ? "bg-green-600" : "bg-gray-200"}`}
+                  ></div>
                 )}
               </React.Fragment>
             ))}
@@ -1068,11 +1206,15 @@ const handleAllowEntry = async () => {
                   onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                   className="lg:hidden text-blue-400"
                 >
-                  <ChevronDown className={`w-5 h-5 transition-transform ${isMobileMenuOpen ? 'rotate-180' : ''}`} />
+                  <ChevronDown
+                    className={`w-5 h-5 transition-transform ${isMobileMenuOpen ? "rotate-180" : ""}`}
+                  />
                 </button>
               </div>
 
-              {(isMobileMenuOpen || (typeof window !== 'undefined' && window.innerWidth >= 1024)) && (
+              {(isMobileMenuOpen ||
+                (typeof window !== "undefined" &&
+                  window.innerWidth >= 1024)) && (
                 <>
                   {anprEvents.length === 0 ? (
                     <p className="text-slate-400 text-center py-4 text-sm sm:text-base">
@@ -1102,7 +1244,10 @@ const handleAllowEntry = async () => {
                                   {e.numberPlate}
                                 </p>
                                 <p className="text-slate-400 text-xs sm:text-sm">
-                                  {new Date(e.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                  {new Date(e.timestamp).toLocaleTimeString(
+                                    [],
+                                    { hour: "2-digit", minute: "2-digit" },
+                                  )}
                                 </p>
                               </div>
                             </div>
@@ -1123,29 +1268,39 @@ const handleAllowEntry = async () => {
               {/* Live Feed */}
               <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
                 <div className="bg-gray-900 h-48 sm:h-64 md:h-80 flex items-center justify-center relative">
-                  <div className={`absolute top-2 sm:top-4 left-2 sm:left-4 px-2 sm:px-3 py-1 rounded text-xs sm:text-sm font-semibold flex items-center gap-1 sm:gap-2 ${
-                    socketStatus === 'connected' ? 'bg-red-600 text-white' : 'bg-gray-600 text-white'
-                  }`}>
-                    <div className={`w-1 h-1 sm:w-2 sm:h-2 bg-white rounded-full ${socketStatus === 'connected' ? 'animate-pulse' : ''}`}></div>
-                    {socketStatus === 'connected' ? 'LIVE' : 'OFFLINE'}
+                  <div
+                    className={`absolute top-2 sm:top-4 left-2 sm:left-4 px-2 sm:px-3 py-1 rounded text-xs sm:text-sm font-semibold flex items-center gap-1 sm:gap-2 ${
+                      socketStatus === "connected"
+                        ? "bg-red-600 text-white"
+                        : "bg-gray-600 text-white"
+                    }`}
+                  >
+                    <div
+                      className={`w-1 h-1 sm:w-2 sm:h-2 bg-white rounded-full ${socketStatus === "connected" ? "animate-pulse" : ""}`}
+                    ></div>
+                    {socketStatus === "connected" ? "LIVE" : "OFFLINE"}
                   </div>
 
                   {anprData.frameImage ? (
-                    <img 
-                      src={anprData.frameImage} 
+                    <img
+                      src={anprData.frameImage}
                       alt="ANPR Frame"
                       className="w-full h-full object-cover"
                     />
                   ) : (
                     <div className="text-white text-center">
                       <Camera className="w-8 h-8 sm:w-12 sm:h-12 md:w-16 md:h-16 mx-auto mb-2 sm:mb-4 opacity-50" />
-                      <p className="text-xs sm:text-sm opacity-75 px-2">ANPR Camera Live View</p>
+                      <p className="text-xs sm:text-sm opacity-75 px-2">
+                        ANPR Camera Live View
+                      </p>
                     </div>
                   )}
 
                   {anprData.vehicleNumber && (
                     <div className="absolute bottom-2 sm:bottom-4 left-2 sm:left-4 right-2 sm:right-4 bg-black/50 backdrop-blur-sm rounded-lg p-2 sm:p-3">
-                      <div className="text-white text-xs mb-1">Vehicle Detected</div>
+                      <div className="text-white text-xs mb-1">
+                        Vehicle Detected
+                      </div>
                       <div className="flex items-center justify-between">
                         <div className="text-lg sm:text-2xl font-bold text-white">
                           {anprData.vehicleNumber}
@@ -1161,44 +1316,58 @@ const handleAllowEntry = async () => {
 
               {/* Capture Result */}
               <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 sm:p-6">
-                <h3 className="text-lg font-bold text-gray-900 mb-3 sm:mb-4">ANPR Capture Result</h3>
-                <p className="text-sm text-gray-600 mb-3 sm:mb-4">Confirm vehicle number before proceeding.</p>
+                <h3 className="text-lg font-bold text-gray-900 mb-3 sm:mb-4">
+                  ANPR Capture Result
+                </h3>
+                <p className="text-sm text-gray-600 mb-3 sm:mb-4">
+                  Confirm vehicle number before proceeding.
+                </p>
 
                 <div className="space-y-3 sm:space-y-4">
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4">
-                    <div className="text-xs text-blue-600 font-semibold mb-1">CAPTURED IMAGE</div>
-                    
+                    <div className="text-xs text-blue-600 font-semibold mb-1">
+                      CAPTURED IMAGE
+                    </div>
+
                     {anprData.capturedImage ? (
-                      <img 
-                        src={anprData.capturedImage} 
+                      <img
+                        src={anprData.capturedImage}
                         alt="Number Plate"
                         className="w-full h-24 sm:h-32 object-contain bg-gray-200 rounded-lg mb-2 sm:mb-3"
                       />
                     ) : (
                       <div className="h-24 sm:h-32 bg-gray-200 rounded-lg mb-2 sm:mb-3 flex items-center justify-center">
-                        <span className="text-gray-500 text-xs sm:text-sm">[ Waiting for detection... ]</span>
+                        <span className="text-gray-500 text-xs sm:text-sm">
+                          [ Waiting for detection... ]
+                        </span>
                       </div>
                     )}
-                    
+
                     <div className="flex items-center justify-center gap-2 sm:gap-4 bg-white border-2 border-blue-600 rounded-lg p-2 sm:p-4">
                       <div className="text-xl sm:text-2xl md:text-4xl font-bold text-gray-900">
-                        {anprData.vehicleNumber || 'Detecting...'}
+                        {anprData.vehicleNumber || "Detecting..."}
                       </div>
                     </div>
                     <div className="mt-2 sm:mt-3 flex items-center justify-between text-xs sm:text-sm">
                       <span className="text-gray-600">Confidence</span>
-                      <span className="font-bold text-green-600">{anprData.confidence}%</span>
+                      <span className="font-bold text-green-600">
+                        {anprData.confidence}%
+                      </span>
                     </div>
                   </div>
 
                   <div className="space-y-2">
                     <div className="flex items-center justify-between text-xs sm:text-sm">
                       <span className="text-gray-600">Time</span>
-                      <span className="font-semibold text-gray-900">{anprData.timestamp || 'N/A'}</span>
+                      <span className="font-semibold text-gray-900">
+                        {anprData.timestamp || "N/A"}
+                      </span>
                     </div>
                     <div className="flex items-center justify-between text-xs sm:text-sm">
                       <span className="text-gray-600">Camera</span>
-                      <span className="font-semibold text-gray-900">{anprData.cameraId}</span>
+                      <span className="font-semibold text-gray-900">
+                        {anprData.cameraId}
+                      </span>
                     </div>
                   </div>
 
@@ -1228,13 +1397,19 @@ const handleAllowEntry = async () => {
         {/* Step 2: Vehicle Details with Site Selection */}
         {step === 2 && (
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 sm:p-6">
-            <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-1">Entry Details</h3>
-            <p className="text-sm text-gray-600 mb-4 sm:mb-6">Please fill in the consignment and vehicle information below.</p>
+            <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-1">
+              Entry Details
+            </h3>
+            <p className="text-sm text-gray-600 mb-4 sm:mb-6">
+              Please fill in the consignment and vehicle information below.
+            </p>
 
             <div className="space-y-4 sm:space-y-5">
               {/* Vehicle Number (Read-only) */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Vehicle Number</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Vehicle Number
+                </label>
                 <input
                   type="text"
                   value={anprData.vehicleNumber}
@@ -1248,33 +1423,33 @@ const handleAllowEntry = async () => {
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Site <span className="text-red-500">*</span>
                 </label>
-                
+
                 <div className="flex flex-wrap gap-2 mb-3">
                   <button
                     type="button"
-                    onClick={() => handleSiteModeChange('select')}
+                    onClick={() => handleSiteModeChange("select")}
                     className={`px-3 sm:px-4 py-2 rounded-lg font-semibold text-sm transition ${
-                      siteInputMode === 'select'
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      siteInputMode === "select"
+                        ? "bg-blue-600 text-white"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                     }`}
                   >
                     Select from List
                   </button>
-                  {/* <button
+                  <button
                     type="button"
-                    onClick={() => handleSiteModeChange('manual')}
+                    onClick={() => handleSiteModeChange("manual")}
                     className={`px-3 sm:px-4 py-2 rounded-lg font-semibold text-sm transition ${
-                      siteInputMode === 'manual'
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      siteInputMode === "manual"
+                        ? "bg-blue-600 text-white"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                     }`}
                   >
                     Enter Manually
-                  </button> */}
+                  </button>
                 </div>
 
-                {siteInputMode === 'select' ? (
+                {siteInputMode === "select" ? (
                   <div className="relative">
                     <Building className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
                     <select
@@ -1283,9 +1458,10 @@ const handleAllowEntry = async () => {
                       className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none appearance-none bg-white"
                     >
                       <option value="">Select Site...</option>
-                      {sites.map(site => (
+                      {sites.map((site) => (
                         <option key={site._id} value={site._id}>
-                          {site.name} {site.location ? `- ${site.location}` : ''}
+                          {site.name}{" "}
+                          {site.location ? `- ${site.location}` : ""}
                         </option>
                       ))}
                     </select>
@@ -1294,50 +1470,62 @@ const handleAllowEntry = async () => {
                 ) : (
                   <div className="space-y-3">
                     <div>
-                      <label className="block text-xs text-gray-600 mb-1">Site ID *</label>
+                      <label className="block text-xs text-gray-600 mb-1">
+                        Site ID *
+                      </label>
                       <input
                         type="text"
                         value={manualSiteId}
-                        onChange={(e) => handleManualSiteChange('id', e.target.value)}
+                        onChange={(e) =>
+                          handleManualSiteChange("id", e.target.value)
+                        }
                         placeholder="Enter Site ID (e.g., 507f1f77bcf86cd799439011)"
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs text-gray-600 mb-1">Site Name</label>
+                      <label className="block text-xs text-gray-600 mb-1">
+                        Site Name
+                      </label>
                       <input
                         type="text"
                         value={manualSiteName}
-                        onChange={(e) => handleManualSiteChange('name', e.target.value)}
+                        onChange={(e) =>
+                          handleManualSiteChange("name", e.target.value)
+                        }
                         placeholder="Enter Site Name (optional)"
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                       />
                     </div>
                   </div>
                 )}
-                
+
                 {!vehicleDetails.siteId && (
-                  <p className="text-red-500 text-xs mt-1">Please enter or select a site</p>
+                  <p className="text-red-500 text-xs mt-1">
+                    Please enter or select a site
+                  </p>
                 )}
                 <p className="text-xs text-gray-500 mt-1">
-                  {siteInputMode === 'select' 
-                    ? 'Select from your assigned sites' 
-                    : 'Enter Site ID manually (ObjectId format)'}
+                  {siteInputMode === "select"
+                    ? "Select from your assigned sites"
+                    : "Enter Site ID manually (ObjectId format)"}
                 </p>
-                
+
                 {/* Show selected/entered site info */}
-                {/* {vehicleDetails.siteId && (
+                {vehicleDetails.siteId && (
                   <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-lg">
                     <p className="text-xs text-blue-700">
-                      <span className="font-semibold">Site ID:</span> {vehicleDetails.siteId}
+                      <span className="font-semibold">Site ID:</span>{" "}
+                      {vehicleDetails.siteId}
                       {vehicleDetails.siteName && (
                         <span className="ml-2">
-                          <span className="font-semibold">Name:</span> {vehicleDetails.siteName}
+                          <span className="font-semibold">Name:</span>{" "}
+                          {vehicleDetails.siteName}
                         </span>
                       )}
                     </p>
                   </div>
-                )} */}
+                )}
               </div>
 
               {/* Driver Name (Optional) */}
@@ -1355,7 +1543,9 @@ const handleAllowEntry = async () => {
                     className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                   />
                 </div>
-                <p className="text-xs text-gray-500 mt-1">This information will be recorded with the entry</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  This information will be recorded with the entry
+                </p>
               </div>
 
               {/* Vehicle Type with Autocomplete */}
@@ -1373,7 +1563,7 @@ const handleAllowEntry = async () => {
                     placeholder="Type or select vehicle type..."
                     className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                   />
-                  
+
                   {showSuggestions && filteredVehicleTypes.length > 0 && (
                     <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                       {filteredVehicleTypes.map((type) => (
@@ -1382,24 +1572,33 @@ const handleAllowEntry = async () => {
                           onClick={() => handleVehicleTypeSelect(type)}
                           className="px-4 py-3 hover:bg-blue-50 cursor-pointer transition border-b border-gray-100 last:border-b-0"
                         >
-                          <div className="font-semibold text-gray-900">{type.label}</div>
-                          <div className="text-xs text-gray-500">{type.value}</div>
+                          <div className="font-semibold text-gray-900">
+                            {type.label}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {type.value}
+                          </div>
                         </div>
                       ))}
                     </div>
                   )}
                 </div>
                 {!vehicleDetails.vehicleType && (
-                  <p className="text-red-500 text-xs mt-1">Please select a vehicle type</p>
+                  <p className="text-red-500 text-xs mt-1">
+                    Please select a vehicle type
+                  </p>
                 )}
-                <p className="text-xs text-gray-500 mt-1">Start typing to see suggestions or select from dropdown</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Start typing to see suggestions or select from dropdown
+                </p>
               </div>
 
               {/* Custom Vehicle Type Input */}
-              {vehicleDetails.vehicleType === 'OTHER' && (
+              {vehicleDetails.vehicleType === "OTHER" && (
                 <div className="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-4">
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Enter Custom Vehicle Type <span className="text-red-500">*</span>
+                    Enter Custom Vehicle Type{" "}
+                    <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -1409,58 +1608,70 @@ const handleAllowEntry = async () => {
                     className="w-full px-4 py-3 border border-yellow-400 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none bg-white"
                   />
                   {!customVehicleType.trim() && (
-                    <p className="text-red-500 text-xs mt-1">Please enter custom vehicle type</p>
+                    <p className="text-red-500 text-xs mt-1">
+                      Please enter custom vehicle type
+                    </p>
                   )}
-                  <p className="text-xs text-gray-600 mt-2">Please specify the exact vehicle type</p>
+                  <p className="text-xs text-gray-600 mt-2">
+                    Please specify the exact vehicle type
+                  </p>
                 </div>
               )}
 
               {/* Vendor Selection with Manual Entry Option */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Vendor / Transporter <span className="text-gray-400">(Optional)</span>
+                  Vendor / Transporter{" "}
+                  <span className="text-gray-400">(Optional)</span>
                 </label>
-                
+
                 <div className="flex flex-wrap gap-2 mb-3">
                   <button
                     type="button"
                     onClick={() => {
-                      setVendorInputMode('select');
-                      setManualVendorName('');
+                      setVendorInputMode("select");
+                      setManualVendorName("");
                     }}
                     className={`px-3 sm:px-4 py-2 rounded-lg font-semibold text-sm transition ${
-                      vendorInputMode === 'select'
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      vendorInputMode === "select"
+                        ? "bg-blue-600 text-white"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                     }`}
                   >
                     Select from List
                   </button>
-                  {/* <button
+                  <button
                     type="button"
                     onClick={() => {
-                      setVendorInputMode('manual');
-                      setVehicleDetails({ ...vehicleDetails, vendorId: '' });
+                      setVendorInputMode("manual");
+                      setVehicleDetails({ ...vehicleDetails, vendorId: "" });
                     }}
                     className={`px-3 sm:px-4 py-2 rounded-lg font-semibold text-sm transition ${
-                      vendorInputMode === 'manual'
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      vendorInputMode === "manual"
+                        ? "bg-blue-600 text-white"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                     }`}
                   >
                     Enter Manually
-                  </button> */}
+                  </button>
                 </div>
 
-                {vendorInputMode === 'select' ? (
+                {vendorInputMode === "select" ? (
                   <select
                     value={vehicleDetails.vendorId}
-                    onChange={(e) => setVehicleDetails({ ...vehicleDetails, vendorId: e.target.value })}
+                    onChange={(e) =>
+                      setVehicleDetails({
+                        ...vehicleDetails,
+                        vendorId: e.target.value,
+                      })
+                    }
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                   >
                     <option value="">Select Vendor...</option>
-                    {vendors.map(vendor => (
-                      <option key={vendor._id} value={vendor._id}>{vendor.name}</option>
+                    {vendors.map((vendor) => (
+                      <option key={vendor._id} value={vendor._id}>
+                        {vendor.name}
+                      </option>
                     ))}
                   </select>
                 ) : (
@@ -1476,17 +1687,24 @@ const handleAllowEntry = async () => {
 
               {/* Load Status - Responsive */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Load Status</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Load Status
+                </label>
                 <div className="grid grid-cols-3 gap-2 sm:gap-3">
-                  {['full', 'partial', 'empty'].map((status) => (
+                  {["full", "partial", "empty"].map((status) => (
                     <button
                       key={status}
                       type="button"
-                      onClick={() => setVehicleDetails({ ...vehicleDetails, loadStatus: status })}
+                      onClick={() =>
+                        setVehicleDetails({
+                          ...vehicleDetails,
+                          loadStatus: status,
+                        })
+                      }
                       className={`px-3 sm:px-4 py-2 sm:py-3 rounded-lg font-semibold text-sm sm:text-base transition ${
                         vehicleDetails.loadStatus === status
-                          ? 'bg-blue-600 text-white border-2 border-blue-600'
-                          : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-blue-300'
+                          ? "bg-blue-600 text-white border-2 border-blue-600"
+                          : "bg-white text-gray-700 border-2 border-gray-300 hover:border-blue-300"
                       }`}
                     >
                       {status.charAt(0).toUpperCase() + status.slice(1)}
@@ -1498,12 +1716,18 @@ const handleAllowEntry = async () => {
               {/* Material Type */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Material Type <span className="text-gray-400">(Optional)</span>
+                  Material Type{" "}
+                  <span className="text-gray-400">(Optional)</span>
                 </label>
                 <input
                   type="text"
                   value={vehicleDetails.materialType}
-                  onChange={(e) => setVehicleDetails({ ...vehicleDetails, materialType: e.target.value })}
+                  onChange={(e) =>
+                    setVehicleDetails({
+                      ...vehicleDetails,
+                      materialType: e.target.value,
+                    })
+                  }
                   placeholder="e.g. Steel Rods, Cement Bags..."
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                 />
@@ -1512,12 +1736,18 @@ const handleAllowEntry = async () => {
               {/* Count of Material */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Count of Material <span className="text-gray-400">(Optional)</span>
+                  Count of Material{" "}
+                  <span className="text-gray-400">(Optional)</span>
                 </label>
                 <input
                   type="text"
-                  value={vehicleDetails.countofmaterials}
-                  onChange={(e) => setVehicleDetails({ ...vehicleDetails, countofmaterials: e.target.value })}
+                  value={vehicleDetails.materialCount}
+                  onChange={(e) =>
+                    setVehicleDetails({
+                      ...vehicleDetails,
+                      materialCount: e.target.value,
+                    })
+                  }
                   placeholder="e.g. 50 bags, 10 boxes, 500 kg..."
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                 />
@@ -1526,23 +1756,35 @@ const handleAllowEntry = async () => {
               {/* Challan / Bill - Camera Capture */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Challan / Bill Capture <span className="text-gray-400">(Optional)</span>
+                  Challan / Bill Capture{" "}
+                  <span className="text-gray-400">(Optional)</span>
                 </label>
-                <div className={`border-2 border-dashed rounded-lg p-4 sm:p-6 text-center ${
-                  vehicleDetails.challanImage ? 'border-green-300 bg-green-50' : 'border-gray-300 bg-gray-50'
-                }`}>
+                <div
+                  className={`border-2 border-dashed rounded-lg p-4 sm:p-6 text-center ${
+                    vehicleDetails.challanImage
+                      ? "border-green-300 bg-green-50"
+                      : "border-gray-300 bg-gray-50"
+                  }`}
+                >
                   {vehicleDetails.challanImage ? (
                     <div className="space-y-2 sm:space-y-3">
-                      <img 
-                        src={vehicleDetails.challanImage} 
+                      <img
+                        src={vehicleDetails.challanImage}
                         alt="Challan"
                         className="w-full h-32 sm:h-48 object-cover rounded-lg mb-2"
                       />
                       <CheckCircle className="w-8 h-8 sm:w-12 sm:h-12 text-green-600 mx-auto" />
-                      <p className="text-sm font-semibold text-green-700">Challan captured successfully!</p>
+                      <p className="text-sm font-semibold text-green-700">
+                        Challan captured successfully!
+                      </p>
                       <button
                         type="button"
-                        onClick={() => setVehicleDetails({ ...vehicleDetails, challanImage: null })}
+                        onClick={() =>
+                          setVehicleDetails({
+                            ...vehicleDetails,
+                            challanImage: null,
+                          })
+                        }
                         className="text-sm text-red-600 hover:text-red-700 font-semibold"
                       >
                         Remove & Capture Again
@@ -1551,10 +1793,12 @@ const handleAllowEntry = async () => {
                   ) : (
                     <div>
                       <Camera className="w-8 h-8 sm:w-12 sm:h-12 text-gray-400 mx-auto mb-2 sm:mb-3" />
-                      <p className="text-sm text-gray-600 mb-2 sm:mb-3">Capture challan/bill using camera (Optional)</p>
+                      <p className="text-sm text-gray-600 mb-2 sm:mb-3">
+                        Capture challan/bill using camera (Optional)
+                      </p>
                       <button
                         type="button"
-                        onClick={() => startCamera('challan')}
+                        onClick={() => startCamera("challan")}
                         className="px-4 sm:px-6 py-2 sm:py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold text-sm sm:text-base"
                       >
                         Open Camera
@@ -1571,7 +1815,12 @@ const handleAllowEntry = async () => {
                 </label>
                 <textarea
                   value={vehicleDetails.notes}
-                  onChange={(e) => setVehicleDetails({ ...vehicleDetails, notes: e.target.value })}
+                  onChange={(e) =>
+                    setVehicleDetails({
+                      ...vehicleDetails,
+                      notes: e.target.value,
+                    })
+                  }
                   rows={3}
                   placeholder="Add any additional notes here..."
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none"
@@ -1589,7 +1838,12 @@ const handleAllowEntry = async () => {
                 </button>
                 <button
                   onClick={handleNext}
-                  disabled={!vehicleDetails.vehicleType || !vehicleDetails.siteId || (vehicleDetails.vehicleType === 'OTHER' && !customVehicleType.trim())}
+                  disabled={
+                    !vehicleDetails.vehicleType ||
+                    !vehicleDetails.siteId ||
+                    (vehicleDetails.vehicleType === "OTHER" &&
+                      !customVehicleType.trim())
+                  }
                   className="py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Next Step
@@ -1606,56 +1860,93 @@ const handleAllowEntry = async () => {
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 sm:p-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 gap-2">
                 <div>
-                  <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-1">Required Photos</h3>
-                  <p className="text-sm text-gray-600">Tap a card to capture image from camera.</p>
+                  <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-1">
+                    Required Photos
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    Tap a card to capture image from camera.
+                  </p>
                 </div>
                 <div className="text-right">
                   <div className="text-sm text-gray-600">Vehicle: </div>
-                  <div className="text-base sm:text-lg font-bold text-blue-600">{anprData.vehicleNumber}</div>
+                  <div className="text-base sm:text-lg font-bold text-blue-600">
+                    {anprData.vehicleNumber}
+                  </div>
                   <div className="text-xs text-gray-500 mt-1">
-                    Site: {vehicleDetails.siteName || vehicleDetails.siteId.substring(0, 8) + '...'}
+                    Site:{" "}
+                    {vehicleDetails.siteName ||
+                      vehicleDetails.siteId.substring(0, 8) + "..."}
                   </div>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 {[
-                  { key: 'frontView', label: 'Front View', desc: 'Number plate & cabin' },
-                  { key: 'backView', label: 'Back View', desc: 'Tail & cargo doors' },
-                  { key: 'driverView', label: 'Driver / Cabin', desc: 'Driver or empty cabin' },
-                  { key: 'loadView', label: 'Material / Load', desc: 'Cargo or empty bed' }
+                  {
+                    key: "frontView",
+                    label: "Front View",
+                    desc: "Number plate & cabin",
+                  },
+                  {
+                    key: "backView",
+                    label: "Back View",
+                    desc: "Tail & cargo doors",
+                  },
+                  {
+                    key: "driverView",
+                    label: "Driver / Cabin",
+                    desc: "Driver or empty cabin",
+                  },
+                  {
+                    key: "loadView",
+                    label: "Material / Load",
+                    desc: "Cargo or empty bed",
+                  },
                 ].map((item) => (
                   <div
                     key={item.key}
                     className={`relative border-2 border-dashed rounded-lg p-4 transition cursor-pointer ${
                       mediaCapture[item.key]
-                        ? 'border-green-300 bg-green-50'
-                        : 'border-blue-300 bg-blue-50 hover:bg-blue-100'
+                        ? "border-green-300 bg-green-50"
+                        : "border-blue-300 bg-blue-50 hover:bg-blue-100"
                     }`}
-                    onClick={() => !mediaCapture[item.key] && startCamera(item.key)}
+                    onClick={() =>
+                      !mediaCapture[item.key] && startCamera(item.key)
+                    }
                   >
                     <div className="absolute top-2 right-2">
-                      <span className={`px-2 py-1 rounded text-xs font-bold ${
-                        mediaCapture[item.key] ? 'bg-green-600 text-white' : 'bg-red-100 text-red-700'
-                      }`}>
+                      <span
+                        className={`px-2 py-1 rounded text-xs font-bold ${
+                          mediaCapture[item.key]
+                            ? "bg-green-600 text-white"
+                            : "bg-red-100 text-red-700"
+                        }`}
+                      >
                         Required
                       </span>
                     </div>
 
                     {mediaCapture[item.key] ? (
                       <div className="text-center">
-                        <img 
-                          src={mediaCapture[item.key]} 
+                        <img
+                          src={mediaCapture[item.key]}
                           alt={item.label}
                           className="w-full h-24 sm:h-32 object-cover rounded-lg mb-2"
                         />
                         <CheckCircle className="w-6 h-6 sm:w-8 sm:h-8 text-green-600 mx-auto mb-2" />
-                        <div className="font-bold text-gray-900 text-sm sm:text-base mb-1">{item.label}</div>
-                        <p className="text-xs text-gray-600 mb-2">{item.desc}</p>
+                        <div className="font-bold text-gray-900 text-sm sm:text-base mb-1">
+                          {item.label}
+                        </div>
+                        <p className="text-xs text-gray-600 mb-2">
+                          {item.desc}
+                        </p>
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            setMediaCapture({ ...mediaCapture, [item.key]: null });
+                            setMediaCapture({
+                              ...mediaCapture,
+                              [item.key]: null,
+                            });
                           }}
                           className="text-xs sm:text-sm text-blue-600 hover:text-blue-700 font-semibold"
                         >
@@ -1665,7 +1956,9 @@ const handleAllowEntry = async () => {
                     ) : (
                       <div className="text-center">
                         <Camera className="w-6 h-6 sm:w-8 sm:h-8 text-blue-600 mx-auto mb-2" />
-                        <div className="font-bold text-gray-900 text-sm sm:text-base mb-1">{item.label}</div>
+                        <div className="font-bold text-gray-900 text-sm sm:text-base mb-1">
+                          {item.label}
+                        </div>
                         <p className="text-xs text-gray-600">{item.desc}</p>
                       </div>
                     )}
@@ -1677,19 +1970,32 @@ const handleAllowEntry = async () => {
             {/* Optional Video */}
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 sm:p-6">
               <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-1">
-                Video Evidence <span className="text-gray-400 font-normal text-xs sm:text-sm">(Optional)</span>
+                Video Evidence{" "}
+                <span className="text-gray-400 font-normal text-xs sm:text-sm">
+                  (Optional)
+                </span>
               </h3>
-              <p className="text-sm text-gray-600 mb-4">Record a 360° walkaround of the vehicle</p>
+              <p className="text-sm text-gray-600 mb-4">
+                Record a 360° walkaround of the vehicle
+              </p>
 
-              <div className={`border-2 border-dashed rounded-lg p-6 sm:p-8 text-center ${
-                mediaCapture.videoClip ? 'border-green-300 bg-green-50' : 'border-gray-300 bg-gray-50'
-              }`}>
+              <div
+                className={`border-2 border-dashed rounded-lg p-6 sm:p-8 text-center ${
+                  mediaCapture.videoClip
+                    ? "border-green-300 bg-green-50"
+                    : "border-gray-300 bg-gray-50"
+                }`}
+              >
                 {mediaCapture.videoClip ? (
                   <div>
                     <CheckCircle className="w-8 h-8 sm:w-12 sm:h-12 text-green-600 mx-auto mb-2 sm:mb-3" />
-                    <p className="text-sm font-semibold text-green-700 mb-2 sm:mb-3">Video recorded successfully!</p>
+                    <p className="text-sm font-semibold text-green-700 mb-2 sm:mb-3">
+                      Video recorded successfully!
+                    </p>
                     <button
-                      onClick={() => setMediaCapture({ ...mediaCapture, videoClip: null })}
+                      onClick={() =>
+                        setMediaCapture({ ...mediaCapture, videoClip: null })
+                      }
                       className="text-sm text-red-600 hover:text-red-700 font-semibold"
                     >
                       Remove Video
@@ -1698,9 +2004,11 @@ const handleAllowEntry = async () => {
                 ) : (
                   <div>
                     <Video className="w-8 h-8 sm:w-12 sm:h-12 text-gray-400 mx-auto mb-2 sm:mb-3" />
-                    <p className="text-sm text-gray-600 mb-3 sm:mb-4">Record Video Clip with Camera</p>
+                    <p className="text-sm text-gray-600 mb-3 sm:mb-4">
+                      Record Video Clip with Camera
+                    </p>
                     <button
-                      onClick={() => startCamera('video')}
+                      onClick={() => startCamera("video")}
                       className="px-4 sm:px-6 py-2 sm:py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-semibold flex items-center gap-2 mx-auto text-sm sm:text-base"
                     >
                       <Video className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -1727,7 +2035,13 @@ const handleAllowEntry = async () => {
               </button>
               <button
                 onClick={handleAllowEntry}
-                disabled={loading || !mediaCapture.frontView || !mediaCapture.backView || !mediaCapture.driverView || !mediaCapture.loadView}
+                disabled={
+                  loading ||
+                  !mediaCapture.frontView ||
+                  !mediaCapture.backView ||
+                  !mediaCapture.driverView ||
+                  !mediaCapture.loadView
+                }
                 className="py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {loading ? (
@@ -1736,7 +2050,7 @@ const handleAllowEntry = async () => {
                     Processing...
                   </>
                 ) : (
-                  'Allow Entry'
+                  "Allow Entry"
                 )}
               </button>
             </div>
