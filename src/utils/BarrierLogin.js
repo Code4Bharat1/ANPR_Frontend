@@ -8,6 +8,7 @@ import { useState } from "react";
 ========================== */
 
 const DEFAULT_IP = "192.168.0.100";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 const getBaseURL = () => {
   if (typeof window === "undefined") {
@@ -33,7 +34,7 @@ export default function BarrierLoginPage() {
 
     try {
       const res = await axios.post(
-        `http://localhost:5000/api/v1/auth/login`,
+        `${API_URL}/api/v1/auth/login`,
         {
           username: "admin",
           password: "Admin@1923",
@@ -76,7 +77,7 @@ export default function BarrierLoginPage() {
 
   return (
     <div style={styles.container}>
-      <h1>GateGuard – Quick Login</h1>
+      {/* <h1>GateGuard – Quick Login</h1> */}
 
       <button onClick={handleLogin} disabled={loading} style={styles.button}>
         {loading ? "Logging in..." : "GET TOKEN"}

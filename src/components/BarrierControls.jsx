@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import api from "@/lib/axios";
-
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 export default function BarrierControls() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
@@ -27,7 +27,7 @@ export default function BarrierControls() {
         : storedToken;
 
       const res = await api.post(
-        "http://localhost:5000/api/v1/barrier/actuate",
+        `${API_URL}/api/v1/barrier/actuate`,
         {},
         {
           headers: {

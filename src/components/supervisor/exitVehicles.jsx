@@ -17,6 +17,7 @@ import {
   RotateCw,
 } from "lucide-react";
 import { base64ToFile, uploadToWasabi } from "@/utils/wasabiUpload";
+import BarrierLoginPage from "@/utils/BarrierLogin";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
@@ -39,7 +40,8 @@ const ExitVehicles = () => {
     photos: {},
     video: null,
   });
-
+const [barrierLoading, setBarrierLoading] = useState(false);
+const [barrierMessage, setBarrierMessage] = useState("");
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
 
@@ -489,9 +491,46 @@ const ExitVehicles = () => {
     const config = configs[status] || configs.loading;
     return { config, label: config.label };
   };
+const actuateBarrier = async () => {
+  setBarrierLoading(true);
+  setBarrierMessage("");
 
+  try {
+    const storedToken =
+      localStorage.getItem("TOKEN") ||
+      localStorage.getItem("token") ||
+      localStorage.getItem("Token");
+
+    if (!storedToken) {
+      throw new Error("Auth token not found. Please login first.");
+    }
+
+    // ✅ STRIP PREFIX
+    const rawToken = storedToken.startsWith("Token ")
+      ? storedToken.slice(6)
+      : storedToken;
+
+    const res = await api.post(
+      `${API_URL}/api/v1/barrier/actuate`,
+      {},
+      {
+        headers: {
+          Authorization: `Token ${rawToken}`,
+          "X-Camera-IP": "192.168.0.101",
+        },
+      }
+    );
+
+    setBarrierMessage(res.data?.message || "Barrier opened successfully");
+  } catch (err) {
+    setBarrierMessage(err?.response?.data?.message || err.message);
+  } finally {
+    setBarrierLoading(false);
+  }
+};
   return (
     <SupervisorLayout>
+      <BarrierLoginPage/>
       <div className="max-w-7xl mx-auto">
         <canvas ref={canvasRef} className="hidden" />
 
@@ -1107,7 +1146,117 @@ const ExitVehicles = () => {
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none"
                 />
               </div>
+ {/* ✅ NEW: Barrier Control Button */}
+            <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-xl border-2 border-purple-200 shadow-sm p-4 sm:p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-purple-100 rounded-lg">
+                    <svg
+                      className="w-6 h-6 text-purple-600"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"
+                      />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="text-base sm:text-lg font-bold text-gray-900">
+                      Barrier Control
+                    </h3>
+                    <p className="text-xs sm:text-sm text-gray-600">
+                      Open gate for vehicle exit
+                    </p>
+                  </div>
+                </div>
+              </div>
 
+              <button
+                onClick={actuateBarrier}
+                disabled={barrierLoading}
+                className="w-full py-3 sm:py-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm sm:text-base shadow-lg"
+              >
+                {barrierLoading ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Opening Barrier...
+                  </>
+                ) : (
+                  <>
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 10l7-7m0 0l7 7m-7-7v18"
+                      />
+                    </svg>
+                    OPEN BARRIER
+                  </>
+                )}
+              </button>
+
+              {barrierMessage && (
+                <div
+                  className={`mt-3 p-3 rounded-lg flex items-start gap-2 ${
+                    barrierMessage.toLowerCase().includes("error") ||
+                    barrierMessage.toLowerCase().includes("not found") ||
+                    barrierMessage.toLowerCase().includes("failed")
+                      ? "bg-red-50 border border-red-200"
+                      : "bg-green-50 border border-green-200"
+                  }`}
+                >
+                  <svg
+                    className={`w-5 h-5 flex-shrink-0 ${
+                      barrierMessage.toLowerCase().includes("error") ||
+                      barrierMessage.toLowerCase().includes("not found") ||
+                      barrierMessage.toLowerCase().includes("failed")
+                        ? "text-red-600"
+                        : "text-green-600"
+                    }`}
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    {barrierMessage.toLowerCase().includes("error") ||
+                    barrierMessage.toLowerCase().includes("not found") ||
+                    barrierMessage.toLowerCase().includes("failed") ? (
+                      <path
+                        fillRule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                        clipRule="evenodd"
+                      />
+                    ) : (
+                      <path
+                        fillRule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                        clipRule="evenodd"
+                      />
+                    )}
+                  </svg>
+                  <p
+                    className={`text-xs sm:text-sm font-medium ${
+                      barrierMessage.toLowerCase().includes("error") ||
+                      barrierMessage.toLowerCase().includes("not found") ||
+                      barrierMessage.toLowerCase().includes("failed")
+                        ? "text-red-700"
+                        : "text-green-700"
+                    }`}
+                  >
+                    {barrierMessage}
+                  </p>
+                </div>
+              )}
+            </div>
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row gap-3">
                 <button

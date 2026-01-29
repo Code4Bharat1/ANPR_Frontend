@@ -1607,7 +1607,7 @@ const [barrierMessage, setBarrierMessage] = useState("");
       : storedToken;
 
     const res = await api.post(
-      "http://localhost:5000/api/v1/barrier/actuate",
+      `${API_URL}/api/v1/barrier/actuate`,
       {},
       {
         headers: {
@@ -2708,44 +2708,7 @@ const [barrierMessage, setBarrierMessage] = useState("");
                 )}
               </div>
             </div>
-
-            {/* Action Buttons - Responsive */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <button
-                onClick={handleBack}
-                className="py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-semibold"
-              >
-                Back
-              </button>
-              <button
-                onClick={resetForm}
-                className="py-3 bg-red-50 text-red-600 border border-red-200 rounded-lg hover:bg-red-100 transition font-semibold"
-              >
-                Cancel Entry
-              </button>
-              <button
-                onClick={handleAllowEntry}
-                disabled={
-                  loading ||
-                  !mediaCapture.frontView ||
-                  !mediaCapture.backView ||
-                  !mediaCapture.driverView ||
-                  !mediaCapture.loadView
-                }
-                className="py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    Processing...
-                  </>
-                ) : (
-                  "Allow Entry"
-                )}
-              </button>
-            </div>
-
-            {/* ✅ NEW: Barrier Control Section */}
+             {/* ✅ NEW: Barrier Control Section */}
             <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-xl border-2 border-purple-200 shadow-sm p-4 sm:p-6">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
@@ -2856,6 +2819,44 @@ const [barrierMessage, setBarrierMessage] = useState("");
                 </div>
               )}
             </div>
+
+            {/* Action Buttons - Responsive */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <button
+                onClick={handleBack}
+                className="py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-semibold"
+              >
+                Back
+              </button>
+              <button
+                onClick={resetForm}
+                className="py-3 bg-red-50 text-red-600 border border-red-200 rounded-lg hover:bg-red-100 transition font-semibold"
+              >
+                Cancel Entry
+              </button>
+              <button
+                onClick={handleAllowEntry}
+                disabled={
+                  loading ||
+                  !mediaCapture.frontView ||
+                  !mediaCapture.backView ||
+                  !mediaCapture.driverView ||
+                  !mediaCapture.loadView
+                }
+                className="py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  "Allow Entry"
+                )}
+              </button>
+            </div>
+
+           
           </div>
         )}
       </div>
