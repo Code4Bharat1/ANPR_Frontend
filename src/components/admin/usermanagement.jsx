@@ -325,7 +325,7 @@ const ProjectManagersPage = () => {
 
       // If there are validation errors, stop here
       if (Object.keys(validationErrors).length > 0) {
-        console.log('Form validation failed with errors:', validationErrors);
+        // console.log('Form validation failed with errors:', validationErrors);
 
         // Scroll to top of modal to show errors
         setTimeout(() => {
@@ -353,11 +353,11 @@ const ProjectManagersPage = () => {
         payload.assignedSupervisors = formData.assignedSupervisors;
       }
 
-      console.log('Creating Project Manager with payload:', payload);
+      // console.log('Creating Project Manager with payload:', payload);
 
       // 5. Make API call
       const response = await api.post("/api/client-admin/project-managers", payload);
-      console.log('API Response:', response.data);
+      // console.log('API Response:', response.data);
 
       // 6. Success handling
       alert("Project Manager created successfully!");
@@ -600,7 +600,7 @@ const ProjectManagersPage = () => {
       setEditErrors(validationErrors);
 
       if (Object.keys(validationErrors).length > 0) {
-        console.log('Edit form validation failed:', validationErrors);
+        // console.log('Edit form validation failed:', validationErrors);
         return;
       }
 
@@ -621,7 +621,7 @@ const ProjectManagersPage = () => {
         payload.assignedSupervisors = formData.assignedSupervisors;
       }
 
-      console.log('Updating Project Manager with payload:', payload);
+      // console.log('Updating Project Manager with payload:', payload);
 
       await api.put(`/api/client-admin/project-managers/${selectedUser._id}`, payload);
 

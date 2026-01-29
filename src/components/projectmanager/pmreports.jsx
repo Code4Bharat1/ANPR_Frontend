@@ -155,7 +155,7 @@ const PMReports = () => {
     setLoadingSites(true);
     const response = await axiosInstance.get("/api/project/my-sites");
 
-    console.log("Sites API response:", response.data);
+    // console.log("Sites API response:", response.data);
 
     // 🔥 MOST IMPORTANT FIX
     if (Array.isArray(response.data)) {

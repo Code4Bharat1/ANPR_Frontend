@@ -284,7 +284,7 @@ const SupervisorManagement = () => {
 
 
   const handleCreateSupervisor = async () => {
-    console.log('🚀 START: handleCreateSupervisor');
+    // console.log('🚀 START: handleCreateSupervisor');
 
     try {
       setIsCreating(true);
@@ -325,12 +325,12 @@ const SupervisorManagement = () => {
         payload.projectManagerId = currentProjectManager._id;
       }
 
-      console.log('📤 Sending API request...', payload);
+      // console.log('📤 Sending API request...', payload);
 
       /* ================= API CALL ================= */
       const response = await api.post('/api/project/supervisors', payload);
 
-      console.log('✅ API Response:', response.data);
+      // console.log('✅ API Response:', response.data);
 
       /* ================= SUCCESS CHECK ================= */
       if (
@@ -338,7 +338,7 @@ const SupervisorManagement = () => {
         response.status === 201 ||
         response.data?.data?._id
       ) {
-        console.log('🎉 SUCCESS: Supervisor created');
+        // console.log('🎉 SUCCESS: Supervisor created');
 
         showToast('Supervisor created successfully!');
 
@@ -390,7 +390,7 @@ const SupervisorManagement = () => {
       showToast(msg, 'error');
 
     } finally {
-      console.log('🏁 END: handleCreateSupervisor');
+      // console.log('🏁 END: handleCreateSupervisor');
       setIsCreating(false);
     }
   };
@@ -434,11 +434,11 @@ const SupervisorManagement = () => {
         siteId: formData.siteId,
       };
 
-      console.log('Updating supervisor with payload:', payload);
+      // console.log('Updating supervisor with payload:', payload);
 
       const response = await api.put(`/api/project/supervisors/${selectedSupervisor._id}`, payload);
 
-      console.log('Update response:', response.data);
+      // console.log('Update response:', response.data);
 
       if (response.status === 200 || response.status === 201) {
         showToast('Supervisor updated successfully!');
@@ -1001,7 +1001,7 @@ const SupervisorManagement = () => {
               <h2 className="text-2xl font-bold text-gray-900">Add Supervisor</h2>
               <button
                 onClick={() => {
-                  console.log('❌ Closing modal manually');
+                  // console.log('❌ Closing modal manually');
                   setShowAdd(false);
                   setErrorMessage('');
                   setFormData({
@@ -1243,7 +1243,7 @@ const SupervisorManagement = () => {
             <div className="sticky bottom-0 bg-gray-50 flex justify-end gap-3 p-6 border-t border-gray-200">
               <button
                 onClick={() => {
-                  console.log('❌ Cancel button clicked - closing modal');
+                  // console.log('❌ Cancel button clicked - closing modal');
                   setShowAdd(false);
                   setErrorMessage('');
                   setFormData({
@@ -1265,7 +1265,7 @@ const SupervisorManagement = () => {
               {/* <button
           id="create-btn"
           onClick={async () => {
-            console.log('✅ Create button clicked');
+            // console.log('✅ Create button clicked');
             
             // Prevent multiple clicks
             if (isCreating) return;

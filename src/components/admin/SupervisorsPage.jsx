@@ -330,7 +330,7 @@ const [userToDelete, setUserToDelete] = useState(null);
 
             // If there are validation errors, stop here
             if (Object.keys(validationErrors).length > 0) {
-                console.log('Form validation failed with errors:', validationErrors);
+                // console.log('Form validation failed with errors:', validationErrors);
 
                 // Scroll to top of modal to show errors
                 setTimeout(() => {
@@ -354,10 +354,10 @@ const [userToDelete, setUserToDelete] = useState(null);
                 projectManagerId: formData.projectManagerId,
             };
 
-            console.log("📤 Sending payload to API:", payload);
+            // console.log("📤 Sending payload to API:", payload);
 
             const response = await api.post("/api/client-admin/supervisors", payload);
-            console.log("✅ API Response:", response.data);
+            // console.log("✅ API Response:", response.data);
 
             alert("Supervisor created successfully!");
 
@@ -597,7 +597,7 @@ const [userToDelete, setUserToDelete] = useState(null);
             setEditErrors(validationErrors);
 
             if (Object.keys(validationErrors).length > 0) {
-                console.log('Edit form validation failed:', validationErrors);
+                // console.log('Edit form validation failed:', validationErrors);
                 return;
             }
 
@@ -615,7 +615,7 @@ const [userToDelete, setUserToDelete] = useState(null);
                 payload.password = formData.password;
             }
 
-            console.log('Updating Supervisor with payload:', payload);
+            // console.log('Updating Supervisor with payload:', payload);
 
             await api.put(`/api/client-admin/supervisor/${selectedUser._id}`, payload);
 
