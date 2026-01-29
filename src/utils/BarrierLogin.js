@@ -4,19 +4,18 @@ import axios from "axios";
 import { useState } from "react";
 
 /* ==========================
-   DYNAMIC IP WITH FALLBACK
+   CAMERA CONFIG
 ========================== */
 
-const DEFAULT_IP = "192.168.0.100";
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+const DEFAULT_CAMERA_IP = "192.168.0.101";
 
-const getBaseURL = () => {
+const getCameraURL = () => {
   if (typeof window === "undefined") {
-    return `http://${DEFAULT_IP}`;
+    return `http://${DEFAULT_CAMERA_IP}`;
   }
 
   const savedIP = localStorage.getItem("API_IP");
-  const ip = savedIP && savedIP.trim() !== "" ? savedIP : DEFAULT_IP;
+  const ip = savedIP && savedIP.trim() !== "" ? savedIP : DEFAULT_CAMERA_IP;
 
   return `http://${ip}`;
 };
@@ -31,29 +30,28 @@ export default function BarrierLoginPage() {
 
     setLoading(true);
     setError(null);
+    setSuccess(false);
 
     try {
       const res = await axios.post(
-        `${API_URL}/api/v1/auth/login`,
+        `${getCameraURL()}/api/v1/auth/login`,
         {
           username: "admin",
           password: "Admin@1923",
         },
         {
-          withCredentials: true,
           headers: {
             Accept: "application/json",
             "Content-Type": "application/json",
 
+            // ✅ REQUIRED CAMERA HEADERS
             "X-Alpha": "21",
             "X-Salt": "683239",
             "X-Cue": "34db55e07f7b39df480284397f7f42ec",
-            "X-Camera-IP": "192.168.0.101",
           },
+          timeout: 8000,
         },
       );
-
-      console.log(res);
 
       const token = res.data?.token;
 
@@ -61,15 +59,17 @@ export default function BarrierLoginPage() {
         throw new Error("Token not found in response");
       }
 
-      // ✅ Store EXACTLY like Postman (unchanged)
+      // ✅ Store EXACTLY like Postman
       localStorage.setItem("TOKEN", `Token ${token}`);
       localStorage.setItem("token", `Token ${token}`);
       localStorage.setItem("Token", `Token ${token}`);
 
       setSuccess(true);
     } catch (err) {
-      console.log(err);
-      setError(err?.response?.data?.message || err.message);
+      console.error(err);
+      setError(
+        err?.response?.data?.message || err.message || "Camera not reachable",
+      );
     } finally {
       setLoading(false);
     }
@@ -77,8 +77,6 @@ export default function BarrierLoginPage() {
 
   return (
     <div style={styles.container}>
-      {/* <h1>GateGuard – Quick Login</h1> */}
-
       <button onClick={handleLogin} disabled={loading} style={styles.button}>
         {loading ? "Logging in..." : "GET TOKEN"}
       </button>
@@ -90,7 +88,7 @@ export default function BarrierLoginPage() {
 }
 
 /* ==========================
-   STYLES (UNCHANGED)
+   STYLES
 ========================== */
 
 const styles = {
