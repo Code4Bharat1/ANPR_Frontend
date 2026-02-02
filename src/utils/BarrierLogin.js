@@ -47,7 +47,7 @@ export default function BarrierLoginPage() {
             "X-Alpha": "21",
             "X-Salt": "683239",
             "X-Cue": "34db55e07f7b39df480284397f7f42ec",
-            "X-Camera-IP": "192.168.0.101",
+            "X-Camera-IP": "192.168.0.100",
           },
         },
       );
