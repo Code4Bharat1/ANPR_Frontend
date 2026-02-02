@@ -9,7 +9,8 @@ function getCameraURL() {
 export async function POST() {
   try {
     const response = await axios.post(
-      `${getCameraURL()}/api/v1/auth/login`,
+      `http://192.168.0.100/api/v1/auth/login`,
+      // `${getCameraURL()}/api/v1/auth/login`,
       {
         username: "admin",
         password: "Admin@1923",
@@ -20,9 +21,9 @@ export async function POST() {
           "Content-Type": "application/json",
 
           "X-Alpha": "21",
-          "X-Salt": "683239",
           "X-Cue": "34db55e07f7b39df480284397f7f42ec",
-          "X-Camera-IP": "192.168.0.100",
+          "X-Salt": "683239",
+          // "X-Camera-IP": "192.168.0.100",
         },
         // timeout: 8000,
       },
