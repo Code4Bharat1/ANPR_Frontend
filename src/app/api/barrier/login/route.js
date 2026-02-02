@@ -24,7 +24,7 @@ export async function POST() {
           "X-Salt": "683239",
           "X-Cue": "34db55e07f7b39df480284397f7f42ec",
         },
-        timeout: 8000,
+        // timeout: 8000,
       },
     );
     console.log(response);
