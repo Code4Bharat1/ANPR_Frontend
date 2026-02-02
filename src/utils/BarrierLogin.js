@@ -33,7 +33,7 @@ export default function BarrierLoginPage() {
 
     try {
       const res = await axios.post(
-        `http://localhost:5000/api/v1/auth/login`,
+        `https://api-anpr.nexcorealliance.com/api/v1/auth/login`,
         {
           username: "admin",
           password: "Admin@1923",

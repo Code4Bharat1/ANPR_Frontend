@@ -27,7 +27,7 @@ export default function BarrierControls() {
         : storedToken;
 
       const res = await api.post(
-        "http://localhost:5000/api/v1/barrier/actuate",
+        "https://api-anpr.nexcorealliance.com/api/v1/barrier/actuate",
         {},
         {
           headers: {
