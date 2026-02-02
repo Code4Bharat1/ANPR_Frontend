@@ -7,7 +7,7 @@ import { useState } from "react";
    CAMERA CONFIG
 ========================== */
 
-const DEFAULT_CAMERA_IP = "192.168.0.101";
+const DEFAULT_CAMERA_IP = "192.168.0.100";
 
 const getCameraURL = () => {
   if (typeof window === "undefined") {
