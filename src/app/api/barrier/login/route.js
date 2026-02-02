@@ -27,9 +27,11 @@ export async function POST() {
         timeout: 8000,
       },
     );
+    console.log(response);
 
     return Response.json(response.data, { status: 200 });
   } catch (error) {
+    console.log(error);
     console.error("Camera Login Error:", error?.message);
 
     return Response.json(
