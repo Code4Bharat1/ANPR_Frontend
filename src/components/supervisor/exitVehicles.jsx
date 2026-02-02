@@ -516,7 +516,7 @@ const actuateBarrier = async () => {
       {
         headers: {
           Authorization: `Token ${rawToken}`,
-          "X-Camera-IP": "192.168.0.101",
+          "X-Camera-IP": "192.168.0.100",
         },
       }
     );
