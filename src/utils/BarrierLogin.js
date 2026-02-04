@@ -17,7 +17,7 @@ export default function BarrierLoginPage() {
 
     try {
       const response = await axios.post(
-        `http://192.168.0.100/api/auth/auth/login`,
+        `http://192.168.0.100/api/v1/auth/auth/login`,
         // `${getCameraURL()}/api/v1/auth/login`,
         {
           username: "admin",
