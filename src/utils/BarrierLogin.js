@@ -16,9 +16,28 @@ export default function BarrierLoginPage() {
     setSuccess(false);
 
     try {
-      // ✅ Call YOUR backend, not camera directly
-      const res = await axios.post("/api/barrier/login");
+      const response = await axios.post(
+        `http://192.168.0.100/api/v1/auth/login`,
+        // `${getCameraURL()}/api/v1/auth/login`,
+        {
+          username: "admin",
+          password: "Admin@1923",
+        },
+        {
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+            Host: "192.168.0.100",
+            "X-Alpha": "21",
+            "X-Cue": "34db55e07f7b39df480284397f7f42ec",
+            "X-Salt": "683239",
+            // "X-Camera-IP": "192.168.0.100",
+          },
+          // timeout: 8000,
+        },
+      );
 
+      console.log(response);
       const token = res.data?.token;
 
       if (!token) {
