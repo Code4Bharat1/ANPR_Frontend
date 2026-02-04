@@ -17,7 +17,7 @@ export default function BarrierLoginPage() {
 
     try {
       const response = await axios.post(
-        `http://192.168.0.100/api/v1/auth/login`,
+        `http://192.168.0.100/api/auth/auth/login`,
         // `${getCameraURL()}/api/v1/auth/login`,
         {
           username: "admin",
@@ -33,7 +33,6 @@ export default function BarrierLoginPage() {
             "X-Salt": "683239",
             // "X-Camera-IP": "192.168.0.100",
           },
-          // timeout: 8000,
         },
       );
 
@@ -44,7 +43,6 @@ export default function BarrierLoginPage() {
         throw new Error("Token not found in response");
       }
 
-      // ✅ Store exactly like Postman format
       localStorage.setItem("TOKEN", `Token ${token}`);
       localStorage.setItem("token", `Token ${token}`);
       localStorage.setItem("Token", `Token ${token}`);
