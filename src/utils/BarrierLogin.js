@@ -17,7 +17,7 @@ export default function BarrierLoginPage() {
 
     try {
       const response = await axios.post(
-        `http://192.168.0.100/api/v1/auth/auth/login/`,
+        `https://anpr.nexcorealliance.com/api/v1/auth/auth/login/`,
         // `${getCameraURL()}/api/v1/auth/login`,
         {
           username: "admin",
@@ -37,7 +37,7 @@ export default function BarrierLoginPage() {
       );
 
       console.log(response);
-      const token = res.data?.token;
+      const token = response.data?.token;
 
       if (!token) {
         throw new Error("Token not found in response");
