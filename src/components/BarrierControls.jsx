@@ -35,7 +35,7 @@ export default function BarrierControls() {
             "X-Camera-IP": "192.168.0.100",
             Accept: "application/json",
             "Content-Type": "application/json",
-            Host: "192.168.0.100",
+            // Host: "192.168.0.100",
             "X-Alpha": "21",
             "X-Cue": "34db55e07f7b39df480284397f7f42ec",
             "X-Salt": "683239",

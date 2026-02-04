@@ -17,7 +17,7 @@ export default function BarrierLoginPage() {
 
     try {
       const response = await axios.post(
-        `http://192.168.0.100/api/v1/auth/auth/login/`,
+        `http://192.168.0.100/api/auth/auth/login/`,
         // `${getCameraURL()}/api/v1/auth/login`,
         {
           username: "admin",
@@ -27,7 +27,7 @@ export default function BarrierLoginPage() {
           headers: {
             Accept: "application/json",
             "Content-Type": "application/json",
-            Host: "192.168.0.100",
+            // Host: "192.168.0.100",
             "X-Alpha": "21",
             "X-Cue": "34db55e07f7b39df480284397f7f42ec",
             "X-Salt": "683239",
@@ -37,7 +37,7 @@ export default function BarrierLoginPage() {
       );
 
       console.log(response);
-      const token = response.data?.token;
+      const token = res.data?.token;
 
       if (!token) {
         throw new Error("Token not found in response");
