@@ -1,49 +1,26 @@
 "use client";
 
 import { useState } from "react";
-import api from "@/lib/axios";
+import axios from "axios";
 
 export default function BarrierControls() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
-  const actuateBarrier = async () => {
+  const openBarrier = async () => {
     setLoading(true);
     setMessage("");
 
     try {
-      const storedToken =
-        localStorage.getItem("TOKEN") ||
-        localStorage.getItem("token") ||
-        localStorage.getItem("Token");
-
-      if (!storedToken) {
-        throw new Error("Auth token not found. Please login first.");
-      }
-
-      // ✅ STRIP PREFIX
-      const rawToken = storedToken.startsWith("Token ")
-        ? storedToken.slice(6)
-        : storedToken;
-
-      const res = await api.post(
-        "http://192.168.0.100/api/v1/barrier/actuate",
-        {},
-        {
-          headers: {
-            Authorization: `Token ${rawToken}`,
-            "X-Camera-IP": "192.168.0.100",
-            Accept: "application/json",
-            "Content-Type": "application/json",
-            // Host: "192.168.0.100",
-            "X-Alpha": "21",
-            "X-Cue": "34db55e07f7b39df480284397f7f42ec",
-            "X-Salt": "683239",
-          },
-        },
+      const res = await axios.post(
+        "https://api-anpr.nexcorealliance.com/api/barrier/open"
       );
 
-      setMessage(res.data?.message || "Action performed");
+      if (!res.data?.success) {
+        throw new Error(res.data?.message || "Barrier open failed");
+      }
+
+      setMessage(res.data.message);
     } catch (err) {
       setMessage(err?.response?.data?.message || err.message);
     } finally {
@@ -57,10 +34,10 @@ export default function BarrierControls() {
 
       <button
         className="bg-indigo-500 text-white p-2 px-4 rounded-xl"
-        onClick={actuateBarrier}
+        onClick={openBarrier}
         disabled={loading}
       >
-        Entry UP
+        {loading ? "Opening..." : "OPEN BARRIER"}
       </button>
 
       {message && <p>{message}</p>}

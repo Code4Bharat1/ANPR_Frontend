@@ -4,9 +4,12 @@ import axios from "axios";
 import { useState } from "react";
 
 export default function BarrierLoginPage() {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(false);
+  const [loading, setLoading] =
+    useState(false);
+  const [error, setError] =
+    useState(null);
+  const [success, setSuccess] =
+    useState(false);
 
   const handleLogin = async () => {
     if (loading) return;
@@ -16,41 +19,23 @@ export default function BarrierLoginPage() {
     setSuccess(false);
 
     try {
-      const response = await axios.post(
-        `http://192.168.0.100/api/auth/auth/login/`,
-        // `${getCameraURL()}/api/v1/auth/login`,
-        {
-          username: "admin",
-          password: "Admin@1923",
-        },
-        {
-          headers: {
-            Accept: "application/json",
-            "Content-Type": "application/json",
-            // Host: "192.168.0.100",
-            "X-Alpha": "21",
-            "X-Cue": "34db55e07f7b39df480284397f7f42ec",
-            "X-Salt": "683239",
-            // "X-Camera-IP": "192.168.0.100",
-          },
-        },
+      const res = await axios.post(
+        "https://api-anpr.nexcorealliance.com/api/barrier/login",
       );
 
-      console.log(response);
-      const token = res.data?.token;
-
-      if (!token) {
-        throw new Error("Token not found in response");
+      if (!res.data?.success) {
+        throw new Error(
+          res.data?.message ||
+            "Login failed",
+        );
       }
-
-      localStorage.setItem("TOKEN", `Token ${token}`);
-      localStorage.setItem("token", `Token ${token}`);
-      localStorage.setItem("Token", `Token ${token}`);
 
       setSuccess(true);
     } catch (err) {
-      console.error(err);
-      setError(err?.response?.data?.message || err.message || "Login failed");
+      setError(
+        err?.response?.data?.message ||
+          err.message,
+      );
     } finally {
       setLoading(false);
     }
@@ -58,25 +43,34 @@ export default function BarrierLoginPage() {
 
   return (
     <div style={styles.container}>
-      <button onClick={handleLogin} disabled={loading} style={styles.button}>
-        {loading ? "Logging in..." : "GET TOKEN"}
+      <button
+        onClick={handleLogin}
+        disabled={loading}
+        style={styles.button}
+      >
+        {loading
+          ? "Logging in..."
+          : "LOGIN BARRIER"}
       </button>
 
-      {success && <p style={styles.success}>Token stored successfully ✅</p>}
-      {error && <p style={styles.error}>{error}</p>}
+      {success && (
+        <p style={styles.success}>
+          Barrier login successful ✅
+        </p>
+      )}
+      {error && (
+        <p style={styles.error}>
+          {error}
+        </p>
+      )}
     </div>
   );
 }
-
-/* ==========================
-   STYLES
-========================== */
 
 const styles = {
   container: {
     display: "flex",
     flexDirection: "column",
-    justifyContent: "center",
     alignItems: "center",
     gap: "16px",
     marginTop: "40px",
@@ -86,10 +80,6 @@ const styles = {
     fontSize: "16px",
     cursor: "pointer",
   },
-  success: {
-    color: "green",
-  },
-  error: {
-    color: "red",
-  },
+  success: { color: "green" },
+  error: { color: "red" },
 };
