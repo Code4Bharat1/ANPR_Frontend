@@ -3,23 +3,6 @@
 import axios from "axios";
 import { useState } from "react";
 
-/* ==========================
-   CAMERA CONFIG
-========================== */
-
-const DEFAULT_CAMERA_IP = "192.168.0.100";
-
-const getCameraURL = () => {
-  if (typeof window === "undefined") {
-    return `http://${DEFAULT_CAMERA_IP}`;
-  }
-
-  const savedIP = localStorage.getItem("API_IP");
-  const ip = savedIP && savedIP.trim() !== "" ? savedIP : DEFAULT_CAMERA_IP;
-
-  return `http://${ip}`;
-};
-
 export default function BarrierLoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -33,8 +16,9 @@ export default function BarrierLoginPage() {
     setSuccess(false);
 
     try {
-      const res = await axios.post(
-        `${getCameraURL()}/api/v1/auth/login`,
+      const response = await axios.post(
+        `http://192.168.0.100/api/auth/auth/login/`,
+        // `${getCameraURL()}/api/v1/auth/login`,
         {
           username: "admin",
           password: "Admin@1923",
@@ -43,23 +27,22 @@ export default function BarrierLoginPage() {
           headers: {
             Accept: "application/json",
             "Content-Type": "application/json",
-
-            // ✅ REQUIRED CAMERA HEADERS
+            // Host: "192.168.0.100",
             "X-Alpha": "21",
-            "X-Salt": "683239",
             "X-Cue": "34db55e07f7b39df480284397f7f42ec",
+            "X-Salt": "683239",
+            // "X-Camera-IP": "192.168.0.100",
           },
-          timeout: 8000,
         },
       );
 
+      console.log(response);
       const token = res.data?.token;
 
       if (!token) {
         throw new Error("Token not found in response");
       }
 
-      // ✅ Store EXACTLY like Postman
       localStorage.setItem("TOKEN", `Token ${token}`);
       localStorage.setItem("token", `Token ${token}`);
       localStorage.setItem("Token", `Token ${token}`);
@@ -67,9 +50,7 @@ export default function BarrierLoginPage() {
       setSuccess(true);
     } catch (err) {
       console.error(err);
-      setError(
-        err?.response?.data?.message || err.message || "Camera not reachable",
-      );
+      setError(err?.response?.data?.message || err.message || "Login failed");
     } finally {
       setLoading(false);
     }
@@ -98,6 +79,7 @@ const styles = {
     justifyContent: "center",
     alignItems: "center",
     gap: "16px",
+    marginTop: "40px",
   },
   button: {
     padding: "12px 24px",
