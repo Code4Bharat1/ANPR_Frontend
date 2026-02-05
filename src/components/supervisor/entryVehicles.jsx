@@ -93,7 +93,7 @@ const EntryVehicles = () => {
   const [manualSiteId, setManualSiteId] = useState("");
   const [manualSiteName, setManualSiteName] = useState("");
   const [barrierLoading, setBarrierLoading] = useState(false);
-const [barrierMessage, setBarrierMessage] = useState("");
+  const [barrierMessage, setBarrierMessage] = useState("");
 
   const [anprData, setAnprData] = useState({
     vehicleNumber: "",
@@ -751,7 +751,7 @@ const [barrierMessage, setBarrierMessage] = useState("");
       if (!finalVendor || finalVendor.trim() === "") {
         const proceedWithoutVendor = window.confirm(
           "⚠️ No vendor selected. Would you like to continue without vendor information?\n\n" +
-            "Note: You can add vendor details later if needed.",
+          "Note: You can add vendor details later if needed.",
         );
 
         if (!proceedWithoutVendor) {
@@ -1010,42 +1010,25 @@ const [barrierMessage, setBarrierMessage] = useState("");
     }
   };
   const actuateBarrier = async () => {
-  setBarrierLoading(true);
-  setBarrierMessage("");
+    setLoading(true);
+    setMessage("");
 
-  try {
-    const storedToken =
-      localStorage.getItem("TOKEN") ||
-      localStorage.getItem("token") ||
-      localStorage.getItem("Token");
+    try {
+      const res = await axios.post(
+        "https://api-anpr.nexcorealliance.com/api/barrier/open"
+      );
 
-    if (!storedToken) {
-      throw new Error("Auth token not found. Please login first.");
-    }
-
-    // ✅ STRIP PREFIX
-    const rawToken = storedToken.startsWith("Token ")
-      ? storedToken.slice(6)
-      : storedToken;
-
-    const res = await api.post(
-      `${API_URL}/api/v1/barrier/actuate`,
-      {},
-      {
-        headers: {
-          Authorization: `Token ${rawToken}`,
-          "X-Camera-IP": "192.168.0.100",
-        },
+      if (!res.data?.success) {
+        throw new Error(res.data?.message || "Barrier open failed");
       }
-    );
 
-    setBarrierMessage(res.data?.message || "Barrier opened successfully");
-  } catch (err) {
-    setBarrierMessage(err?.response?.data?.message || err.message);
-  } finally {
-    setBarrierLoading(false);
-  }
-};
+      setMessage(res.data.message);
+    } catch (err) {
+      setMessage(err?.response?.data?.message || err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <SupervisorLayout>
@@ -1160,13 +1143,12 @@ const [barrierMessage, setBarrierMessage] = useState("");
               <React.Fragment key={s}>
                 <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
                   <div
-                    className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-bold text-sm sm:text-base ${
-                      s === step
+                    className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-bold text-sm sm:text-base ${s === step
                         ? "bg-blue-600 text-white"
                         : s < step
                           ? "bg-green-600 text-white"
                           : "bg-gray-200 text-gray-600"
-                    }`}
+                      }`}
                   >
                     {s < step ? (
                       <CheckCircle className="w-4 h-4 sm:w-6 sm:h-6" />
@@ -1254,52 +1236,51 @@ const [barrierMessage, setBarrierMessage] = useState("");
               {(isMobileMenuOpen ||
                 (typeof window !== "undefined" &&
                   window.innerWidth >= 1024)) && (
-                <>
-                  {anprEvents.length === 0 ? (
-                    <p className="text-slate-400 text-center py-4 text-sm sm:text-base">
-                      No events received yet. Waiting for ANPR data...
-                    </p>
-                  ) : (
-                    <div className="space-y-2 max-h-48 sm:max-h-96 overflow-y-auto">
-                      {anprEvents.map((e, index) => (
-                        <div
-                          key={e._id || index}
-                          className="bg-slate-700 p-3 sm:p-4 rounded-lg border border-slate-600 hover:border-blue-500 transition-colors cursor-pointer"
-                          onClick={() => handleANPREventClick(e)}
-                        >
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <div
-                                className={`px-2 py-1 rounded-full text-xs font-bold ${
-                                  e.isEntry
-                                    ? "bg-green-500 text-white"
-                                    : "bg-red-500 text-white"
-                                }`}
-                              >
-                                {e.isEntry ? "IN" : "OUT"}
+                  <>
+                    {anprEvents.length === 0 ? (
+                      <p className="text-slate-400 text-center py-4 text-sm sm:text-base">
+                        No events received yet. Waiting for ANPR data...
+                      </p>
+                    ) : (
+                      <div className="space-y-2 max-h-48 sm:max-h-96 overflow-y-auto">
+                        {anprEvents.map((e, index) => (
+                          <div
+                            key={e._id || index}
+                            className="bg-slate-700 p-3 sm:p-4 rounded-lg border border-slate-600 hover:border-blue-500 transition-colors cursor-pointer"
+                            onClick={() => handleANPREventClick(e)}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <div
+                                  className={`px-2 py-1 rounded-full text-xs font-bold ${e.isEntry
+                                      ? "bg-green-500 text-white"
+                                      : "bg-red-500 text-white"
+                                    }`}
+                                >
+                                  {e.isEntry ? "IN" : "OUT"}
+                                </div>
+                                <div>
+                                  <p className="text-white font-bold text-sm sm:text-lg">
+                                    {e.numberPlate}
+                                  </p>
+                                  <p className="text-slate-400 text-xs sm:text-sm">
+                                    {new Date(e.timestamp).toLocaleTimeString(
+                                      [],
+                                      { hour: "2-digit", minute: "2-digit" },
+                                    )}
+                                  </p>
+                                </div>
                               </div>
-                              <div>
-                                <p className="text-white font-bold text-sm sm:text-lg">
-                                  {e.numberPlate}
-                                </p>
-                                <p className="text-slate-400 text-xs sm:text-sm">
-                                  {new Date(e.timestamp).toLocaleTimeString(
-                                    [],
-                                    { hour: "2-digit", minute: "2-digit" },
-                                  )}
-                                </p>
+                              <div className="text-blue-400 hover:text-blue-300 text-xs sm:text-sm font-medium">
+                                Use
                               </div>
-                            </div>
-                            <div className="text-blue-400 hover:text-blue-300 text-xs sm:text-sm font-medium">
-                              Use
                             </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </>
-              )}
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
             </div>
 
             {/* Current Vehicle Detection - Responsive Grid */}
@@ -1308,11 +1289,10 @@ const [barrierMessage, setBarrierMessage] = useState("");
               <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
                 <div className="bg-gray-900 h-48 sm:h-64 md:h-80 flex items-center justify-center relative">
                   <div
-                    className={`absolute top-2 sm:top-4 left-2 sm:left-4 px-2 sm:px-3 py-1 rounded text-xs sm:text-sm font-semibold flex items-center gap-1 sm:gap-2 ${
-                      socketStatus === "connected"
+                    className={`absolute top-2 sm:top-4 left-2 sm:left-4 px-2 sm:px-3 py-1 rounded text-xs sm:text-sm font-semibold flex items-center gap-1 sm:gap-2 ${socketStatus === "connected"
                         ? "bg-red-600 text-white"
                         : "bg-gray-600 text-white"
-                    }`}
+                      }`}
                   >
                     <div
                       className={`w-1 h-1 sm:w-2 sm:h-2 bg-white rounded-full ${socketStatus === "connected" ? "animate-pulse" : ""}`}
@@ -1467,22 +1447,20 @@ const [barrierMessage, setBarrierMessage] = useState("");
                   <button
                     type="button"
                     onClick={() => handleSiteModeChange("select")}
-                    className={`px-3 sm:px-4 py-2 rounded-lg font-semibold text-sm transition ${
-                      siteInputMode === "select"
+                    className={`px-3 sm:px-4 py-2 rounded-lg font-semibold text-sm transition ${siteInputMode === "select"
                         ? "bg-blue-600 text-white"
                         : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                    }`}
+                      }`}
                   >
                     Select from List
                   </button>
                   <button
                     type="button"
                     onClick={() => handleSiteModeChange("manual")}
-                    className={`px-3 sm:px-4 py-2 rounded-lg font-semibold text-sm transition ${
-                      siteInputMode === "manual"
+                    className={`px-3 sm:px-4 py-2 rounded-lg font-semibold text-sm transition ${siteInputMode === "manual"
                         ? "bg-blue-600 text-white"
                         : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                    }`}
+                      }`}
                   >
                     Enter Manually
                   </button>
@@ -1671,11 +1649,10 @@ const [barrierMessage, setBarrierMessage] = useState("");
                       setVendorInputMode("select");
                       setManualVendorName("");
                     }}
-                    className={`px-3 sm:px-4 py-2 rounded-lg font-semibold text-sm transition ${
-                      vendorInputMode === "select"
+                    className={`px-3 sm:px-4 py-2 rounded-lg font-semibold text-sm transition ${vendorInputMode === "select"
                         ? "bg-blue-600 text-white"
                         : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                    }`}
+                      }`}
                   >
                     Select from List
                   </button>
@@ -1685,11 +1662,10 @@ const [barrierMessage, setBarrierMessage] = useState("");
                       setVendorInputMode("manual");
                       setVehicleDetails({ ...vehicleDetails, vendorId: "" });
                     }}
-                    className={`px-3 sm:px-4 py-2 rounded-lg font-semibold text-sm transition ${
-                      vendorInputMode === "manual"
+                    className={`px-3 sm:px-4 py-2 rounded-lg font-semibold text-sm transition ${vendorInputMode === "manual"
                         ? "bg-blue-600 text-white"
                         : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                    }`}
+                      }`}
                   >
                     Enter Manually
                   </button>
@@ -1740,11 +1716,10 @@ const [barrierMessage, setBarrierMessage] = useState("");
                           loadStatus: status,
                         })
                       }
-                      className={`px-3 sm:px-4 py-2 sm:py-3 rounded-lg font-semibold text-sm sm:text-base transition ${
-                        vehicleDetails.loadStatus === status
+                      className={`px-3 sm:px-4 py-2 sm:py-3 rounded-lg font-semibold text-sm sm:text-base transition ${vehicleDetails.loadStatus === status
                           ? "bg-blue-600 text-white border-2 border-blue-600"
                           : "bg-white text-gray-700 border-2 border-gray-300 hover:border-blue-300"
-                      }`}
+                        }`}
                     >
                       {status.charAt(0).toUpperCase() + status.slice(1)}
                     </button>
@@ -1799,11 +1774,10 @@ const [barrierMessage, setBarrierMessage] = useState("");
                   <span className="text-gray-400">(Optional)</span>
                 </label>
                 <div
-                  className={`border-2 border-dashed rounded-lg p-4 sm:p-6 text-center ${
-                    vehicleDetails.challanImage
+                  className={`border-2 border-dashed rounded-lg p-4 sm:p-6 text-center ${vehicleDetails.challanImage
                       ? "border-green-300 bg-green-50"
                       : "border-gray-300 bg-gray-50"
-                  }`}
+                    }`}
                 >
                   {vehicleDetails.challanImage ? (
                     <div className="space-y-2 sm:space-y-3">
@@ -1894,7 +1868,7 @@ const [barrierMessage, setBarrierMessage] = useState("");
         )}
 
         {/* Step 3: Media Capture (Responsive) */}
-       {step === 3 && (
+        {step === 3 && (
           <div className="space-y-4 sm:space-y-6">
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 sm:p-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 gap-2">
@@ -1944,22 +1918,20 @@ const [barrierMessage, setBarrierMessage] = useState("");
                 ].map((item) => (
                   <div
                     key={item.key}
-                    className={`relative border-2 border-dashed rounded-lg p-4 transition cursor-pointer ${
-                      mediaCapture[item.key]
+                    className={`relative border-2 border-dashed rounded-lg p-4 transition cursor-pointer ${mediaCapture[item.key]
                         ? "border-green-300 bg-green-50"
                         : "border-blue-300 bg-blue-50 hover:bg-blue-100"
-                    }`}
+                      }`}
                     onClick={() =>
                       !mediaCapture[item.key] && startCamera(item.key)
                     }
                   >
                     <div className="absolute top-2 right-2">
                       <span
-                        className={`px-2 py-1 rounded text-xs font-bold ${
-                          mediaCapture[item.key]
+                        className={`px-2 py-1 rounded text-xs font-bold ${mediaCapture[item.key]
                             ? "bg-green-600 text-white"
                             : "bg-red-100 text-red-700"
-                        }`}
+                          }`}
                       >
                         Required
                       </span>
@@ -2019,11 +1991,10 @@ const [barrierMessage, setBarrierMessage] = useState("");
               </p>
 
               <div
-                className={`border-2 border-dashed rounded-lg p-6 sm:p-8 text-center ${
-                  mediaCapture.videoClip
+                className={`border-2 border-dashed rounded-lg p-6 sm:p-8 text-center ${mediaCapture.videoClip
                     ? "border-green-300 bg-green-50"
                     : "border-gray-300 bg-gray-50"
-                }`}
+                  }`}
               >
                 {mediaCapture.videoClip ? (
                   <div>
@@ -2057,7 +2028,7 @@ const [barrierMessage, setBarrierMessage] = useState("");
                 )}
               </div>
             </div>
-             {/* ✅ NEW: Barrier Control Button */}
+            {/* ✅ NEW: Barrier Control Button */}
             <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-xl border-2 border-purple-200 shadow-sm p-4 sm:p-6">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
@@ -2119,28 +2090,26 @@ const [barrierMessage, setBarrierMessage] = useState("");
 
               {barrierMessage && (
                 <div
-                  className={`mt-3 p-3 rounded-lg flex items-start gap-2 ${
-                    barrierMessage.toLowerCase().includes("error") ||
-                    barrierMessage.toLowerCase().includes("not found") ||
-                    barrierMessage.toLowerCase().includes("failed")
-                      ? "bg-red-50 border border-red-200"
-                      : "bg-green-50 border border-green-200"
-                  }`}
-                >
-                  <svg
-                    className={`w-5 h-5 flex-shrink-0 ${
-                      barrierMessage.toLowerCase().includes("error") ||
+                  className={`mt-3 p-3 rounded-lg flex items-start gap-2 ${barrierMessage.toLowerCase().includes("error") ||
                       barrierMessage.toLowerCase().includes("not found") ||
                       barrierMessage.toLowerCase().includes("failed")
+                      ? "bg-red-50 border border-red-200"
+                      : "bg-green-50 border border-green-200"
+                    }`}
+                >
+                  <svg
+                    className={`w-5 h-5 flex-shrink-0 ${barrierMessage.toLowerCase().includes("error") ||
+                        barrierMessage.toLowerCase().includes("not found") ||
+                        barrierMessage.toLowerCase().includes("failed")
                         ? "text-red-600"
                         : "text-green-600"
-                    }`}
+                      }`}
                     fill="currentColor"
                     viewBox="0 0 20 20"
                   >
                     {barrierMessage.toLowerCase().includes("error") ||
-                    barrierMessage.toLowerCase().includes("not found") ||
-                    barrierMessage.toLowerCase().includes("failed") ? (
+                      barrierMessage.toLowerCase().includes("not found") ||
+                      barrierMessage.toLowerCase().includes("failed") ? (
                       <path
                         fillRule="evenodd"
                         d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
@@ -2155,13 +2124,12 @@ const [barrierMessage, setBarrierMessage] = useState("");
                     )}
                   </svg>
                   <p
-                    className={`text-xs sm:text-sm font-medium ${
-                      barrierMessage.toLowerCase().includes("error") ||
-                      barrierMessage.toLowerCase().includes("not found") ||
-                      barrierMessage.toLowerCase().includes("failed")
+                    className={`text-xs sm:text-sm font-medium ${barrierMessage.toLowerCase().includes("error") ||
+                        barrierMessage.toLowerCase().includes("not found") ||
+                        barrierMessage.toLowerCase().includes("failed")
                         ? "text-red-700"
                         : "text-green-700"
-                    }`}
+                      }`}
                   >
                     {barrierMessage}
                   </p>
@@ -2205,7 +2173,7 @@ const [barrierMessage, setBarrierMessage] = useState("");
               </button>
             </div>
 
-           
+
           </div>
         )}
       </div>
