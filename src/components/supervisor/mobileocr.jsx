@@ -1614,7 +1614,7 @@ const OcrScan = () => {
 
   return (
     <SupervisorLayout>
-      <BarrierLoginPage />
+      {/* <BarrierLoginPage /> */}
       <div className="max-w-5xl">
         <canvas ref={canvasRef} className="hidden" />
         <input

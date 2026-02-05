@@ -1033,7 +1033,7 @@ const EntryVehicles = () => {
 
   return (
     <SupervisorLayout>
-      <BarrierLoginPage />
+      {/* <BarrierLoginPage /> */}
       {/* <BarrierControls /> */}
       <div className="max-w-6xl mx-auto px-2 sm:px-4">
         <canvas ref={canvasRef} className="hidden" />
