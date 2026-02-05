@@ -110,8 +110,8 @@ const OcrScan = () => {
   const [loading, setLoading] = useState(false);
   const [ocrProcessing, setOcrProcessing] = useState(false);
   const [barrierLoading, setBarrierLoading] = useState(false);
-const [barrierMessage, setBarrierMessage] = useState("");
-
+  const [barrierMessage, setBarrierMessage] = useState("");
+  const [message, setMessage] = useState("");
   // Added states from first file
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
@@ -635,8 +635,8 @@ const [barrierMessage, setBarrierMessage] = useState("");
 
       setError(
         err?.response?.data?.error ||
-        err.message ||
-        "OCR processing failed. Please try again.",
+          err.message ||
+          "OCR processing failed. Please try again.",
       );
     } finally {
       setOcrProcessing(false);
@@ -816,7 +816,7 @@ const [barrierMessage, setBarrierMessage] = useState("");
         result[idx] =
           result[idx + 1] =
           result[idx + 2] =
-          Math.min(255, Math.max(0, sum));
+            Math.min(255, Math.max(0, sum));
         result[idx + 3] = 255;
       }
     }
@@ -1265,7 +1265,6 @@ const [barrierMessage, setBarrierMessage] = useState("");
 
           // console.log(response);
 
-
           if (response.data && response.data.success) {
             if (Array.isArray(response.data.data)) {
               vendorsData = response.data.data;
@@ -1483,7 +1482,7 @@ const [barrierMessage, setBarrierMessage] = useState("");
           file: challanFile,
           vehicleId: `${vehicleNumber}/entry/challan`,
           type: "entry",
-          index: 1
+          index: 1,
         });
       }
 
@@ -1588,42 +1587,26 @@ const [barrierMessage, setBarrierMessage] = useState("");
     return labels[cameraView] || "Photo";
   };
   const actuateBarrier = async () => {
-  setBarrierLoading(true);
-  setBarrierMessage("");
+    setLoading(true);
+    console.log("Actuate barrier clicked");
+    setMessage("");
 
-  try {
-    const storedToken =
-      localStorage.getItem("TOKEN") ||
-      localStorage.getItem("token") ||
-      localStorage.getItem("Token");
+    try {
+      const res = await axios.post(
+        "https://api-anpr.nexcorealliance.com/api/barrier/open",
+      );
 
-    if (!storedToken) {
-      throw new Error("Auth token not found. Please login first.");
-    }
-
-    // ✅ STRIP PREFIX
-    const rawToken = storedToken.startsWith("Token ")
-      ? storedToken.slice(6)
-      : storedToken;
-
-    const res = await api.post(
-      `${API_URL}/api/v1/barrier/actuate`,
-      {},
-      {
-        headers: {
-          Authorization: `Token ${rawToken}`,
-          "X-Camera-IP": "192.168.0.100",
-        },
+      if (!res.data?.success) {
+        throw new Error(res.data?.message || "Barrier open failed");
       }
-    );
 
-    setBarrierMessage(res.data?.message || "Barrier opened successfully");
-  } catch (err) {
-    setBarrierMessage(err?.response?.data?.message || err.message);
-  } finally {
-    setBarrierLoading(false);
-  }
-};
+      setMessage(res.data.message);
+    } catch (err) {
+      setMessage(err?.response?.data?.message || err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // =====================================================
   // RENDER
@@ -1688,10 +1671,10 @@ const [barrierMessage, setBarrierMessage] = useState("");
                   "loadView",
                   "challan",
                 ].includes(cameraView) && (
-                    <div className="text-xs text-blue-300 mt-1">
-                      Position camera for clear photo
-                    </div>
-                  )}
+                  <div className="text-xs text-blue-300 mt-1">
+                    Position camera for clear photo
+                  </div>
+                )}
               </div>
 
               {/* Only show switch camera button for OCR mode */}
@@ -1839,31 +1822,31 @@ const [barrierMessage, setBarrierMessage] = useState("");
                 "loadView",
                 "challan",
               ].includes(cameraView) && (
-                  <div className="absolute inset-0 pointer-events-none">
-                    {/* Simple center crosshair */}
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="w-32 h-32 border-2 border-white/50 rounded-lg"></div>
-                    </div>
+                <div className="absolute inset-0 pointer-events-none">
+                  {/* Simple center crosshair */}
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-32 h-32 border-2 border-white/50 rounded-lg"></div>
+                  </div>
 
-                    {/* Bottom guidance text */}
-                    <div className="absolute bottom-8 left-0 right-0 text-center">
-                      <div className="inline-block bg-black/60 backdrop-blur-sm px-4 py-2 rounded-lg">
-                        <p className="text-white text-sm font-medium">
-                          {cameraView === "frontView" &&
-                            "Capture vehicle front with number plate"}
-                          {cameraView === "backView" &&
-                            "Capture vehicle rear with tail lights"}
-                          {cameraView === "driverView" &&
-                            "Capture driver/cabin clearly"}
-                          {cameraView === "loadView" &&
-                            "Capture material/load in vehicle"}
-                          {cameraView === "challan" &&
-                            "Capture challan/bill clearly"}
-                        </p>
-                      </div>
+                  {/* Bottom guidance text */}
+                  <div className="absolute bottom-8 left-0 right-0 text-center">
+                    <div className="inline-block bg-black/60 backdrop-blur-sm px-4 py-2 rounded-lg">
+                      <p className="text-white text-sm font-medium">
+                        {cameraView === "frontView" &&
+                          "Capture vehicle front with number plate"}
+                        {cameraView === "backView" &&
+                          "Capture vehicle rear with tail lights"}
+                        {cameraView === "driverView" &&
+                          "Capture driver/cabin clearly"}
+                        {cameraView === "loadView" &&
+                          "Capture material/load in vehicle"}
+                        {cameraView === "challan" &&
+                          "Capture challan/bill clearly"}
+                      </p>
                     </div>
                   </div>
-                )}
+                </div>
+              )}
             </div>
 
             <div className="bg-black/80 backdrop-blur-sm p-4 sm:p-6 flex justify-center items-center">
@@ -1901,12 +1884,13 @@ const [barrierMessage, setBarrierMessage] = useState("");
               <React.Fragment key={s}>
                 <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
                   <div
-                    className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-bold text-sm sm:text-base ${s === step
+                    className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-bold text-sm sm:text-base ${
+                      s === step
                         ? "bg-blue-600 text-white"
                         : s < step
                           ? "bg-green-600 text-white"
                           : "bg-gray-200 text-gray-600"
-                      }`}
+                    }`}
                   >
                     {s < step ? (
                       <CheckCircle className="w-4 h-4 sm:w-6 sm:h-6" />
@@ -2003,10 +1987,11 @@ const [barrierMessage, setBarrierMessage] = useState("");
                       onChange={(e) =>
                         handleVehicleNumberChange(e.target.value)
                       }
-                      className={`w-full px-4 py-3 border-2 rounded-lg text-lg font-bold text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none font-mono ${validateVehicleNumber(vehicleNumber)
+                      className={`w-full px-4 py-3 border-2 rounded-lg text-lg font-bold text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none font-mono ${
+                        validateVehicleNumber(vehicleNumber)
                           ? "border-green-400 bg-green-50"
                           : "border-blue-300"
-                        }`}
+                      }`}
                       placeholder="e.g. MH-12-AB-1234"
                     />
                     <div className="mt-2 flex items-center justify-between">
@@ -2015,10 +2000,11 @@ const [barrierMessage, setBarrierMessage] = useState("");
                       </div>
                       {vehicleNumber && (
                         <div
-                          className={`text-xs font-semibold px-2 py-1 rounded ${validateVehicleNumber(vehicleNumber)
+                          className={`text-xs font-semibold px-2 py-1 rounded ${
+                            validateVehicleNumber(vehicleNumber)
                               ? "bg-green-100 text-green-800"
                               : "bg-red-100 text-red-800"
-                            }`}
+                          }`}
                         >
                           {validateVehicleNumber(vehicleNumber)
                             ? "✓ Valid"
@@ -2224,7 +2210,6 @@ const [barrierMessage, setBarrierMessage] = useState("");
                 )}
               </div>
 
-
               {/* Driver Name (Optional) */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -2329,10 +2314,11 @@ const [barrierMessage, setBarrierMessage] = useState("");
                       setVendorInputMode("select");
                       setManualVendorName("");
                     }}
-                    className={`px-3 sm:px-4 py-2 rounded-lg font-semibold text-sm transition ${vendorInputMode === "select"
+                    className={`px-3 sm:px-4 py-2 rounded-lg font-semibold text-sm transition ${
+                      vendorInputMode === "select"
                         ? "bg-blue-600 text-white"
                         : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                      }`}
+                    }`}
                   >
                     Select from List
                   </button>
@@ -2396,10 +2382,11 @@ const [barrierMessage, setBarrierMessage] = useState("");
                           loadStatus: status,
                         })
                       }
-                      className={`px-3 sm:px-4 py-2 sm:py-3 rounded-lg font-semibold text-sm sm:text-base transition ${vehicleDetails.loadStatus === status
+                      className={`px-3 sm:px-4 py-2 sm:py-3 rounded-lg font-semibold text-sm sm:text-base transition ${
+                        vehicleDetails.loadStatus === status
                           ? "bg-blue-600 text-white border-2 border-blue-600"
                           : "bg-white text-gray-700 border-2 border-gray-300 hover:border-blue-300"
-                        }`}
+                      }`}
                     >
                       {status.charAt(0).toUpperCase() + status.slice(1)}
                     </button>
@@ -2454,10 +2441,11 @@ const [barrierMessage, setBarrierMessage] = useState("");
                   <span className="text-gray-400">(Optional)</span>
                 </label>
                 <div
-                  className={`border-2 border-dashed rounded-lg p-4 sm:p-6 text-center ${vehicleDetails.challanImage
+                  className={`border-2 border-dashed rounded-lg p-4 sm:p-6 text-center ${
+                    vehicleDetails.challanImage
                       ? "border-green-300 bg-green-50"
                       : "border-gray-300 bg-gray-50"
-                    }`}
+                  }`}
                 >
                   {vehicleDetails.challanImage ? (
                     <div className="space-y-2 sm:space-y-3">
@@ -2598,20 +2586,22 @@ const [barrierMessage, setBarrierMessage] = useState("");
                 ].map((item) => (
                   <div
                     key={item.key}
-                    className={`relative border-2 border-dashed rounded-lg p-4 transition cursor-pointer ${mediaCapture[item.key]
+                    className={`relative border-2 border-dashed rounded-lg p-4 transition cursor-pointer ${
+                      mediaCapture[item.key]
                         ? "border-green-300 bg-green-50"
                         : "border-blue-300 bg-blue-50 hover:bg-blue-100"
-                      }`}
+                    }`}
                     onClick={() =>
                       !mediaCapture[item.key] && startCamera(item.key)
                     }
                   >
                     <div className="absolute top-2 right-2">
                       <span
-                        className={`px-2 py-1 rounded text-xs font-bold ${mediaCapture[item.key]
+                        className={`px-2 py-1 rounded text-xs font-bold ${
+                          mediaCapture[item.key]
                             ? "bg-green-600 text-white"
                             : "bg-red-100 text-red-700"
-                          }`}
+                        }`}
                       >
                         Required
                       </span>
@@ -2671,10 +2661,11 @@ const [barrierMessage, setBarrierMessage] = useState("");
               </p>
 
               <div
-                className={`border-2 border-dashed rounded-lg p-6 sm:p-8 text-center ${mediaCapture.videoClip
+                className={`border-2 border-dashed rounded-lg p-6 sm:p-8 text-center ${
+                  mediaCapture.videoClip
                     ? "border-green-300 bg-green-50"
                     : "border-gray-300 bg-gray-50"
-                  }`}
+                }`}
               >
                 {mediaCapture.videoClip ? (
                   <div>
@@ -2708,7 +2699,7 @@ const [barrierMessage, setBarrierMessage] = useState("");
                 )}
               </div>
             </div>
-             {/* ✅ NEW: Barrier Control Section */}
+            {/* ✅ NEW: Barrier Control Section */}
             <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-xl border-2 border-purple-200 shadow-sm p-4 sm:p-6">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
@@ -2855,8 +2846,6 @@ const [barrierMessage, setBarrierMessage] = useState("");
                 )}
               </button>
             </div>
-
-           
           </div>
         )}
       </div>
