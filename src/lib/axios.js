@@ -43,7 +43,7 @@ api.interceptors.request.use(
 
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => Promise.reject(error),
 );
 
 /* ==========================
@@ -59,11 +59,11 @@ api.interceptors.response.use(
 
       // prevent infinite reload
       if (typeof window !== "undefined") {
-        window.location.href = "/login";
+        // window.location.href = "/login";
       }
     }
     return Promise.reject(error);
-  }
+  },
 );
 
 export default api;
