@@ -93,7 +93,7 @@ function PhotoModal({ trip, onClose }) {
   const [fetching, setFetching] = useState(false);
   const [lightbox, setLightbox] = useState(null);
 
-  const token = () => localStorage.getItem("token") || localStorage.getItem("accessToken") || "";
+  const token = () => localStorage.getItem("accessToken") || localStorage.getItem("accessToken") || "";
 
   const getSignedUrl = async (key) => {
     const routes = [
