@@ -93,7 +93,7 @@ function PhotoModal({ trip, onClose }) {
   const [fetching, setFetching] = useState(false);
   const [lightbox, setLightbox] = useState(null);
 
-  const token = () => localStorage.getItem("token") || localStorage.getItem("accessToken") || "";
+  const token = () => localStorage.getItem("accessToken") || localStorage.getItem("accessToken") || "";
 
   const getSignedUrl = async (key) => {
     const routes = [
@@ -181,7 +181,7 @@ function PhotoModal({ trip, onClose }) {
               </div>
             ) : (
               <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fill,minmax(190px,1fr))" }}>
-                {items.map(({ label, key, type }) => {
+                { items && items.map(({ label, key, type }) => {
                   const url = urlMap[key];
                   return (
                     <div key={key} onClick={() => url && setLightbox({ src: url, type })}
@@ -378,7 +378,7 @@ export default function VendorTripAnalytics() {
                     <div className="relative">
                       <select value={selectedVendor} onChange={e => setSelectedVendor(e.target.value)} style={selStyle}>
                         <option value="all">All Vendors</option>
-                        {vendors.map(v => <option key={v._id} value={v._id}>{v.name || v.companyName}</option>)}
+                        {vendors && vendors.map(v => <option key={v._id} value={v._id}>{v.name || v.companyName}</option>)}
                       </select>
                       <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                     </div>
@@ -459,7 +459,7 @@ export default function VendorTripAnalytics() {
                             <p className="text-slate-500 font-semibold">No trips found</p>
                             <p className="text-slate-400 text-[12px] mt-1">Try changing the period to "All Time"</p>
                           </td></tr>
-                        ) : trips.map((trip, i) => (
+                        ) : trips && trips.map((trip, i) => (
                           <tr key={trip._id} className="trip-row" style={{ animationDelay: `${Math.min(i,15)*.03}s` }}>
                             <td className="px-4 py-3 font-mono text-[11.5px] text-violet-600 font-bold whitespace-nowrap border-b border-slate-50">{trip.tripId || "—"}</td>
                             <td className="px-4 py-3 border-b border-slate-50">
@@ -570,7 +570,7 @@ export default function VendorTripAnalytics() {
                         <div className="w-7 h-7 rounded-lg bg-violet-50 flex items-center justify-center"><TrendingUp size={13} color="#7c3aed" /></div>
                         <span className="text-[12.5px] font-bold text-slate-900">Top Vendors</span>
                       </div>
-                      {topVendors.map(([name, count], idx) => (
+                      {topVendors && topVendors.map(([name, count], idx) => (
                         <div key={name} className="mb-3">
                           <div className="flex justify-between items-center mb-1.5">
                             <span className="text-[11.5px] text-slate-700 font-semibold truncate max-w-[160px]" title={name}>{name}</span>
