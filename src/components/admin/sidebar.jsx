@@ -3,7 +3,8 @@ import { useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { 
   LayoutDashboard, MapPin, Users, Camera, FileText, 
-  Settings, User, LogOut, X
+  Settings, User, LogOut, X,
+  BarChart3
 } from 'lucide-react';
 import Image from 'next/image'; // ✅ Import Image
 
@@ -18,6 +19,7 @@ const Sidebar = ({ isOpen, onClose }) => {
     { name: 'Users', path: '/admin/users', icon: Users },
     { name: 'Devices', path: '/admin/devices', icon: Camera },
     { name: 'Reports', path: '/admin/reports', icon: FileText },
+     { name: 'Vendor Trip Analytics', path: '/admin/vendor', icon: BarChart3 },
     // { name: 'Settings', path: '/admin/settings', icon: Settings },
     // { name: 'Profile', path: '/admin/profile', icon: User },
   ];
