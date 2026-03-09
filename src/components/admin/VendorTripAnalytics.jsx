@@ -13,7 +13,6 @@ import Header from "./header";
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 const USE_MOCK = false;
-const PHOTO_API = `${API_URL}/api/uploads/get-file`;
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 const isValidKey = (key) => {
@@ -44,7 +43,7 @@ const MOCK_VENDORS = [
   { _id: "v2", name: "Patel Transport" },
 ];
 const MOCK_TRIPS = [
-  { _id: "t1", tripId: "TRP-001", vehicleNumber: "MH04AB1234", vehicleType: "TRUCK", vendor: "Sharma Logistics", driver: "Ramesh Kumar", entryTime: "07 Mar 2025, 09:10 AM", exitTime: "07 Mar 2025, 11:45 AM", duration: "2h 35m", status: "EXITED", entryMedia: { photos: { frontView: "vehicles/v1/entry/photo-1.jpg", backView: "vehicles/v1/entry/photo-2.jpg" }, video: null }, exitMedia: { photos: { frontView: "vehicles/v1/exit/photo-1.jpg" }, video: "vehicles/v1/exit/video.mp4" } },
+  { _id: "t1", tripId: "TRP-001", vehicleNumber: "MH04AB1234", vehicleType: "TRUCK", vendor: "Sharma Logistics", driver: "Ramesh Kumar", entryTime: "07 Mar 2025, 09:10 AM", exitTime: "07 Mar 2025, 11:45 AM", duration: "2h 35m", status: "EXITED", entryMedia: { photos: { frontView: "vehicles/v1/entry/photo-1.jpg" }, video: null }, exitMedia: { photos: { frontView: "vehicles/v1/exit/photo-1.jpg" }, video: "vehicles/v1/exit/video.mp4" } },
   { _id: "t2", tripId: "TRP-002", vehicleNumber: "GJ05CD5678", vehicleType: "TRUCK", vendor: "Patel Transport", driver: "Suresh Patel", entryTime: "07 Mar 2025, 10:00 AM", exitTime: "--", duration: "Ongoing", status: "INSIDE", entryMedia: { photos: {}, video: null }, exitMedia: { photos: {}, video: null } },
 ];
 
@@ -63,41 +62,25 @@ const STATUS_MAP = {
 function Badge({ status }) {
   const s = STATUS_MAP[status] || { label: status || "—", bg: "#f3f4f6", color: "#6b7280", dot: "#9ca3af", border: "#e5e7eb" };
   return (
-    <span style={{
-      display: "inline-flex", alignItems: "center", gap: 5,
-      background: s.bg, color: s.color,
-      padding: "4px 10px", borderRadius: 20,
-      fontSize: 11, fontWeight: 700, whiteSpace: "nowrap",
-      border: `1px solid ${s.border}`, letterSpacing: "0.03em"
-    }}>
-      <span style={{ width: 5, height: 5, borderRadius: "50%", background: s.dot, flexShrink: 0, boxShadow: `0 0 0 2px ${s.bg}` }} />
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 5, background: s.bg, color: s.color, padding: "4px 10px", borderRadius: 20, fontSize: 11, fontWeight: 700, whiteSpace: "nowrap", border: `1px solid ${s.border}` }}>
+      <span style={{ width: 5, height: 5, borderRadius: "50%", background: s.dot, flexShrink: 0 }} />
       {s.label}
     </span>
   );
 }
 
 // ─── STAT CARD ────────────────────────────────────────────────────────────────
-function StatCard({ Icon, label, value, iconBg, iconColor, trend }) {
+function StatCard({ Icon, label, value, iconBg, iconColor }) {
   return (
-    <div style={{
-      background: "#fff", borderRadius: 14, padding: "18px 16px",
-      boxShadow: "0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04)",
-      border: "1px solid #f0f0f0",
-      display: "flex", alignItems: "center", gap: 12,
-      position: "relative", overflow: "hidden",
-      transition: "transform .15s, box-shadow .15s",
-      width: "100%", boxSizing: "border-box"
-    }}
-    onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,.1)"; }}
-    onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04)"; }}
-    >
-      <div style={{ position: "absolute", top: 0, right: 0, width: 80, height: 80, borderRadius: "0 14px 0 80px", background: iconBg, opacity: 0.5 }} />
-      <div style={{ width: 46, height: 46, borderRadius: 12, background: iconBg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, position: "relative" }}>
-        <Icon size={20} color={iconColor} />
+    <div className="bg-white rounded-2xl p-4 border border-[#f0f0f0] flex items-center gap-3 relative overflow-hidden transition-all hover:-translate-y-px hover:shadow-md"
+      style={{ boxShadow: "0 1px 3px rgba(0,0,0,.06)" }}>
+      <div style={{ position: "absolute", top: 0, right: 0, width: 64, height: 64, borderRadius: "0 16px 0 64px", background: iconBg, opacity: 0.45 }} />
+      <div style={{ width: 44, height: 44, borderRadius: 12, background: iconBg, flexShrink: 0, position: "relative" }} className="flex items-center justify-center">
+        <Icon size={19} color={iconColor} />
       </div>
-      <div style={{ position: "relative" }}>
-        <p style={{ fontSize: 26, fontWeight: 800, color: "#0f172a", lineHeight: 1, letterSpacing: "-0.5px" }}>{value}</p>
-        <p style={{ fontSize: 11.5, color: "#94a3b8", marginTop: 3, fontWeight: 500 }}>{label}</p>
+      <div className="relative">
+        <p className="text-2xl font-extrabold text-slate-900 leading-none tracking-tight">{value}</p>
+        <p className="text-[11px] text-slate-400 mt-1 font-medium">{label}</p>
       </div>
     </div>
   );
@@ -133,30 +116,23 @@ function PhotoModal({ trip, onClose }) {
 
   const getMediaKeys = useCallback((t) => {
     const media = t === "entry" ? trip.entryMedia : trip.exitMedia;
-    const photoKeys = Object.entries(media?.photos || {})
-      .filter(([, v]) => isValidKey(v))
-      .map(([label, key]) => ({ label, key, type: "image" }));
-    const videoKey = isValidKey(media?.video)
-      ? [{ label: "Video", key: media.video, type: "video" }]
-      : [];
+    const photoKeys = Object.entries(media?.photos || {}).filter(([, v]) => isValidKey(v)).map(([label, key]) => ({ label, key, type: "image" }));
+    const videoKey = isValidKey(media?.video) ? [{ label: "Video", key: media.video, type: "video" }] : [];
     return [...photoKeys, ...videoKey];
   }, [trip]);
 
   useEffect(() => {
     const items = getMediaKeys(tab);
-    if (items.length === 0) return;
+    if (!items.length) return;
     const unfetched = items.filter(i => !urlMap[i.key]);
-    if (unfetched.length === 0) return;
+    if (!unfetched.length) return;
     setFetching(true);
-    Promise.all(unfetched.map(async (item) => {
-      const url = await getSignedUrl(item.key);
-      return { key: item.key, url };
-    })).then(results => {
-      const newMap = { ...urlMap };
-      results.forEach(r => { if (r.url) newMap[r.key] = r.url; });
-      setUrlMap(newMap);
-      setFetching(false);
-    });
+    Promise.all(unfetched.map(async (item) => ({ key: item.key, url: await getSignedUrl(item.key) })))
+      .then(results => {
+        const newMap = { ...urlMap };
+        results.forEach(r => { if (r.url) newMap[r.key] = r.url; });
+        setUrlMap(newMap); setFetching(false);
+      });
   }, [tab]);
 
   const items = getMediaKeys(tab);
@@ -164,95 +140,61 @@ function PhotoModal({ trip, onClose }) {
 
   return (
     <>
-      <style>{`
-        @keyframes modalIn { from { opacity:0; transform:scale(.96) translateY(8px) } to { opacity:1; transform:scale(1) translateY(0) } }
-        @keyframes backdropIn { from { opacity:0 } to { opacity:1 } }
-      `}</style>
-      <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,.6)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16, backdropFilter: "blur(6px)", animation: "backdropIn .2s ease" }}>
-        <div onClick={e => e.stopPropagation()} style={{ background: "#fff", borderRadius: 20, width: "100%", maxWidth: 680, maxHeight: "92vh", overflow: "hidden", display: "flex", flexDirection: "column", boxShadow: "0 32px 80px rgba(0,0,0,.25)", animation: "modalIn .25s ease" }}>
+      <style>{`@keyframes modalIn{from{opacity:0;transform:scale(.96) translateY(8px)}to{opacity:1;transform:scale(1) translateY(0)}}@keyframes bdIn{from{opacity:0}to{opacity:1}}`}</style>
+      <div onClick={onClose} className="fixed inset-0 z-[1000] flex items-center justify-center p-4" style={{ background: "rgba(15,23,42,.6)", backdropFilter: "blur(6px)", animation: "bdIn .2s ease" }}>
+        <div onClick={e => e.stopPropagation()} className="bg-white rounded-2xl w-full max-w-[680px] max-h-[92vh] overflow-hidden flex flex-col" style={{ boxShadow: "0 32px 80px rgba(0,0,0,.25)", animation: "modalIn .25s ease" }}>
 
-          {/* Modal Header */}
-          <div style={{ padding: "20px 22px 16px", borderBottom: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "center", background: "linear-gradient(135deg, #faf5ff 0%, #f0f9ff 100%)" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <div style={{ width: 40, height: 40, borderRadius: 10, background: "linear-gradient(135deg, #7c3aed, #a855f7)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 10px rgba(124,58,237,.3)" }}>
+          <div className="flex justify-between items-center px-5 py-4 border-b border-slate-100" style={{ background: "linear-gradient(135deg,#faf5ff,#f0f9ff)" }}>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,#7c3aed,#a855f7)", boxShadow: "0 4px 10px rgba(124,58,237,.3)" }}>
                 <ImageIcon size={17} color="#fff" />
               </div>
               <div>
-                <p style={{ fontSize: 15, fontWeight: 700, color: "#0f172a" }}>Trip Media</p>
-                <p style={{ fontSize: 11, color: "#94a3b8", fontFamily: "monospace", marginTop: 1 }}>{trip.vehicleNumber} • {trip.tripId}</p>
+                <p className="text-[15px] font-bold text-slate-900">Trip Media</p>
+                <p className="text-[11px] text-slate-400 font-mono mt-0.5">{trip.vehicleNumber} • {trip.tripId}</p>
               </div>
             </div>
-            <button onClick={onClose} style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid #e2e8f0", background: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#64748b", transition: "all .15s" }}
-              onMouseEnter={e => { e.currentTarget.style.background = "#f8fafc"; e.currentTarget.style.borderColor = "#cbd5e1"; }}
-              onMouseLeave={e => { e.currentTarget.style.background = "#fff"; e.currentTarget.style.borderColor = "#e2e8f0"; }}>
+            <button onClick={onClose} className="w-8 h-8 rounded-lg border border-slate-200 bg-white flex items-center justify-center text-slate-500 cursor-pointer">
               <X size={14} />
             </button>
           </div>
 
-          {/* Tabs */}
-          <div style={{ display: "flex", gap: 6, padding: "12px 22px", borderBottom: "1px solid #f1f5f9", background: "#fafafa" }}>
-            {[
-              { key: "entry", label: "Entry Media", Icon: Truck },
-              { key: "exit",  label: "Exit Media",  Icon: CheckCircle2 },
-            ].map(({ key, label, Icon: I }) => (
-              <button key={key} onClick={() => setTab(key)} style={{
-                padding: "7px 18px", borderRadius: 10, cursor: "pointer",
-                fontSize: 12.5, fontWeight: 600,
-                border: tab === key ? "none" : "1px solid #e2e8f0",
-                background: tab === key ? "linear-gradient(135deg, #7c3aed, #9333ea)" : "#fff",
-                color: tab === key ? "#fff" : "#64748b",
-                display: "flex", alignItems: "center", gap: 6,
-                transition: "all .15s",
-                boxShadow: tab === key ? "0 4px 10px rgba(124,58,237,.25)" : "none"
-              }}>
+          <div className="flex gap-1.5 px-5 py-3 border-b border-slate-100 bg-slate-50">
+            {[{ key: "entry", label: "Entry Media", Icon: Truck }, { key: "exit", label: "Exit Media", Icon: CheckCircle2 }].map(({ key, label, Icon: I }) => (
+              <button key={key} onClick={() => setTab(key)} className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-[12.5px] font-semibold cursor-pointer border transition-all"
+                style={{ background: tab === key ? "linear-gradient(135deg,#7c3aed,#9333ea)" : "#fff", color: tab === key ? "#fff" : "#64748b", border: tab === key ? "none" : "1px solid #e2e8f0", boxShadow: tab === key ? "0 4px 10px rgba(124,58,237,.25)" : "none" }}>
                 <I size={12} /> {label}
               </button>
             ))}
           </div>
 
-          {/* Media Grid */}
-          <div style={{ padding: 18, overflowY: "auto", flex: 1 }}>
+          <div className="p-4 overflow-y-auto flex-1">
             {fetching ? (
-              <div style={{ textAlign: "center", padding: 56, color: "#94a3b8" }}>
+              <div className="py-14 text-center text-slate-400">
                 <Loader2 size={28} color="#7c3aed" style={{ animation: "spin .7s linear infinite", margin: "0 auto 12px", display: "block" }} />
-                <p style={{ fontSize: 13 }}>Loading media…</p>
+                <p className="text-[13px]">Loading media…</p>
               </div>
             ) : items.length === 0 ? (
-              <div style={{ textAlign: "center", padding: 56, color: "#94a3b8" }}>
-                <div style={{ width: 64, height: 64, borderRadius: "50%", background: "#f1f5f9", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px" }}>
-                  <ImageIcon size={26} color="#cbd5e1" />
-                </div>
-                <p style={{ fontSize: 13, fontWeight: 600, color: "#64748b" }}>No media available</p>
-                <p style={{ fontSize: 11, color: "#94a3b8", marginTop: 4 }}>No {tab} photos or videos found</p>
+              <div className="py-14 text-center">
+                <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-3"><ImageIcon size={26} color="#cbd5e1" /></div>
+                <p className="text-[13px] font-semibold text-slate-500">No media available</p>
               </div>
             ) : (
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(190px, 1fr))", gap: 12 }}>
+              <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fill,minmax(190px,1fr))" }}>
                 {items.map(({ label, key, type }) => {
                   const url = urlMap[key];
-                  const displayLabel = LABELS[label] || label;
                   return (
                     <div key={key} onClick={() => url && setLightbox({ src: url, type })}
-                      style={{ borderRadius: 12, overflow: "hidden", border: "1px solid #e2e8f0", background: "#f8fafc", aspectRatio: type === "video" ? "16/9" : "4/3", position: "relative", cursor: url ? "pointer" : "default", transition: "transform .15s, box-shadow .15s" }}
-                      onMouseEnter={e => { if (url) { e.currentTarget.style.transform = "scale(1.02)"; e.currentTarget.style.boxShadow = "0 8px 20px rgba(0,0,0,.12)"; }}}
-                      onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = ""; }}>
-                      <span style={{ position: "absolute", top: 8, left: 8, background: "rgba(0,0,0,.65)", backdropFilter: "blur(4px)", color: "#fff", padding: "3px 8px", borderRadius: 6, fontSize: 10, fontWeight: 600, zIndex: 2, display: "flex", alignItems: "center", gap: 4 }}>
-                        {type === "video" && <Play size={8} fill="#fff" />}
-                        {displayLabel}
+                      className="rounded-xl overflow-hidden border border-slate-200 bg-slate-50 relative transition-all hover:scale-[1.02] hover:shadow-lg"
+                      style={{ aspectRatio: type === "video" ? "16/9" : "4/3", cursor: url ? "pointer" : "default" }}>
+                      <span className="absolute top-2 left-2 z-10 text-white text-[10px] font-semibold px-2 py-0.5 rounded-md flex items-center gap-1" style={{ background: "rgba(0,0,0,.65)", backdropFilter: "blur(4px)" }}>
+                        {type === "video" && <Play size={8} fill="#fff" />}{LABELS[label] || label}
                       </span>
                       {url ? (
-                        type === "video"
-                          ? <video src={url} style={{ width: "100%", height: "100%", objectFit: "cover" }} muted />
-                          : <img src={url} alt={label} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        type === "video" ? <video src={url} className="w-full h-full object-cover" muted /> : <img src={url} alt={label} className="w-full h-full object-cover" />
                       ) : (
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "#cbd5e1" }}>
+                        <div className="flex items-center justify-center h-full text-slate-300">
                           <Loader2 size={20} style={{ animation: "spin .7s linear infinite" }} />
-                        </div>
-                      )}
-                      {url && (
-                        <div style={{ position: "absolute", inset: 0, background: "rgba(124,58,237,.35)", display: "flex", alignItems: "center", justifyContent: "center", opacity: 0, transition: "opacity .15s" }}
-                          onMouseEnter={e => e.currentTarget.style.opacity = 1}
-                          onMouseLeave={e => e.currentTarget.style.opacity = 0}>
-                          <span style={{ color: "#fff", fontSize: 12, fontWeight: 700, background: "rgba(0,0,0,.3)", padding: "6px 14px", borderRadius: 20, backdropFilter: "blur(4px)" }}>{type === "video" ? "▶ Play" : "⊕ View"}</span>
                         </div>
                       )}
                     </div>
@@ -264,16 +206,13 @@ function PhotoModal({ trip, onClose }) {
         </div>
       </div>
 
-      {/* Lightbox */}
       {lightbox && (
-        <div onClick={() => setLightbox(null)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.96)", zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div onClick={() => setLightbox(null)} className="fixed inset-0 z-[2000] flex items-center justify-center" style={{ background: "rgba(0,0,0,.96)" }}>
           {lightbox.type === "video"
-            ? <video src={lightbox.src} controls autoPlay style={{ maxWidth: "90vw", maxHeight: "90vh", borderRadius: 10 }} onClick={e => e.stopPropagation()} />
-            : <img src={lightbox.src} alt="" style={{ maxWidth: "90vw", maxHeight: "90vh", objectFit: "contain", borderRadius: 10 }} />
+            ? <video src={lightbox.src} controls autoPlay className="max-w-[90vw] max-h-[90vh] rounded-xl" onClick={e => e.stopPropagation()} />
+            : <img src={lightbox.src} alt="" className="max-w-[90vw] max-h-[90vh] object-contain rounded-xl" />
           }
-          <button onClick={() => setLightbox(null)} style={{ position: "absolute", top: 18, right: 18, background: "rgba(255,255,255,.1)", border: "1px solid rgba(255,255,255,.15)", backdropFilter: "blur(8px)", color: "#fff", width: 38, height: 38, borderRadius: "50%", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "background .15s" }}
-            onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,.2)"}
-            onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,.1)"}>
+          <button onClick={() => setLightbox(null)} className="absolute top-4 right-4 w-9 h-9 rounded-full flex items-center justify-center text-white cursor-pointer border" style={{ background: "rgba(255,255,255,.1)", borderColor: "rgba(255,255,255,.15)" }}>
             <X size={16} />
           </button>
         </div>
@@ -295,31 +234,21 @@ export default function VendorTripAnalytics() {
   const [selectedTrip, setSelectedTrip]     = useState(null);
   const [sidebarOpen, setSidebarOpen]       = useState(false);
 
-  const token = () =>
-    localStorage.getItem("token") ||
-    localStorage.getItem("accessToken") ||
-    sessionStorage.getItem("token") || "";
-
+  const token = () => localStorage.getItem("token") || localStorage.getItem("accessToken") || sessionStorage.getItem("token") || "";
   const getUser = () => {
     try { return JSON.parse(localStorage.getItem("user") || localStorage.getItem("userData") || sessionStorage.getItem("user") || "{}"); }
     catch { return {}; }
   };
 
-  // Fetch vendors
   useEffect(() => {
     if (USE_MOCK) { setVendors(MOCK_VENDORS); return; }
     const user = getUser();
     const params = new URLSearchParams();
     if (user?.clientId) params.set("clientId", user.clientId);
-    fetch(`${API_URL}/api/project/vendors?${params}`, {
-      headers: { Authorization: `Bearer ${token()}` }
-    })
-      .then(r => r.json())
-      .then(d => { console.log("Vendor API response:", d); setVendors(d); })
-      .catch(err => console.log(err));
+    fetch(`${API_URL}/api/project/vendors?${params}`, { headers: { Authorization: `Bearer ${token()}` } })
+      .then(r => r.json()).then(d => setVendors(d)).catch(console.log);
   }, []);
 
-  // Fetch trips
   const fetchTrips = useCallback(async () => {
     if (USE_MOCK) { setLoading(true); setTimeout(() => { setTrips(MOCK_TRIPS); setLoading(false); }, 400); return; }
     setLoading(true); setError(null);
@@ -334,21 +263,16 @@ export default function VendorTripAnalytics() {
     if (statusFilter   !== "all") params.set("status",       statusFilter);
     if (search.trim())            params.set("vehicleNumber",search.trim());
     try {
-      const res = await fetch(`${API_URL}/api/trips/history?${params}`, {
-        headers: { Authorization: `Bearer ${token()}` },
-      });
+      const res = await fetch(`${API_URL}/api/trips/history?${params}`, { headers: { Authorization: `Bearer ${token()}` } });
       if (!res.ok) { setError(`API ${res.status}`); setTrips([]); return; }
       const data = await res.json();
       setTrips(data.data || data.trips || []);
-    } catch (e) {
-      setError(`Network error: ${e.message}`);
-      setTrips([]);
-    } finally { setLoading(false); }
+    } catch (e) { setError(`Network error: ${e.message}`); setTrips([]); }
+    finally { setLoading(false); }
   }, [selectedVendor, period, statusFilter, search]);
 
   useEffect(() => { fetchTrips(); }, [fetchTrips]);
 
-  // Stats
   const total  = trips.length;
   const inside = trips.filter(t => ["active","INSIDE"].includes(t.status)).length;
   const exited = trips.filter(t => ["completed","EXITED"].includes(t.status)).length;
@@ -361,86 +285,66 @@ export default function VendorTripAnalytics() {
   const hasValidMedia = (trip) =>
     Object.values(trip.entryMedia?.photos || {}).some(isValidKey) ||
     Object.values(trip.exitMedia?.photos  || {}).some(isValidKey) ||
-    isValidKey(trip.entryMedia?.video) ||
-    isValidKey(trip.exitMedia?.video);
+    isValidKey(trip.entryMedia?.video) || isValidKey(trip.exitMedia?.video);
 
-  const selectStyle = {
+  const selStyle = {
     background: "#fff", border: "1px solid #e2e8f0", borderRadius: 9,
     padding: "9px 32px 9px 12px", fontSize: 13, color: "#374151",
     outline: "none", cursor: "pointer", fontFamily: "inherit",
-    appearance: "none", transition: "border-color .15s, box-shadow .15s",
-    boxShadow: "0 1px 2px rgba(0,0,0,.04)"
+    appearance: "none", boxShadow: "0 1px 2px rgba(0,0,0,.04)",
+    width: "100%", boxSizing: "border-box"
   };
 
   return (
     <>
       <style>{`
-        @keyframes spin { to { transform: rotate(360deg); } }
-        @keyframes fadeUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+        @keyframes spin   { to { transform: rotate(360deg); } }
+        @keyframes fadeUp { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
 
-        .trip-row { animation: fadeUp .3s ease both; }
+        .trip-row          { animation: fadeUp .25s ease both; }
         .trip-row:hover td { background: #faf5ff !important; }
+        .media-btn:hover   { background: #f5f3ff !important; border-color: #c4b5fd !important; color: #7c3aed !important; }
+        select:focus,input:focus { border-color: #a78bfa !important; box-shadow: 0 0 0 3px rgba(124,58,237,.1) !important; outline: none; }
 
-        .media-btn:hover { background: #f5f3ff !important; border-color: #c4b5fd !important; color: #7c3aed !important; transform: scale(1.03); }
+        /* Table / card toggle */
+        .desktop-table { display: table !important; }
+        .mobile-cards  { display: none   !important; }
+        .trip-table    { min-width: 780px; width: 100%; border-collapse: collapse; }
+        .table-scroll  { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 
-        select:focus { border-color: #a78bfa !important; box-shadow: 0 0 0 3px rgba(124,58,237,.1) !important; }
-        input:focus  { border-color: #a78bfa !important; box-shadow: 0 0 0 3px rgba(124,58,237,.1) !important; }
-
-        /* ── RESPONSIVE ── */
-        @media (max-width: 1100px) {
-          .main-grid { grid-template-columns: 1fr !important; }
-          .sidebar-widgets { display: grid !important; grid-template-columns: 1fr 1fr !important; }
+        @media (max-width: 768px) {
+          .desktop-table     { display: none  !important; }
+          .mobile-cards      { display: flex  !important; flex-direction: column; gap: 10px; padding: 10px; }
+          .stat-grid         { grid-template-columns: repeat(2,1fr) !important; }
+          .filter-grid       { grid-template-columns: repeat(2,1fr) !important; }
+          .content-grid      { grid-template-columns: 1fr !important; }
         }
 
-        @media (max-width: 900px) {
-          .stat-cards  { grid-template-columns: repeat(2, 1fr) !important; }
-          .filters-row { grid-template-columns: repeat(2, 1fr) !important; }
-          .page-body   { padding: 16px !important; }
+        @media (max-width: 480px) {
+          .filter-grid { grid-template-columns: 1fr !important; }
         }
-
-        @media (max-width: 640px) {
-          .stat-cards  { grid-template-columns: repeat(2, 1fr) !important; }
-          .filters-row { grid-template-columns: 1fr !important; }
-          .sidebar-widgets { grid-template-columns: 1fr !important; }
-          .page-body { padding: 10px !important; }
-        }
-
-        /* Hide overflow-x on table wrapper but allow scroll */
-        .table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-        .table-wrapper table { min-width: 780px; width: 100%; border-collapse: collapse; }
       `}</style>
 
-      <div style={{ display: "flex", height: "100vh", overflow: "hidden", background: "#f6f7fb", fontFamily: "'Inter','Segoe UI',sans-serif" }}>
+      {/* ROOT — fixed height, NO outer scroll */}
+      <div className="flex h-screen overflow-hidden bg-[#f6f7fb]" style={{ fontFamily: "'Inter','Segoe UI',sans-serif" }}>
 
-        {/* ── SIDEBAR ── */}
         <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-        {/* ── RIGHT COLUMN ── */}
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, overflow: "hidden" }}>
+        {/* Right panel — fills space, inner body scrolls */}
+        <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
 
           <Header title="VendorTrip Analytics" onMenuClick={() => setSidebarOpen(true)} />
 
-          {/* ── PAGE BODY ── */}
-          <div className="page-body" style={{ flex: 1, overflowY: "auto", overflowX: "hidden", padding: "20px 20px" }}>
-            <div style={{ maxWidth: 1400, margin: "0 auto", width: "100%", boxSizing: "border-box" }}>
+          {/* ✅ Only this div scrolls */}
+          <div className="flex-1 md:-mr-1 overflow-y-auto mx-auto flex items-start justify-end overflow-x-hidden px-4 py-5 md:px-5 w-full md:w-[80%]">
+            <div className="mx-auto w-full">
 
-              {/* Page heading */}
-              <div className="page-heading" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 22, flexWrap: "wrap", gap: 10 }}>
-                <div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
-                    <div style={{ width: 32, height: 32, borderRadius: 9, background: "linear-gradient(135deg, #7c3aed, #a855f7)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 3px 8px rgba(124,58,237,.25)" }}>
-                      <BarChart3 size={16} color="#fff" />
-                    </div>
-                    <h1 style={{ fontSize: 19, fontWeight: 800, color: "#0f172a", letterSpacing: "-0.3px" }}>Vendor Trip Analytics</h1>
-                  </div>
-                  <p style={{ fontSize: 12, color: "#94a3b8", marginLeft: 42, fontWeight: 500 }}>All vendor trip records with entry & exit media</p>
-                </div>
-                <button
-                  onClick={fetchTrips}
-                  style={{ background: "linear-gradient(135deg, #7c3aed, #9333ea)", color: "#fff", border: "none", borderRadius: 10, padding: "9px 18px", fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 7, boxShadow: "0 4px 12px rgba(124,58,237,.3)", transition: "transform .15s, box-shadow .15s" }}
-                  onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.boxShadow = "0 6px 18px rgba(124,58,237,.4)"; }}
-                  onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = "0 4px 12px rgba(124,58,237,.3)"; }}
-                >
+              {/* Heading row */}
+              <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
+                <div />
+                <button onClick={fetchTrips}
+                  className="flex items-center gap-2 text-white text-[13px] font-semibold px-4 py-2 rounded-xl cursor-pointer transition-all hover:-translate-y-px border-0"
+                  style={{ background: "linear-gradient(135deg,#7c3aed,#9333ea)", boxShadow: "0 4px 12px rgba(124,58,237,.3)" }}>
                   <RefreshCw size={13} style={loading ? { animation: "spin .7s linear infinite" } : {}} />
                   Refresh
                 </button>
@@ -448,14 +352,13 @@ export default function VendorTripAnalytics() {
 
               {/* Error */}
               {error && (
-                <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 10, padding: "11px 16px", marginBottom: 18, display: "flex", alignItems: "center", gap: 9 }}>
-                  <AlertTriangle size={15} color="#dc2626" />
-                  <span style={{ fontSize: 13, color: "#dc2626", fontWeight: 500 }}>{error}</span>
+                <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-600 text-[13px] font-medium rounded-xl px-4 py-3 mb-4">
+                  <AlertTriangle size={15} /> {error}
                 </div>
               )}
 
               {/* Stat Cards */}
-              <div className="stat-cards" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 18, width: "100%" }}>
+              <div className="stat-grid grid grid-cols-4 gap-3 mb-4">
                 <StatCard Icon={Activity}     label="Total Trips"  value={total}  iconBg="#f5f3ff" iconColor="#7c3aed" />
                 <StatCard Icon={TrendingUp}   label="Active"       value={inside} iconBg="#ecfdf5" iconColor="#059669" />
                 <StatCard Icon={CheckCircle2} label="Completed"    value={exited} iconBg="#eff6ff" iconColor="#2563eb" />
@@ -463,28 +366,28 @@ export default function VendorTripAnalytics() {
               </div>
 
               {/* Filters */}
-              <div style={{ background: "#fff", borderRadius: 14, padding: "14px 16px", marginBottom: 18, boxShadow: "0 1px 3px rgba(0,0,0,.05)", border: "1px solid #f0f0f0", width: "100%", boxSizing: "border-box" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 10 }}>
+              <div className="bg-white rounded-2xl p-4 mb-4 border border-[#f0f0f0]" style={{ boxShadow: "0 1px 3px rgba(0,0,0,.05)" }}>
+                <div className="flex items-center gap-2 mb-3">
                   <Filter size={12} color="#7c3aed" />
-                  <p style={{ fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: ".1em" }}>Filters</p>
+                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Filters</span>
                 </div>
-                <div className="filters-row" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, width: "100%", boxSizing: "border-box" }}>
+                <div className="filter-grid grid grid-cols-4 gap-3">
 
                   <div>
-                    <p style={{ fontSize: 11, color: "#64748b", marginBottom: 5, display: "flex", alignItems: "center", gap: 4, fontWeight: 600 }}><Users size={10} color="#94a3b8" /> Vendor</p>
-                    <div style={{ position: "relative" }}>
-                      <select value={selectedVendor} onChange={e => setSelectedVendor(e.target.value)} style={{ ...selectStyle, width: "100%", boxSizing: "border-box" }}>
+                    <p className="text-[11px] text-slate-400 font-semibold mb-1.5 flex items-center gap-1"><Users size={10} /> Vendor</p>
+                    <div className="relative">
+                      <select value={selectedVendor} onChange={e => setSelectedVendor(e.target.value)} style={selStyle}>
                         <option value="all">All Vendors</option>
                         {vendors.map(v => <option key={v._id} value={v._id}>{v.name || v.companyName}</option>)}
                       </select>
-                      <ChevronDown size={13} style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", color: "#9ca3af", pointerEvents: "none" }} />
+                      <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                     </div>
                   </div>
 
                   <div>
-                    <p style={{ fontSize: 11, color: "#64748b", marginBottom: 5, display: "flex", alignItems: "center", gap: 4, fontWeight: 600 }}><Calendar size={10} color="#94a3b8" /> Period</p>
-                    <div style={{ position: "relative" }}>
-                      <select value={period} onChange={e => setPeriod(e.target.value)} style={{ ...selectStyle, width: "100%", boxSizing: "border-box" }}>
+                    <p className="text-[11px] text-slate-400 font-semibold mb-1.5 flex items-center gap-1"><Calendar size={10} /> Period</p>
+                    <div className="relative">
+                      <select value={period} onChange={e => setPeriod(e.target.value)} style={selStyle}>
                         <option value="today">Today</option>
                         <option value="last7days">Last 7 Days</option>
                         <option value="last30days">Last 30 Days</option>
@@ -492,93 +395,90 @@ export default function VendorTripAnalytics() {
                         <option value="last120days">Last 120 Days</option>
                         <option value="alltime">All Time</option>
                       </select>
-                      <ChevronDown size={13} style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", color: "#9ca3af", pointerEvents: "none" }} />
+                      <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                     </div>
                   </div>
 
                   <div>
-                    <p style={{ fontSize: 11, color: "#64748b", marginBottom: 5, display: "flex", alignItems: "center", gap: 4, fontWeight: 600 }}><Clock size={10} color="#94a3b8" /> Status</p>
-                    <div style={{ position: "relative" }}>
-                      <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={{ ...selectStyle, width: "100%", boxSizing: "border-box" }}>
+                    <p className="text-[11px] text-slate-400 font-semibold mb-1.5 flex items-center gap-1"><Clock size={10} /> Status</p>
+                    <div className="relative">
+                      <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={selStyle}>
                         <option value="all">All Status</option>
                         <option value="INSIDE">Active</option>
                         <option value="EXITED">Completed</option>
                         <option value="DENIED">Denied</option>
                       </select>
-                      <ChevronDown size={13} style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", color: "#9ca3af", pointerEvents: "none" }} />
+                      <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                     </div>
                   </div>
 
                   <div>
-                    <p style={{ fontSize: 11, color: "#64748b", marginBottom: 5, display: "flex", alignItems: "center", gap: 4, fontWeight: 600 }}><Search size={10} color="#94a3b8" /> Vehicle Number</p>
-                    <div style={{ position: "relative" }}>
-                      <Search size={13} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }} />
-                      <input type="text" placeholder="e.g. MH04AB1234" value={search} onChange={e => setSearch(e.target.value)} style={{ ...selectStyle, width: "100%", boxSizing: "border-box", paddingLeft: 30 }} />
+                    <p className="text-[11px] text-slate-400 font-semibold mb-1.5 flex items-center gap-1"><Search size={10} /> Vehicle Number</p>
+                    <div className="relative">
+                      <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <input type="text" placeholder="e.g. MH04AB1234" value={search} onChange={e => setSearch(e.target.value)} style={{ ...selStyle, paddingLeft: 30 }} />
                     </div>
                   </div>
 
                 </div>
               </div>
 
-              {/* Main grid */}
-              <div className="main-grid" style={{ display: "grid", gridTemplateColumns: topVendors.length ? "1fr 290px" : "1fr", gap: 18, alignItems: "start" }}>
+              {/* Content grid */}
+              <div className="content-grid grid gap-4" style={{ gridTemplateColumns: topVendors.length ? "1fr 280px" : "1fr", alignItems: "start" }}>
 
-                {/* TABLE */}
-                <div style={{ background: "#fff", borderRadius: 14, boxShadow: "0 1px 4px rgba(0,0,0,.06)", border: "1px solid #f0f0f0", overflow: "hidden" }}>
-                  <div style={{ padding: "13px 18px", borderBottom: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#fafbff" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                {/* TABLE CARD */}
+                <div className="bg-white rounded-2xl border border-[#f0f0f0] overflow-hidden" style={{ boxShadow: "0 1px 4px rgba(0,0,0,.06)" }}>
+                  <div className="flex items-center justify-between px-4 py-3 border-b border-slate-50 bg-[#fafbff]">
+                    <div className="flex items-center gap-2">
                       <Truck size={14} color="#7c3aed" />
-                      <p style={{ fontSize: 13, fontWeight: 700, color: "#0f172a" }}>Trip Records</p>
+                      <span className="text-[13px] font-bold text-slate-900">Trip Records</span>
                     </div>
-                    <span style={{ fontSize: 11, color: "#94a3b8", fontFamily: "monospace", background: "#f1f5f9", padding: "3px 10px", borderRadius: 20, fontWeight: 600 }}>{trips.length} results</span>
+                    <span className="text-[11px] text-slate-400 font-semibold font-mono bg-slate-100 px-3 py-0.5 rounded-full">{trips.length} results</span>
                   </div>
-                  <div className="table-wrapper">
+
+                  <div className="table-scroll">
+
                     {/* ── DESKTOP TABLE ── */}
-                    <table className="desktop-table">
+                    <table className="desktop-table trip-table">
                       <thead>
-                        <tr style={{ background: "#f8fafc" }}>
+                        <tr className="bg-slate-50">
                           {["Trip ID","Vehicle","Vendor / Driver","Entry","Exit","Duration","Status","Media"].map(h => (
-                            <th key={h} style={{ padding: "10px 16px", fontSize: 10.5, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: ".08em", whiteSpace: "nowrap", borderBottom: "1px solid #f1f5f9", textAlign: "left" }}>{h}</th>
+                            <th key={h} className="px-4 py-2.5 text-[10.5px] font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap border-b border-slate-100 text-left">{h}</th>
                           ))}
                         </tr>
                       </thead>
                       <tbody>
                         {loading ? (
-                          <tr><td colSpan={8} style={{ padding: 60, textAlign: "center", color: "#94a3b8" }}>
+                          <tr><td colSpan={8} className="py-16 text-center text-slate-400">
                             <Loader2 size={26} color="#7c3aed" style={{ animation: "spin .7s linear infinite", margin: "0 auto 10px", display: "block" }} />
-                            <p style={{ fontSize: 13 }}>Loading trips…</p>
+                            <p className="text-[13px]">Loading trips…</p>
                           </td></tr>
                         ) : trips.length === 0 ? (
-                          <tr><td colSpan={8} style={{ padding: 60, textAlign: "center" }}>
-                            <div style={{ width: 60, height: 60, borderRadius: "50%", background: "#f1f5f9", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px" }}>
-                              <Truck size={26} color="#cbd5e1" />
-                            </div>
-                            <p style={{ color: "#64748b", fontSize: 14, fontWeight: 600 }}>No trips found</p>
-                            <p style={{ color: "#94a3b8", fontSize: 12, marginTop: 4 }}>Try changing the period to "All Time"</p>
+                          <tr><td colSpan={8} className="py-16 text-center">
+                            <div className="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-3"><Truck size={24} color="#cbd5e1" /></div>
+                            <p className="text-slate-500 font-semibold">No trips found</p>
+                            <p className="text-slate-400 text-[12px] mt-1">Try changing the period to "All Time"</p>
                           </td></tr>
                         ) : trips.map((trip, i) => (
-                          <tr key={trip._id} className="trip-row" style={{ animationDelay: `${Math.min(i,15)*.03}s`, cursor: "default" }}>
-                            <td style={{ padding: "12px 16px", fontFamily: "monospace", fontSize: 11.5, color: "#7c3aed", fontWeight: 700, borderBottom: "1px solid #f8fafc", whiteSpace: "nowrap" }}>{trip.tripId || "—"}</td>
-                            <td style={{ padding: "12px 16px", borderBottom: "1px solid #f8fafc" }}>
-                              <div style={{ fontWeight: 700, fontSize: 12.5, color: "#0f172a" }}>{trip.vehicleNumber}</div>
-                              <div style={{ fontSize: 10.5, color: "#94a3b8", marginTop: 2 }}>{trip.vehicleType}</div>
+                          <tr key={trip._id} className="trip-row" style={{ animationDelay: `${Math.min(i,15)*.03}s` }}>
+                            <td className="px-4 py-3 font-mono text-[11.5px] text-violet-600 font-bold whitespace-nowrap border-b border-slate-50">{trip.tripId || "—"}</td>
+                            <td className="px-4 py-3 border-b border-slate-50">
+                              <div className="font-bold text-[12.5px] text-slate-900">{trip.vehicleNumber}</div>
+                              <div className="text-[10.5px] text-slate-400 mt-0.5">{trip.vehicleType}</div>
                             </td>
-                            <td style={{ padding: "12px 16px", borderBottom: "1px solid #f8fafc" }}>
-                              <div style={{ fontSize: 12.5, color: "#1e293b", fontWeight: 600 }}>{trip.vendor}</div>
-                              <div style={{ fontSize: 10.5, color: "#94a3b8", marginTop: 2 }}>{trip.driver && trip.driver !== "N/A" ? trip.driver : "—"}</div>
+                            <td className="px-4 py-3 border-b border-slate-50">
+                              <div className="text-[12.5px] text-slate-700 font-semibold">{trip.vendor}</div>
+                              <div className="text-[10.5px] text-slate-400 mt-0.5">{trip.driver && trip.driver !== "N/A" ? trip.driver : "—"}</div>
                             </td>
-                            <td style={{ padding: "12px 16px", borderBottom: "1px solid #f8fafc", fontSize: 11, color: "#64748b", fontFamily: "monospace", whiteSpace: "nowrap" }}>{trip.entryTime || "—"}</td>
-                            <td style={{ padding: "12px 16px", borderBottom: "1px solid #f8fafc", fontSize: 11, color: "#64748b", fontFamily: "monospace", whiteSpace: "nowrap" }}>{trip.exitTime && trip.exitTime !== "--" ? trip.exitTime : "—"}</td>
-                            <td style={{ padding: "12px 16px", borderBottom: "1px solid #f8fafc", fontSize: 11.5, fontFamily: "monospace", color: "#374151", fontWeight: 600 }}>{trip.duration || "—"}</td>
-                            <td style={{ padding: "12px 16px", borderBottom: "1px solid #f8fafc" }}><Badge status={trip.status} /></td>
-                            <td style={{ padding: "12px 16px", borderBottom: "1px solid #f8fafc" }}>
-                              <button
-                                className="media-btn"
+                            <td className="px-4 py-3 border-b border-slate-50 text-[11px] text-slate-500 font-mono whitespace-nowrap">{trip.entryTime || "—"}</td>
+                            <td className="px-4 py-3 border-b border-slate-50 text-[11px] text-slate-500 font-mono whitespace-nowrap">{trip.exitTime && trip.exitTime !== "--" ? trip.exitTime : "—"}</td>
+                            <td className="px-4 py-3 border-b border-slate-50 text-[11.5px] font-mono text-slate-700 font-semibold">{trip.duration || "—"}</td>
+                            <td className="px-4 py-3 border-b border-slate-50"><Badge status={trip.status} /></td>
+                            <td className="px-4 py-3 border-b border-slate-50">
+                              <button className="media-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold border transition-all"
                                 onClick={() => hasValidMedia(trip) && setSelectedTrip(trip)}
-                                title={hasValidMedia(trip) ? "View photos / video" : "No media"}
-                                style={{ background: "#faf5ff", border: "1px solid #e9d5ff", borderRadius: 8, padding: "6px 12px", fontSize: 11, fontWeight: 600, cursor: hasValidMedia(trip) ? "pointer" : "default", color: hasValidMedia(trip) ? "#7c3aed" : "#d1d5db", display: "inline-flex", alignItems: "center", gap: 5, transition: "all .15s", opacity: hasValidMedia(trip) ? 1 : .4, whiteSpace: "nowrap" }}>
-                                <ImageIcon size={11} />
-                                Media
+                                style={{ background: "#faf5ff", borderColor: "#e9d5ff", color: hasValidMedia(trip) ? "#7c3aed" : "#d1d5db", cursor: hasValidMedia(trip) ? "pointer" : "default", opacity: hasValidMedia(trip) ? 1 : .4 }}>
+                                <ImageIcon size={11} /> Media
                               </button>
                             </td>
                           </tr>
@@ -587,77 +487,68 @@ export default function VendorTripAnalytics() {
                     </table>
 
                     {/* ── MOBILE CARDS ── */}
-                    <div className="mobile-cards" style={{ display: "none", padding: "8px 12px", flexDirection: "column", gap: 10 }}>
+                    <div className="mobile-cards">
                       {loading ? (
-                        <div style={{ padding: 48, textAlign: "center", color: "#94a3b8" }}>
+                        <div className="py-12 text-center text-slate-400">
                           <Loader2 size={26} color="#7c3aed" style={{ animation: "spin .7s linear infinite", margin: "0 auto 10px", display: "block" }} />
-                          <p style={{ fontSize: 13 }}>Loading trips…</p>
+                          <p className="text-[13px]">Loading trips…</p>
                         </div>
                       ) : trips.length === 0 ? (
-                        <div style={{ padding: 48, textAlign: "center" }}>
-                          <div style={{ width: 56, height: 56, borderRadius: "50%", background: "#f1f5f9", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px" }}>
-                            <Truck size={24} color="#cbd5e1" />
-                          </div>
-                          <p style={{ color: "#64748b", fontSize: 14, fontWeight: 600 }}>No trips found</p>
-                          <p style={{ color: "#94a3b8", fontSize: 12, marginTop: 4 }}>Try changing the period to "All Time"</p>
+                        <div className="py-12 text-center">
+                          <div className="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-3"><Truck size={24} color="#cbd5e1" /></div>
+                          <p className="text-slate-500 font-semibold">No trips found</p>
                         </div>
                       ) : trips.map((trip, i) => (
-                        <div key={trip._id} className="trip-row" style={{
-                          background: "#fff", borderRadius: 14, border: "1px solid #f0f0f0",
-                          boxShadow: "0 1px 4px rgba(0,0,0,.06)", overflow: "hidden",
-                          animationDelay: `${Math.min(i,15)*.03}s`
-                        }}>
+                        <div key={trip._id} className="trip-row bg-white rounded-2xl border border-slate-100 overflow-hidden"
+                          style={{ boxShadow: "0 2px 8px rgba(0,0,0,.07)", animationDelay: `${Math.min(i,15)*.03}s` }}>
+
                           {/* Card Header */}
-                          <div style={{ padding: "12px 14px 10px", background: "linear-gradient(135deg,#faf5ff,#eff6ff)", borderBottom: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                          <div className="flex justify-between items-start px-4 py-3 border-b border-slate-100" style={{ background: "linear-gradient(135deg,#faf5ff,#eff6ff)" }}>
                             <div>
-                              <span style={{ fontFamily: "monospace", fontSize: 11, color: "#7c3aed", fontWeight: 700, letterSpacing: "0.03em" }}>{trip.tripId || "—"}</span>
-                              <div style={{ fontWeight: 800, fontSize: 15, color: "#0f172a", marginTop: 2 }}>{trip.vehicleNumber}</div>
-                              <div style={{ fontSize: 10.5, color: "#94a3b8", marginTop: 1, textTransform: "uppercase", letterSpacing: "0.05em" }}>{trip.vehicleType}</div>
+                              <span className="font-mono text-[11px] text-violet-600 font-bold">{trip.tripId || "—"}</span>
+                              <div className="font-extrabold text-[16px] text-slate-900 mt-0.5 tracking-tight">{trip.vehicleNumber}</div>
+                              <div className="text-[10.5px] text-slate-400 uppercase tracking-wide mt-0.5">{trip.vehicleType}</div>
                             </div>
                             <Badge status={trip.status} />
                           </div>
 
                           {/* Card Body */}
-                          <div style={{ padding: "10px 14px" }}>
-                            {/* Vendor + Driver row */}
-                            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10, padding: "8px 10px", background: "#f8fafc", borderRadius: 9 }}>
-                              <div style={{ width: 28, height: 28, borderRadius: 8, background: "#f5f3ff", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                                <Users size={12} color="#7c3aed" />
+                          <div className="p-3 space-y-2.5">
+                            {/* Vendor row */}
+                            <div className="flex items-center gap-2.5 px-3 py-2 bg-slate-50 rounded-xl">
+                              <div className="w-8 h-8 rounded-lg bg-violet-50 flex items-center justify-center flex-shrink-0">
+                                <Users size={13} color="#7c3aed" />
                               </div>
                               <div>
-                                <div style={{ fontSize: 12, fontWeight: 700, color: "#1e293b" }}>{trip.vendor || "—"}</div>
-                                <div style={{ fontSize: 10.5, color: "#94a3b8" }}>{trip.driver && trip.driver !== "N/A" ? trip.driver : "No driver"}</div>
+                                <div className="text-[12.5px] font-bold text-slate-800">{trip.vendor || "—"}</div>
+                                <div className="text-[10.5px] text-slate-400">{trip.driver && trip.driver !== "N/A" ? trip.driver : "No driver"}</div>
                               </div>
                             </div>
 
-                            {/* Time + Duration grid */}
-                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 10 }}>
-                              <div style={{ background: "#f8fafc", borderRadius: 8, padding: "7px 8px" }}>
-                                <div style={{ fontSize: 9.5, color: "#94a3b8", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 3 }}>Entry</div>
-                                <div style={{ fontSize: 10.5, color: "#374151", fontWeight: 600, lineHeight: 1.3 }}>{trip.entryTime || "—"}</div>
-                              </div>
-                              <div style={{ background: "#f8fafc", borderRadius: 8, padding: "7px 8px" }}>
-                                <div style={{ fontSize: 9.5, color: "#94a3b8", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 3 }}>Exit</div>
-                                <div style={{ fontSize: 10.5, color: "#374151", fontWeight: 600, lineHeight: 1.3 }}>{trip.exitTime && trip.exitTime !== "--" ? trip.exitTime : "—"}</div>
-                              </div>
-                              <div style={{ background: "#f8fafc", borderRadius: 8, padding: "7px 8px" }}>
-                                <div style={{ fontSize: 9.5, color: "#94a3b8", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 3 }}>Duration</div>
-                                <div style={{ fontSize: 10.5, color: "#374151", fontWeight: 700, fontFamily: "monospace" }}>{trip.duration || "—"}</div>
-                              </div>
+                            {/* Time grid */}
+                            <div className="grid grid-cols-3 gap-2">
+                              {[
+                                { lbl: "Entry",    val: trip.entryTime || "—" },
+                                { lbl: "Exit",     val: trip.exitTime && trip.exitTime !== "--" ? trip.exitTime : "—" },
+                                { lbl: "Duration", val: trip.duration || "—" },
+                              ].map(({ lbl, val }) => (
+                                <div key={lbl} className="bg-slate-50 rounded-xl p-2">
+                                  <div className="text-[9.5px] text-slate-400 font-bold uppercase tracking-wide mb-1">{lbl}</div>
+                                  <div className="text-[10.5px] text-slate-700 font-semibold leading-snug">{val}</div>
+                                </div>
+                              ))}
                             </div>
 
                             {/* Media button */}
                             <button
-                              className="media-btn"
+                              className="media-btn w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-[12px] font-semibold border transition-all"
                               onClick={() => hasValidMedia(trip) && setSelectedTrip(trip)}
                               style={{
-                                width: "100%", background: hasValidMedia(trip) ? "#faf5ff" : "#f8fafc",
-                                border: `1px solid ${hasValidMedia(trip) ? "#e9d5ff" : "#e2e8f0"}`,
-                                borderRadius: 9, padding: "9px 14px", fontSize: 12, fontWeight: 600,
+                                background: hasValidMedia(trip) ? "#faf5ff" : "#f8fafc",
+                                borderColor: hasValidMedia(trip) ? "#e9d5ff" : "#e2e8f0",
+                                color: hasValidMedia(trip) ? "#7c3aed" : "#cbd5e1",
                                 cursor: hasValidMedia(trip) ? "pointer" : "default",
-                                color: hasValidMedia(trip) ? "#7c3aed" : "#d1d5db",
-                                display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-                                transition: "all .15s", opacity: hasValidMedia(trip) ? 1 : .5
+                                opacity: hasValidMedia(trip) ? 1 : .5
                               }}>
                               <ImageIcon size={13} />
                               {hasValidMedia(trip) ? "View Media" : "No Media Available"}
@@ -666,57 +557,50 @@ export default function VendorTripAnalytics() {
                         </div>
                       ))}
                     </div>
+
                   </div>
                 </div>
 
                 {/* SIDEBAR WIDGETS */}
                 {topVendors.length > 0 && (
-                  <div className="sidebar-widgets" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                  <div className="flex flex-col gap-3">
 
-                    {/* Top Vendors */}
-                    <div style={{ background: "#fff", borderRadius: 14, padding: "18px 16px", boxShadow: "0 1px 4px rgba(0,0,0,.06)", border: "1px solid #f0f0f0" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
-                        <div style={{ width: 28, height: 28, borderRadius: 8, background: "#f5f3ff", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                          <TrendingUp size={13} color="#7c3aed" />
-                        </div>
-                        <p style={{ fontSize: 12.5, fontWeight: 700, color: "#0f172a" }}>Top Vendors</p>
+                    <div className="bg-white rounded-2xl p-4 border border-[#f0f0f0]" style={{ boxShadow: "0 1px 4px rgba(0,0,0,.06)" }}>
+                      <div className="flex items-center gap-2 mb-4">
+                        <div className="w-7 h-7 rounded-lg bg-violet-50 flex items-center justify-center"><TrendingUp size={13} color="#7c3aed" /></div>
+                        <span className="text-[12.5px] font-bold text-slate-900">Top Vendors</span>
                       </div>
                       {topVendors.map(([name, count], idx) => (
-                        <div key={name} style={{ marginBottom: 13 }}>
-                          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5, alignItems: "center" }}>
-                            <span style={{ fontSize: 11.5, color: "#374151", fontWeight: 600, maxWidth: 165, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={name}>{name}</span>
-                            <span style={{ fontSize: 11, color: "#94a3b8", fontFamily: "monospace", fontWeight: 700 }}>{count}</span>
+                        <div key={name} className="mb-3">
+                          <div className="flex justify-between items-center mb-1.5">
+                            <span className="text-[11.5px] text-slate-700 font-semibold truncate max-w-[160px]" title={name}>{name}</span>
+                            <span className="text-[11px] text-slate-400 font-mono font-bold">{count}</span>
                           </div>
-                          <div style={{ height: 6, background: "#f1f5f9", borderRadius: 4, overflow: "hidden" }}>
+                          <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
                             <div style={{ height: "100%", borderRadius: 4, transition: "width .6s cubic-bezier(.34,1.56,.64,1)", background: ["linear-gradient(90deg,#7c3aed,#a855f7)","linear-gradient(90deg,#a855f7,#c084fc)","linear-gradient(90deg,#c084fc,#ddd6fe)","linear-gradient(90deg,#ddd6fe,#ede9fe)","linear-gradient(90deg,#ede9fe,#faf5ff)"][idx] || "#f1f5f9", width: `${(count/maxV)*100}%` }} />
                           </div>
                         </div>
                       ))}
                     </div>
 
-                    {/* Status Breakdown */}
-                    <div style={{ background: "#fff", borderRadius: 14, padding: "18px 16px", boxShadow: "0 1px 4px rgba(0,0,0,.06)", border: "1px solid #f0f0f0" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
-                        <div style={{ width: 28, height: 28, borderRadius: 8, background: "#f5f3ff", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                          <CheckCircle2 size={13} color="#7c3aed" />
-                        </div>
-                        <p style={{ fontSize: 12.5, fontWeight: 700, color: "#0f172a" }}>Status Breakdown</p>
+                    <div className="bg-white rounded-2xl p-4 border border-[#f0f0f0]" style={{ boxShadow: "0 1px 4px rgba(0,0,0,.06)" }}>
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="w-7 h-7 rounded-lg bg-violet-50 flex items-center justify-center"><CheckCircle2 size={13} color="#7c3aed" /></div>
+                        <span className="text-[12.5px] font-bold text-slate-900">Status Breakdown</span>
                       </div>
                       {[
                         { label: "Active",    value: inside, color: "#059669", bg: "#ecfdf5", Icon: TrendingUp },
                         { label: "Completed", value: exited, color: "#2563eb", bg: "#eff6ff", Icon: CheckCircle2 },
                         { label: "Denied",    value: denied, color: "#dc2626", bg: "#fef2f2", Icon: XCircle },
                       ].map(s => (
-                        <div key={s.label} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "9px 10px", marginBottom: 6, borderRadius: 9, background: s.bg, border: "1px solid transparent", transition: "border .15s" }}
-                          onMouseEnter={e => e.currentTarget.style.borderColor = s.color + "33"}
-                          onMouseLeave={e => e.currentTarget.style.borderColor = "transparent"}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <div key={s.label} className="flex items-center justify-between px-2.5 py-2 mb-1.5 rounded-xl" style={{ background: s.bg }}>
+                          <div className="flex items-center gap-2">
                             <s.Icon size={12} color={s.color} />
-                            <span style={{ fontSize: 12, color: "#374151", fontWeight: 600 }}>{s.label}</span>
+                            <span className="text-[12px] text-slate-700 font-semibold">{s.label}</span>
                           </div>
-                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                            <span style={{ fontSize: 15, fontWeight: 800, color: s.color }}>{s.value}</span>
-                            <span style={{ fontSize: 10, color: "#94a3b8", fontFamily: "monospace" }}>{total ? `${Math.round((s.value/total)*100)}%` : "—"}</span>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[15px] font-extrabold" style={{ color: s.color }}>{s.value}</span>
+                            <span className="text-[10px] text-slate-400 font-mono">{total ? `${Math.round((s.value/total)*100)}%` : "—"}</span>
                           </div>
                         </div>
                       ))}
@@ -730,13 +614,7 @@ export default function VendorTripAnalytics() {
           </div>
         </div>
 
-        {/* PHOTO MODAL */}
-        {selectedTrip && (
-          <PhotoModal
-            trip={selectedTrip}
-            onClose={() => setSelectedTrip(null)}
-          />
-        )}
+        {selectedTrip && <PhotoModal trip={selectedTrip} onClose={() => setSelectedTrip(null)} />}
       </div>
     </>
   );
